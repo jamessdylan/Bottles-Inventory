@@ -9,7 +9,6 @@
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  background: white;
 }
 
 header {
@@ -32,13 +31,6 @@ header img {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-}
-
-.field label {
-  font-size: 10px;
-  text-transform: uppercase;
-  color: #666;
 }
 
 select {
@@ -48,18 +40,10 @@ select {
   border: none;
   border-radius: 6px;
   padding: 8px 16px;
-  text-align: center;
 }
 
 .list {
   padding: 0 16px 24px;
-}
-
-.group-label {
-  font-family: "Copperplate", serif;
-  font-size: 13px;
-  margin: 18px 0 6px;
-  border-bottom: 1px solid #ddd;
 }
 
 .item {
@@ -69,7 +53,6 @@ select {
   border-bottom: 1px solid #eee;
 }
 
-/* LEFT */
 .left {
   display: flex;
   gap: 12px;
@@ -85,7 +68,7 @@ select {
   justify-content: center;
 }
 
-/* CSS WINEGLASS */
+/* CSS wineglass */
 .wine {
   width: 18px;
   height: 24px;
@@ -106,11 +89,6 @@ select {
   transform: translateX(-50%);
 }
 
-.text {
-  display: flex;
-  flex-direction: column;
-}
-
 .title {
   font-family: "Copperplate", serif;
   font-size: 15px;
@@ -121,7 +99,6 @@ select {
   color: #666;
 }
 
-/* RIGHT */
 .controls {
   display: flex;
   align-items: center;
@@ -137,28 +114,10 @@ button {
 }
 
 .value {
-  min-width: 42px;
+  min-width: 40px;
   text-align: center;
   font-weight: bold;
   cursor: pointer;
-}
-
-.toggle {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-}
-
-.toggle-circle {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  border: 2px solid black;
-}
-
-.toggle-check {
-  color: green;
-  font-size: 14px;
 }
 </style>
 </head>
@@ -171,7 +130,6 @@ button {
 
 <section class="section">
   <div class="field">
-    <label>Source</label>
     <select id="sourceSelect">
       <option>Emporio</option>
       <option>Mezzo</option>
@@ -184,63 +142,43 @@ button {
   </div>
 </section>
 
-<section class="section">
-  <div class="field">
-    <label>Sort</label>
-    <select id="sortSelect"></select>
-  </div>
-</section>
-
 <div class="list" id="list"></div>
 
 <script>
-// ITEMS MUST ALREADY BE DEFINED (local or fetched)
-const items = window.items || [];
-
+let items = [];
 const list = document.getElementById("list");
 const sourceSelect = document.getElementById("sourceSelect");
-const sortSelect = document.getElementById("sortSelect");
-
 let Source = "Emporio";
-let Sort = "Standard";
 
-/* SORT OPTIONS */
-function getSortOptions(source) {
-  return ["Standard","Smart","Tier"];
-}
-
-function updateSort(source) {
-  sortSelect.innerHTML = "";
-  getSortOptions(source).forEach(o => {
-    const opt = document.createElement("option");
-    opt.value = o;
-    opt.textContent = o;
-    sortSelect.appendChild(opt);
-  });
-}
-
-/* HELPERS */
 const round = v => Math.round(v * 10) / 10;
+
+/* 🔹 LOAD ITEMS FROM GITHUB */
+fetch("https://raw.githubusercontent.com/jamessdylan/Bottles-Inventory/main/items.json")
+  .then(res => res.json())
+  .then(data => {
+    items = data;
+    renderItems();
+  })
+  .catch(err => {
+    console.error("Failed to load inventory:", err);
+  });
 
 function renderItems() {
   list.innerHTML = "";
   const completeKey = `${Source}Complete`;
 
   items.forEach(item => {
-    if (typeof item[completeKey] !== "boolean") item[completeKey] = false;
     if (item[Source] == null) item[Source] = 0;
+    if (typeof item[completeKey] !== "boolean") item[completeKey] = false;
     drawItem(item);
   });
 }
 
-/* DRAW ITEM */
 function drawItem(item) {
-  const completeKey = `${Source}Complete`;
   const value = round(item[Source]);
   const titleColor = item.status ? "#000" : "#ccc";
 
   let iconHTML;
-
   if (item.base64 === true && item.icon) {
     iconHTML = `
       <img src="data:image/png;base64,${item.icon}"
@@ -248,7 +186,7 @@ function drawItem(item) {
     `;
   } else {
     iconHTML = `
-      <div class="wine" style="color:${item.icon || '#999'}"></div>
+      <div class="wine" style="color:${item.icon || "#999"}"></div>
     `;
   }
 
@@ -258,7 +196,7 @@ function drawItem(item) {
   row.innerHTML = `
     <div class="left">
       <div class="icon">${iconHTML}</div>
-      <div class="text">
+      <div>
         <div class="title" style="color:${titleColor}">
           ${[item.brand,item.identifier,item.varietal,item.year]
             .filter(v => v && v !== "N/A").join(" ")}
@@ -271,12 +209,6 @@ function drawItem(item) {
       <button class="minus">−</button>
       <div class="value">${value}</div>
       <button class="plus">+</button>
-      <div class="toggle">
-        ${item[completeKey]
-          ? `<span class="toggle-check">✔</span>`
-          : `<div class="toggle-circle"></div>`
-        }
-      </div>
     </div>
   `;
 
@@ -298,22 +230,13 @@ function drawItem(item) {
     }
   };
 
-  row.querySelector(".toggle").onclick = () => {
-    item[completeKey] = !item[completeKey];
-    renderItems();
-  };
-
   list.appendChild(row);
 }
 
-/* EVENTS */
 sourceSelect.onchange = e => {
   Source = e.target.value;
   renderItems();
 };
-
-updateSort(Source);
-renderItems();
 </script>
 
 </body>
