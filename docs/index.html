@@ -9,6 +9,7 @@
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  background: white;
 }
 
 header {
@@ -31,6 +32,13 @@ header img {
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 6px;
+}
+
+.field label {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: #666;
 }
 
 select {
@@ -40,19 +48,29 @@ select {
   border: none;
   border-radius: 6px;
   padding: 8px 16px;
+  text-align: center;
 }
 
 .list {
   padding: 0 16px 24px;
 }
 
+.group-label {
+  font-family: "Copperplate", serif;
+  font-size: 13px;
+  margin: 18px 0 6px;
+  border-bottom: 1px solid #ddd;
+}
+
 .item {
   display: flex;
   justify-content: space-between;
+  gap: 12px;
   padding: 12px 0;
   border-bottom: 1px solid #eee;
 }
 
+/* LEFT */
 .left {
   display: flex;
   gap: 12px;
@@ -89,6 +107,11 @@ select {
   transform: translateX(-50%);
 }
 
+.text {
+  display: flex;
+  flex-direction: column;
+}
+
 .title {
   font-family: "Copperplate", serif;
   font-size: 15px;
@@ -99,6 +122,7 @@ select {
   color: #666;
 }
 
+/* RIGHT */
 .controls {
   display: flex;
   align-items: center;
@@ -114,7 +138,7 @@ button {
 }
 
 .value {
-  min-width: 40px;
+  min-width: 42px;
   text-align: center;
   font-weight: bold;
   cursor: pointer;
@@ -130,6 +154,7 @@ button {
 
 <section class="section">
   <div class="field">
+    <label>Source</label>
     <select id="sourceSelect">
       <option>Emporio</option>
       <option>Mezzo</option>
@@ -142,52 +167,124 @@ button {
   </div>
 </section>
 
+<section class="section">
+  <div class="field">
+    <label>Sort</label>
+    <select id="sortSelect"></select>
+  </div>
+</section>
+
 <div class="list" id="list"></div>
 
 <script>
 let items = [];
+
 const list = document.getElementById("list");
 const sourceSelect = document.getElementById("sourceSelect");
+const sortSelect = document.getElementById("sortSelect");
+
 let Source = "Emporio";
+let Sort = "Standard";
 
-const round = v => Math.round(v * 10) / 10;
-
-/* 🔹 LOAD ITEMS FROM GITHUB */
-fetch("https://raw.githubusercontent.com/jamessdylan/Bottles-Inventory/main/items.json")
-  .then(res => res.json())
+/* LOAD ITEMS (CORRECT PATH) */
+fetch("items.json")
+  .then(r => r.json())
   .then(data => {
     items = data;
+    updateSort(Source);
     renderItems();
   })
   .catch(err => {
-    console.error("Failed to load inventory:", err);
+    console.error("Failed to load items.json", err);
   });
 
+/* SORT OPTIONS */
+function getSortOptions(source) {
+  if (["Emporio","Mezzo","Tetto (L)","Tetto (R)"].includes(source))
+    return ["Standard","Smart","Tier"];
+  return ["Standard","Smart"];
+}
+
+function updateSort(source) {
+  sortSelect.innerHTML = "";
+  getSortOptions(source).forEach(o => {
+    const opt = document.createElement("option");
+    opt.value = o;
+    opt.textContent = o;
+    sortSelect.appendChild(opt);
+  });
+  Sort = sortSelect.value || "Standard";
+}
+
+/* HELPERS */
+const round = v => Math.round(v * 10) / 10;
+
+const naLast = (a, b) => {
+  if (a === "N/A") return 1;
+  if (b === "N/A") return -1;
+  return String(a).localeCompare(String(b));
+};
+
+/* BASE SORT */
+function baseSort(a, b, completeKey) {
+  if (a[completeKey] !== b[completeKey])
+    return a[completeKey] ? 1 : -1;
+
+  return (
+    naLast(a.brand, b.brand) ||
+    naLast(a.identifier, b.identifier) ||
+    naLast(a.varietal, b.varietal) ||
+    naLast(b.year, a.year)
+  );
+}
+
+/* RENDER */
 function renderItems() {
   list.innerHTML = "";
   const completeKey = `${Source}Complete`;
 
-  items.forEach(item => {
-    if (item[Source] == null) item[Source] = 0;
-    if (typeof item[completeKey] !== "boolean") item[completeKey] = false;
-    drawItem(item);
+  items.forEach(i => {
+    if (typeof i[completeKey] !== "boolean") i[completeKey] = false;
+    if (i[Source] == null) i[Source] = 0;
+  });
+
+  if (Sort === "Standard") {
+    items.slice().sort((a,b)=>baseSort(a,b,completeKey)).forEach(drawItem);
+    return;
+  }
+
+  /* SMART / TIER */
+  const tierOrder = ["House", "Reserve"];
+  const tiers = [
+    ...tierOrder,
+    ...[...new Set(items.map(i => i.tier || "Other"))]
+      .filter(t => !tierOrder.includes(t))
+      .sort((a,b)=>b.localeCompare(a))
+  ];
+
+  tiers.forEach(tier => {
+    const group = items.filter(i => (i.tier || "Other") === tier);
+    if (!group.length) return;
+
+    const label = document.createElement("div");
+    label.className = "group-label";
+    label.textContent = tier;
+    list.appendChild(label);
+
+    group.sort((a,b)=>baseSort(a,b,completeKey)).forEach(drawItem);
   });
 }
 
+/* DRAW ITEM */
 function drawItem(item) {
   const value = round(item[Source]);
   const titleColor = item.status ? "#000" : "#ccc";
 
   let iconHTML;
   if (item.base64 === true && item.icon) {
-    iconHTML = `
-      <img src="data:image/png;base64,${item.icon}"
-           style="width:28px;height:28px;object-fit:contain;">
-    `;
+    iconHTML = `<img src="data:image/png;base64,${item.icon}" style="width:28px;height:28px;">`;
   } else {
-    iconHTML = `
-      <div class="wine" style="color:${item.icon || "#999"}"></div>
-    `;
+    iconHTML = `<div class="wine" style="color:${item.icon || "#999"}"></div>`;
   }
 
   const row = document.createElement("div");
@@ -196,7 +293,7 @@ function drawItem(item) {
   row.innerHTML = `
     <div class="left">
       <div class="icon">${iconHTML}</div>
-      <div>
+      <div class="text">
         <div class="title" style="color:${titleColor}">
           ${[item.brand,item.identifier,item.varietal,item.year]
             .filter(v => v && v !== "N/A").join(" ")}
@@ -233,8 +330,15 @@ function drawItem(item) {
   list.appendChild(row);
 }
 
+/* EVENTS */
 sourceSelect.onchange = e => {
   Source = e.target.value;
+  updateSort(Source);
+  renderItems();
+};
+
+sortSelect.onchange = e => {
+  Sort = e.target.value;
   renderItems();
 };
 </script>
