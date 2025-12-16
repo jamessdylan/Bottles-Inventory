@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Mercato</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  background: white;
+}
+
+header {
+  display: flex;
+  justify-content: center;
+  padding: 24px 16px;
+}
+
+header img {
+  max-width: 100%;
+}
+
+.section {
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.field label {
+  font-family: Calibri, Arial, sans-serif;
+  font-size: 6px;
+  text-transform: uppercase;
+  color: #666;
+}
+
+select {
+  font-family: "Copperplate", serif;
+  font-size: 18px;
+  background: rgba(0,0,0,.1);
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  appearance: none;
+  text-align: center;
+}
+
+.list {
+  padding: 0 16px 24px;
+}
+
+.group-label {
+  font-family: "Copperplate", serif;
+  font-size: 13px;
+  margin: 18px 0 6px;
+  color: #333;
+  border-bottom: 1px solid #ddd;
+}
+
+.item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #eee;
+}
+
+/* LEFT */
+.left {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex: 1;
+}
+
+.icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wine {
+  width: 18px;
+  height: 24px;
+  border: 2px solid;
+  border-bottom: none;
+  border-radius: 0 0 10px 10px;
+  position: relative;
+}
+
+.wine::after {
+  content: "";
+  position: absolute;
+  bottom: -12px;
+  left: 50%;
+  width: 2px;
+  height: 12px;
+  background: currentColor;
+  transform: translateX(-50%);
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
+  font-family: "Copperplate", serif;
+  font-size: 15px;
+}
+
+.subtitle {
+  font-size: 11px;
+  color: #666;
+}
+
+/* RIGHT */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+button {
+  border: none;
+  background: #eee;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 16px;
+}
+
+.value {
+  min-width: 42px;
+  text-align: center;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* TOGGLE */
+.toggle {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toggle-circle {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid black;
+}
+
+.toggle-check {
+  font-size: 14px;
+  color: green;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <img src="SiennaTransparent.png" alt="Mercato">
+</header>
+
+<section class="section">
+  <div class="field">
+    <label>Source</label>
+    <select id="sourceSelect">
+      <option selected>Emporio</option>
+      <option>Mezzo</option>
+      <option>Tetto (L)</option>
+      <option>Tetto (R)</option>
+      <option>Wine Cellar</option>
+      <option>Liquor Closet</option>
+      <option>Other</option>
+    </select>
+  </div>
+</section>
+
+<section class="section">
+  <div class="field">
+    <label>Sort</label>
+    <select id="sortSelect"></select>
+  </div>
+</section>
+
+<div class="list" id="list"></div>
+
+<script>
+const items = [{
+  "status" : false,
+  "brand" : "Cantina",
+  "varietal" : "Ribolla Gialla",
+  "year" : "2022",
+  "identifier" : "N\/A",
+  "complete" : false,
+  "qty" : 0,
+  "color" : "Red"
+},{
+  "status" : true,
+  "brand" : "Veuve Cliquot",
+  "varietal" : "Champagne",
+  "year" : "N\/A",
+  "identifier" : "N\/A",
+  "complete" : false,
+  "qty" : 2.2000000000000002,
+  "color" : "White"
+},{
+  "status" : false,
+  "brand" : "Close du Bois",
+  "varietal" : "Chardonnay",
+  "year" : "2022",
+  "identifier" : "N\/A",
+  "complete" : false,
+  "qty" : 0,
+  "color" : "White"
+},{
+  "status" : true,
+  "brand" : "Ancient Peaks Renegade",
+  "varietal" : "N\/A",
+  "year" : "2019",
+  "identifier" : "N\/A",
+  "complete" : false,
+  "qty" : 1,
+  "color" : "Red"
+},{
+  "status" : true,
+  "brand" : "Frescobaldi",
+  "varietal" : "Pomino Bianco",
+  "year" : "2021",
+  "identifier" : "N\/A",
+  "complete" : false,
+  "qty" : 15,
+  "color" : "White"
+},{
+  "status" : true,
+  "brand" : "Jacopo Biondi Santi Sassoalloro",
+  "varietal" : "Sangiovese",
+  "year" : "2018",
+  "identifier" : "N\/A",
+  "complete" : false,
+  "qty" : 29,
+  "color" : "Red"
+},{
+  "status" : true,
+  "brand" : "Hess",
+  "varietal" : "Cabernet Sauvignon",
+  "year" : "2021",
+  "identifier" : "N\/A",
+  "complete" : false,
+  "qty" : 7,
+  "color" : "Red"
+},{
+  "status" : true,
+  "brand" : "Pares Balta",
+  "varietal" : "N\/A",
+  "year" : "2016",
+  "identifier" : "N\/A",
+  "complete" : false,
+  "qty" : 10,
+  "color" : "Red"
+},{
+  "status" : true,
+  "brand" : "Famiglia Boron",
+  "year" : "N\/A",
+  "identifier" : "N\/A",
+  "color" : "Rose\/Sparkling",
+  "qty" : 31,
+  "complete" : false,
+  "varietal" : "Sparkling Red"
+},{
+  "status" : true,
+  "brand" : "Sal Do",
+  "year" : "2021",
+  "identifier" : "N\/A",
+  "color" : "White",
+  "qty" : 0,
+  "complete" : false,
+  "varietal" : "Sauvignon Blanc"
+},{
+  "status" : false,
+  "brand" : "Altanza",
+  "year" : "2024",
+  "identifier" : "N\/A",
+  "color" : "White",
+  "qty" : 0,
+  "complete" : false,
+  "varietal" : "Sauvignon Blanc"
+},{
+  "status" : true,
+  "brand" : "Pietra Santo",
+  "year" : "N\/A",
+  "identifier" : "N\/A",
+  "color" : "Rose\/Sparkling",
+  "qty" : 3,
+  "complete" : false,
+  "varietal" : "Rose"
+},{
+  "status" : true,
+  "brand" : "Santa Classico Garganega",
+  "year" : "2015",
+  "identifier" : "N\/A",
+  "color" : "White",
+  "qty" : 7,
+  "complete" : false,
+  "varietal" : "N\/A"
+},{
+  "status" : false,
+  "brand" : "Wycliff",
+  "year" : "N\/A",
+  "identifier" : "N\/A",
+  "color" : "Rose\/Sparkling",
+  "qty" : 0,
+  "complete" : false,
+  "varietal" : "Champagne"
+},{
+  "status" : true,
+  "brand" : "Chateau des Tourtes",
+  "year" : "2022",
+  "identifier" : "N\/A",
+  "color" : "Red",
+  "qty" : 5,
+  "complete" : false,
+  "varietal" : "Bordeaux"
+},{
+  "status" : true,
+  "brand" : "Trefethen Dragon's Tooth",
+  "year" : "2018",
+  "identifier" : "Dragon's Tooth",
+  "color" : "Red",
+  "qty" : 7,
+  "complete" : false,
+  "varietal" : "Red Blend"
+},{
+  "status" : true,
+  "brand" : "Elysian",
+  "year" : "2016",
+  "identifier" : "N\/A",
+  "color" : "Red",
+  "qty" : 2,
+  "complete" : false,
+  "varietal" : "Merlot"
+},{
+  "status" : true,
+  "brand" : "Aramis",
+  "year" : "2014",
+  "identifier" : "N\/A",
+  "color" : "Red",
+  "qty" : 4,
+  "complete" : false,
+  "varietal" : "Shiraz"
+},{
+  "status" : true,
+  "brand" : "Daou",
+  "year" : "N\/A",
+  "identifier" : "N\/A",
+  "color" : "White",
+  "qty" : 3.5,
+  "complete" : false,
+  "varietal" : "Chardonnay"
+},{
+  "status" : false,
+  "brand" : "Daou",
+  "year" : "N\/A",
+  "identifier" : "Reserve",
+  "color" : "Red",
+  "qty" : 0,
+  "complete" : false,
+  "varietal" : "Cabernet Sauvignon"
+},{
+  "status" : true,
+  "brand" : "Lyric",
+  "year" : "2023",
+  "identifier" : "N\/A",
+  "color" : "Red",
+  "qty" : 12,
+  "complete" : false,
+  "varietal" : "Pinot Noir"
+},{
+  "status" : true,
+  "brand" : "Blindford",
+  "year" : "N\/A",
+  "identifier" : "N\/A",
+  "color" : "White",
+  "qty" : 14,
+  "complete" : false,
+  "varietal" : "Pinot Noir"
+},{
+  "status" : true,
+  "brand" : "Rombauer",
+  "year" : "N\/A",
+  "identifier" : "N\/A",
+  "color" : "White",
+  "qty" : 4,
+  "complete" : false,
+  "varietal" : "Chardonnay"
+},{
+  "status" : true,
+  "brand" : "Borgo Antico",
+  "year" : "N\/A",
+  "identifier" : "N\/A",
+  "color" : "Red",
+  "qty" : 20.100000000000001,
+  "complete" : false,
+  "varietal" : "Chianti"
+},{
+  "status" : true,
+  "brand" : "Resa",
+  "year" : "2018",
+  "identifier" : "N\/A",
+  "color" : "Red",
+  "qty" : 3,
+  "complete" : false,
+  "varietal" : "Grenache"
+},{
+  "status" : true,
+  "brand" : "Fairies & Elves",
+  "year" : "N\/A",
+  "identifier" : "N\/A",
+  "color" : "White",
+  "qty" : 17.800000000000001,
+  "complete" : false,
+  "varietal" : "Riesling"
+},{
+  "qty" : 0,
+  "varietal" : "Cabernet Sauvignon",
+  "year" : "N\/A",
+  "brand" : "Daou",
+  "color" : "Red",
+  "complete" : false,
+  "status" : false,
+  "identifier" : "N\/A"
+},{
+  "qty" : 11,
+  "varietal" : "Vermentino",
+  "year" : "2023",
+  "brand" : "La Pettegola",
+  "color" : "Red",
+  "complete" : false,
+  "status" : true,
+  "identifier" : "N\/A"
+},{
+  "qty" : 5,
+  "varietal" : "N\/A",
+  "year" : "2016",
+  "brand" : "Valadorna Toscana",
+  "color" : "Red",
+  "complete" : false,
+  "status" : true,
+  "identifier" : "N\/A"
+},{
+  "qty" : 3,
+  "varietal" : "Merlot",
+  "year" : "2016",
+  "brand" : "Amastuola",
+  "color" : "Red",
+  "complete" : false,
+  "status" : true,
+  "identifier" : "N\/A"
+},{
+  "qty" : 3,
+  "varietal" : "Barbaresco",
+  "year" : "2018",
+  "brand" : "Rivetto Barbaresco Marcarini",
+  "color" : "Red",
+  "complete" : false,
+  "status" : true,
+  "identifier" : "N\/A"
+},{
+  "qty" : 0,
+  "varietal" : "Sauvignon Blanc",
+  "year" : "2021",
+  "brand" : "Trione",
+  "color" : "White",
+  "complete" : false,
+  "status" : false,
+  "identifier" : "N\/A"
+},{
+  "qty" : 0,
+  "varietal" : "N\/A",
+  "year" : "2022",
+  "brand" : "Colle Corviano Cerasuolo d'Abruzzo",
+  "color" : "White",
+  "complete" : false,
+  "status" : false,
+  "identifier" : "N\/A"
+},{
+  "qty" : 4,
+  "varietal" : "Cabernet Sauvignon",
+  "year" : "2022",
+  "brand" : "Franciscan",
+  "color" : "Red",
+  "complete" : false,
+  "status" : true,
+  "identifier" : "N\/A"
+},{
+  "qty" : 1,
+  "varietal" : "Roero",
+  "year" : "2016",
+  "brand" : "Tumlin",
+  "color" : "Red",
+  "complete" : false,
+  "status" : true,
+  "identifier" : "N\/A"
+},{
+  "qty" : 1,
+  "varietal" : "Red Blend",
+  "year" : "2017",
+  "brand" : "Trione",
+  "color" : "Red",
+  "complete" : false,
+  "status" : true,
+  "identifier" : "Henry's"
+},{
+  "qty" : 2.3999999999999999,
+  "varietal" : "Chardonnay",
+  "year" : "2021",
+  "brand" : "Elemental",
+  "color" : "White",
+  "complete" : false,
+  "status" : true,
+  "identifier" : "N\/A"
+},{
+  "qty" : 1,
+  "varietal" : "N\/A",
+  "year" : "2017",
+  "brand" : "Los Medanos Bonarda",
+  "color" : "Red",
+  "complete" : false,
+  "status" : true,
+  "identifier" : "N\/A"
+},{
+  "qty" : 54.5,
+  "varietal" : "Prosecco",
+  "year" : "N\/A",
+  "brand" : "Famiglia Boron",
+  "color" : "Rose\/Sparkling",
+  "complete" : false,
+  "status" : true,
+  "identifier" : "N\/A"
+},{
+  "qty" : 12,
+  "varietal" : "Pinot Grigio",
+  "year" : "N\/A",
+  "brand" : "Benvolio",
+  "color" : "White",
+  "complete" : false,
+  "status" : true,
+  "identifier" : "N\/A"
+},{
+  "qty" : 0,
+  "varietal" : "Sauvignon Blanc",
+  "year" : "2021",
+  "brand" : "Cantina",
+  "color" : "White",
+  "complete" : false,
+  "status" : false,
+  "identifier" : "N\/A"
+},{
+  "qty" : 1,
+  "varietal" : "Rose",
+  "year" : "2014",
+  "brand" : "Bieler Pere et Fils",
+  "color" : "Rose\/Sparkling",
+  "complete" : false,
+  "status" : true,
+  "identifier" : "N\/A"
+},{
+  "qty" : 5,
+  "varietal" : "Barolo",
+  "year" : "2017",
+  "brand" : "Giovanni Rosso",
+  "color" : "Red",
+  "complete" : false,
+  "status" : true,
+  "identifier" : "N\/A"
+},{
+  "qty" : 3.5,
+  "varietal" : "Bordeaux",
+  "year" : "2020",
+  "brand" : "Chateau Mayne",
+  "color" : "Red",
+  "complete" : false,
+  "status" : true,
+  "identifier" : "N\/A"
+},{
+  "qty" : 0,
+  "varietal" : "Moscato",
+  "status" : false,
+  "brand" : "Fratelli Ponte",
+  "color" : "White",
+  "identifier" : "Flore di Loto",
+  "year" : "N\/A",
+  "complete" : false
+},{
+  "qty" : 0,
+  "varietal" : "N\/A",
+  "status" : false,
+  "brand" : "Sette Vigne",
+  "color" : "Red",
+  "identifier" : "N\/A",
+  "year" : "2019",
+  "complete" : false
+},{
+  "qty" : 1,
+  "varietal" : "Sangiovese",
+  "status" : true,
+  "brand" : "La Brassesca",
+  "color" : "Red",
+  "identifier" : "N\/A",
+  "year" : "2017",
+  "complete" : false
+},{
+  "qty" : 0,
+  "varietal" : "Prosecco",
+  "status" : false,
+  "brand" : "La Marca",
+  "color" : "Rose\/Sparkling",
+  "identifier" : "N\/A",
+  "year" : "N\/A",
+  "complete" : false
+},{
+  "qty" : 2,
+  "varietal" : "Sangiovese",
+  "status" : true,
+  "brand" : "Duxoup",
+  "color" : "Red",
+  "identifier" : "N\/A",
+  "year" : "N\/A",
+  "complete" : false
+},{
+  "qty" : 12,
+  "varietal" : "Cabernet Sauvignon",
+  "status" : true,
+  "brand" : "Carmel Road",
+  "color" : "Red",
+  "identifier" : "N\/A",
+  "year" : "N\/A",
+  "complete" : false
+},{
+  "qty" : 1,
+  "varietal" : "Red Blend",
+  "status" : true,
+  "brand" : "Rocca di Frassinello",
+  "color" : "Red",
+  "identifier" : "N\/A",
+  "year" : "2016",
+  "complete" : false
+},{
+  "qty" : 16.199999999999999,
+  "varietal" : "Chardonnay",
+  "status" : true,
+  "brand" : "Kendall Jackson",
+  "color" : "White",
+  "identifier" : "N\/A",
+  "year" : "N\/A",
+  "complete" : false
+},{
+  "qty" : 7,
+  "varietal" : "Pinot Noir",
+  "status" : true,
+  "brand" : "Elemental",
+  "color" : "Red",
+  "identifier" : "N\/A",
+  "year" : "2022",
+  "complete" : false
+},{
+  "qty" : 33.399999999999999,
+  "varietal" : "Red Blend",
+  "status" : true,
+  "brand" : "Fiorellino",
+  "color" : "Red",
+  "identifier" : "N\/A",
+  "year" : "N\/A",
+  "complete" : false
+},{
+  "qty" : 1,
+  "varietal" : "Merlot",
+  "status" : true,
+  "brand" : "Rutherford",
+  "color" : "Red",
+  "identifier" : "N\/A",
+  "year" : "2019",
+  "complete" : false
+},{
+  "qty" : 8,
+  "varietal" : "Rose",
+  "status" : true,
+  "brand" : "Frescobaldi",
+  "color" : "Rose\/Sparkling",
+  "identifier" : "N\/A",
+  "year" : "2021",
+  "complete" : false
+},{
+  "qty" : 1,
+  "varietal" : "Sauvignon Blanc",
+  "status" : true,
+  "brand" : "Daou",
+  "color" : "White",
+  "identifier" : "N\/A",
+  "year" : "N\/A",
+  "complete" : false
+},{
+  "qty" : 11.199999999999999,
+  "varietal" : "Cabernet Sauvignon",
+  "status" : true,
+  "brand" : "Elemental",
+  "color" : "Red",
+  "identifier" : "N\/A",
+  "year" : "2022",
+  "complete" : false
+},{
+  "qty" : 12,
+  "varietal" : "Chardonnay",
+  "status" : true,
+  "brand" : "La Crema",
+  "color" : "White",
+  "identifier" : "N\/A",
+  "year" : "N\/A",
+  "complete" : false
+},{
+  "qty" : 67.400000000000006,
+  "varietal" : "Pinot Noir",
+  "status" : true,
+  "brand" : "Remembrance Ridge",
+  "color" : "Red",
+  "identifier" : "N\/A",
+  "year" : "2019",
+  "complete" : false
+},{
+  "qty" : 1,
+  "varietal" : "Champagne",
+  "status" : true,
+  "brand" : "Moet & Chandon",
+  "color" : "Rose\/Sparkling",
+  "identifier" : "N\/A",
+  "year" : "N\/A",
+  "complete" : false
+},{
+  "qty" : 10.6,
+  "varietal" : "Cabernet Sauvignon",
+  "status" : true,
+  "brand" : "Domenys Nat",
+  "color" : "Red",
+  "identifier" : "N\/A",
+  "year" : "1917",
+  "complete" : false
+},{
+  "varietal" : "Margaux",
+  "year" : "2017",
+  "identifier" : "Bouquet de Monbrison",
+  "brand" : "Chateau Monrison",
+  "status" : true,
+  "color" : "Red",
+  "qty" : 9,
+  "complete" : false
+},{
+  "varietal" : "Nebbiolo",
+  "year" : "2017",
+  "identifier" : "N\/A",
+  "brand" : "Belgardo",
+  "status" : true,
+  "color" : "Red",
+  "qty" : 8,
+  "complete" : false
+},{
+  "varietal" : "Furmint",
+  "year" : "2020",
+  "identifier" : "N\/A",
+  "brand" : "Sauska",
+  "status" : true,
+  "color" : "White",
+  "qty" : 14,
+  "complete" : false
+},{
+  "varietal" : "Roero",
+  "year" : "2023",
+  "identifier" : "N\/A",
+  "brand" : "Fratelli Ponte",
+  "status" : false,
+  "color" : "White",
+  "qty" : 0,
+  "complete" : false
+},{
+  "varietal" : "Barbera d’Asti",
+  "year" : "2020",
+  "identifier" : "N\/A",
+  "brand" : "Fratelli Ponte",
+  "status" : true,
+  "color" : "Red",
+  "qty" : 14,
+  "complete" : false
+},{
+  "varietal" : "Sauvignon Blanc",
+  "year" : "N\/A",
+  "identifier" : "N\/A",
+  "brand" : "Aromatic",
+  "status" : true,
+  "color" : "White",
+  "qty" : 6,
+  "complete" : false
+},{
+  "varietal" : "N\/A",
+  "year" : "2016",
+  "identifier" : "N\/A",
+  "brand" : "Tenuta Le Colonne Bolgheri",
+  "status" : true,
+  "color" : "Red",
+  "qty" : 2,
+  "complete" : false
+},{
+  "varietal" : "Malbec (Estoeste)",
+  "year" : "N\/A",
+  "identifier" : "N\/A",
+  "brand" : "Bodegas",
+  "status" : false,
+  "color" : "Red",
+  "qty" : 0,
+  "complete" : false
+},{
+  "varietal" : "Chardonnay",
+  "year" : "2018",
+  "identifier" : "N\/A",
+  "brand" : "Remembrance Ridge",
+  "status" : false,
+  "color" : "White",
+  "qty" : 0,
+  "complete" : false
+},{
+  "varietal" : "N\/A",
+  "year" : "2019",
+  "identifier" : "N\/A",
+  "brand" : "Bertani",
+  "status" : true,
+  "color" : "Red",
+  "qty" : 7,
+  "complete" : false
+},{
+  "varietal" : "N\/A",
+  "year" : "2017",
+  "identifier" : "N\/A",
+  "brand" : "Amarone della Valpolicella DOCG",
+  "status" : true,
+  "color" : "Red",
+  "qty" : 5,
+  "complete" : false
+},{
+  "varietal" : "Zinfandel",
+  "year" : "N\/A",
+  "identifier" : "N\/A",
+  "brand" : "Rombauer",
+  "status" : true,
+  "color" : "Red",
+  "qty" : 10,
+  "complete" : false
+},{
+  "varietal" : "Barolo",
+  "year" : "2017",
+  "identifier" : "N\/A",
+  "brand" : "Vieti Rocche di Castiglione",
+  "status" : true,
+  "color" : "Red",
+  "qty" : 9,
+  "complete" : false
+},{
+  "varietal" : "Red Blend",
+  "year" : "2019",
+  "identifier" : "Eschol",
+  "brand" : "Trefethen",
+  "status" : true,
+  "color" : "Red",
+  "qty" : 5,
+  "complete" : false
+},{
+  "varietal" : "Pinot Noir",
+  "year" : "2019",
+  "identifier" : "N\/A",
+  "brand" : "Emeritus",
+  "status" : true,
+  "color" : "Red",
+  "qty" : 9,
+  "complete" : false
+},{
+  "varietal" : "Sangiovese",
+  "year" : "2014",
+  "identifier" : "Castelgiocondo Brunello Di Montalcino",
+  "brand" : "Frescobaldi",
+  "status" : true,
+  "color" : "Red",
+  "qty" : 1,
+  "complete" : false
+},{
+  "varietal" : "Rosso Piceno",
+  "year" : "2021",
+  "identifier" : "N\/A",
+  "brand" : "Stefano Antonucci",
+  "status" : true,
+  "color" : "Red",
+  "qty" : 2,
+  "complete" : false
+},{
+  "varietal" : "Zinfandel",
+  "year" : "2017",
+  "identifier" : "N\/A",
+  "brand" : "Dry Creek",
+  "status" : true,
+  "color" : "Red",
+  "qty" : 5,
+  "complete" : false
+},{
+  "qty" : 5,
+  "status" : true,
+  "color" : "Red",
+  "identifier" : "N\/A",
+  "brand" : "Eagle Eye",
+  "complete" : false,
+  "year" : "2010",
+  "varietal" : "N\/A"
+},{
+  "qty" : 64.700000000000003,
+  "status" : true,
+  "color" : "White",
+  "identifier" : "N\/A",
+  "brand" : "Chateau de Fayolle",
+  "complete" : false,
+  "year" : "2023",
+  "varietal" : "Blanc Sec"
+},{
+  "qty" : 2,
+  "status" : true,
+  "color" : "Rose\/Sparkling",
+  "identifier" : "N\/A",
+  "brand" : "Sauska",
+  "complete" : false,
+  "year" : "2017",
+  "varietal" : "Tokaji Aszu"
+},{
+  "qty" : 18,
+  "status" : true,
+  "color" : "Red",
+  "identifier" : "N\/A",
+  "brand" : "Fratelli Ponte",
+  "complete" : false,
+  "year" : "2020",
+  "varietal" : "Barolo"
+},{
+  "qty" : 12,
+  "status" : true,
+  "color" : "Red",
+  "identifier" : "N\/A",
+  "brand" : "Kendall Jackson",
+  "complete" : false,
+  "year" : "N\/A",
+  "varietal" : "Pinot Noir"
+},{
+  "qty" : 22.899999999999999,
+  "status" : true,
+  "color" : "Rose\/Sparkling",
+  "identifier" : "N\/A",
+  "brand" : "Le Petit Balthazar",
+  "complete" : false,
+  "year" : "2024",
+  "varietal" : "Rose"
+},{
+  "qty" : 24.300000000000001,
+  "status" : true,
+  "color" : "White",
+  "identifier" : "N\/A",
+  "brand" : "Fiori & Colori",
+  "complete" : false,
+  "year" : "N\/A",
+  "varietal" : "Pinot Grigio"
+},{
+  "qty" : 6,
+  "status" : true,
+  "color" : "Red",
+  "identifier" : "N\/A",
+  "brand" : "Tascante Ghiaia Nera",
+  "complete" : false,
+  "year" : "2020",
+  "varietal" : "Nerello Macalese"
+}];
+
+const list = document.getElementById("list");
+const sourceSelect = document.getElementById("sourceSelect");
+const sortSelect = document.getElementById("sortSelect");
+
+let Source = "Emporio";
+let Sort = "Standard";
+
+/* SORT OPTIONS */
+function getSortOptions(source) {
+  if (["Emporio","Mezzo","Tetto (L)","Tetto (R)"].includes(source))
+    return ["Standard","Smart","Tier"];
+  return ["Standard","Smart"];
+}
+
+function getDefaultSort(source) {
+  return ["Emporio","Mezzo","Tetto (L)","Tetto (R)"].includes(source)
+    ? "Smart"
+    : "Standard";
+}
+
+function updateSort(source) {
+  const opts = getSortOptions(source);
+  sortSelect.innerHTML = "";
+  opts.forEach(o => {
+    const opt = document.createElement("option");
+    opt.value = o;
+    opt.textContent = o;
+    sortSelect.appendChild(opt);
+  });
+  Sort = getDefaultSort(source);
+  sortSelect.value = Sort;
+}
+
+/* HELPERS */
+const round = v => Math.round(v * 10) / 10;
+
+const naLast = (a, b) => {
+  if (a === "N/A") return 1;
+  if (b === "N/A") return -1;
+  return a.localeCompare(b);
+};
+
+/* BASE SORT */
+function baseSort(a, b, completeKey) {
+  if (a[completeKey] !== b[completeKey])
+    return a[completeKey] ? 1 : -1;
+
+  return (
+    naLast(a.brand, b.brand) ||
+    naLast(a.identifier, b.identifier) ||
+    naLast(a.varietal, b.varietal) ||
+    naLast(b.year, a.year)
+  );
+}
+
+/* RENDER */
+function renderItems() {
+  list.innerHTML = "";
+  const completeKey = `${Source}Complete`;
+
+  items.forEach(i => {
+    if (typeof i[completeKey] !== "boolean") i[completeKey] = false;
+    if (i[Source] == null) i[Source] = 0;
+  });
+
+  if (Sort === "Standard") {
+    items.sort((a, b) => baseSort(a, b, completeKey));
+    items.forEach(drawItem);
+    return;
+  }
+
+  /* SMART SORT — HOUSE → RESERVE → OTHERS */
+  const tierOrder = ["House", "Reserve"];
+
+  const tiers = [
+    ...tierOrder,
+    ...[...new Set(items.map(i => i.tier || "Other"))]
+      .filter(t => !tierOrder.includes(t))
+      .sort((a, b) => b.localeCompare(a))
+  ];
+
+  tiers.forEach(tier => {
+    const group = items.filter(i => (i.tier || "Other") === tier);
+    if (!group.length) return;
+
+    group.sort((a, b) => {
+      if (a[completeKey] !== b[completeKey])
+        return a[completeKey] ? 1 : -1;
+
+      if (a.color === "Red" && b.color !== "Red") return 1;
+      if (a.color !== "Red" && b.color === "Red") return -1;
+
+      return (
+        naLast(a.brand, b.brand) ||
+        naLast(a.identifier, b.identifier) ||
+        naLast(a.varietal, b.varietal) ||
+        naLast(b.year, a.year)
+      );
+    });
+
+    const label = document.createElement("div");
+    label.className = "group-label";
+    label.textContent = tier;
+    list.appendChild(label);
+
+    group.forEach(drawItem);
+  });
+}
+
+/* DRAW ITEM */
+function drawItem(item) {
+  const completeKey = `${Source}Complete`;
+  const value = round(item[Source]);
+  const titleColor = item.status ? "#000" : "#ccc";
+
+  const iconHTML = item.base64
+    ? `<img src="data:image/png;base64,${item.icon}" width="28">`
+    : `<div class="icon" style="color:${item.icon}"><div class="wine"></div></div>`;
+
+  const row = document.createElement("div");
+  row.className = "item";
+
+  row.innerHTML = `
+    <div class="left">
+      <div class="icon">${iconHTML}</div>
+      <div class="text">
+        <div class="title" style="color:${titleColor}">
+          ${[item.brand,item.identifier,item.varietal,item.year]
+            .filter(v => v && v !== "N/A").join(" ")}
+        </div>
+        <div class="subtitle">${item.tier ?? ""}</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="minus">−</button>
+      <div class="value">${value}</div>
+      <button class="plus">+</button>
+      <div class="toggle">
+        ${
+          item[completeKey]
+            ? `<span class="toggle-check">✔</span>`
+            : `<div class="toggle-circle"></div>`
+        }
+      </div>
+    </div>
+  `;
+
+  row.querySelector(".toggle").onclick = () => {
+    item[completeKey] = !item[completeKey];
+    renderItems();
+  };
+
+  row.querySelector(".minus").onclick = () => {
+    item[Source] = round(item[Source] - 1);
+    renderItems();
+  };
+
+  row.querySelector(".plus").onclick = () => {
+    item[Source] = round(item[Source] + 1);
+    renderItems();
+  };
+
+  row.querySelector(".value").onclick = () => {
+    const v = prompt("Enter value:", value);
+    if (v !== null && !isNaN(v)) {
+      item[Source] = round(Number(v));
+      renderItems();
+    }
+  };
+
+  list.appendChild(row);
+}
+
+/* EVENTS */
+sourceSelect.onchange = e => {
+  Source = e.target.value;
+  updateSort(Source);
+  renderItems();
+};
+
+sortSelect.onchange = e => {
+  Sort = e.target.value;
+  renderItems();
+};
+
+/* INIT */
+updateSort(Source);
+renderItems();
+</script>
+
+</body>
+</html>
