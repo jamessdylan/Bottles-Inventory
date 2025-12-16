@@ -86,7 +86,7 @@ select {
   justify-content: center;
 }
 
-/* CSS wineglass */
+/* CSS WINEGLASS */
 .wine {
   width: 18px;
   height: 24px;
@@ -186,16 +186,19 @@ const sortSelect = document.getElementById("sortSelect");
 let Source = "Emporio";
 let Sort = "Standard";
 
-/* LOAD ITEMS (CORRECT PATH) */
-fetch("items.json")
-  .then(r => r.json())
+/* LOAD ITEMS — GITHUB PAGES SAFE */
+fetch("/Bottles-Inventory/items.json")
+  .then(r => {
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return r.json();
+  })
   .then(data => {
     items = data;
     updateSort(Source);
     renderItems();
   })
   .catch(err => {
-    console.error("Failed to load items.json", err);
+    console.error("Failed to load items.json:", err);
   });
 
 /* SORT OPTIONS */
@@ -249,7 +252,10 @@ function renderItems() {
   });
 
   if (Sort === "Standard") {
-    items.slice().sort((a,b)=>baseSort(a,b,completeKey)).forEach(drawItem);
+    items
+      .slice()
+      .sort((a,b)=>baseSort(a,b,completeKey))
+      .forEach(drawItem);
     return;
   }
 
@@ -271,7 +277,10 @@ function renderItems() {
     label.textContent = tier;
     list.appendChild(label);
 
-    group.sort((a,b)=>baseSort(a,b,completeKey)).forEach(drawItem);
+    group
+      .slice()
+      .sort((a,b)=>baseSort(a,b,completeKey))
+      .forEach(drawItem);
   });
 }
 
@@ -282,9 +291,12 @@ function drawItem(item) {
 
   let iconHTML;
   if (item.base64 === true && item.icon) {
-    iconHTML = `<img src="data:image/png;base64,${item.icon}" style="width:28px;height:28px;">`;
+    iconHTML =
+      `<img src="data:image/png;base64,${item.icon}"
+            style="width:28px;height:28px;object-fit:contain;">`;
   } else {
-    iconHTML = `<div class="wine" style="color:${item.icon || "#999"}"></div>`;
+    iconHTML =
+      `<div class="wine" style="color:${item.icon || "#999"}"></div>`;
   }
 
   const row = document.createElement("div");
@@ -345,4 +357,5 @@ sortSelect.onchange = e => {
 
 </body>
 </html>
+
 
