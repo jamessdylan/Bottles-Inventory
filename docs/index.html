@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
@@ -10,7 +9,6 @@
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  background: white;
 }
 
 header {
@@ -19,9 +17,7 @@ header {
   padding: 24px 16px;
 }
 
-header img {
-  max-width: 100%;
-}
+header img { max-width: 100%; }
 
 .section {
   display: flex;
@@ -37,8 +33,7 @@ header img {
 }
 
 .field label {
-  font-family: Calibri, Arial, sans-serif;
-  font-size: 6px;
+  font-size: 10px;
   text-transform: uppercase;
   color: #666;
 }
@@ -50,26 +45,20 @@ select {
   border: none;
   border-radius: 6px;
   padding: 8px 16px;
-  appearance: none;
-  text-align: center;
 }
 
-.list {
-  padding: 0 16px 24px;
-}
+.list { padding: 0 16px 24px; }
 
 .group-label {
   font-family: "Copperplate", serif;
   font-size: 13px;
   margin: 18px 0 6px;
-  color: #333;
   border-bottom: 1px solid #ddd;
 }
 
 .item {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
   padding: 12px 0;
   border-bottom: 1px solid #eee;
 }
@@ -109,11 +98,6 @@ select {
   transform: translateX(-50%);
 }
 
-.text {
-  display: flex;
-  flex-direction: column;
-}
-
 .title {
   font-family: "Copperplate", serif;
   font-size: 15px;
@@ -145,14 +129,7 @@ button {
   cursor: pointer;
 }
 
-.toggle {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+.toggle { cursor: pointer; }
 
 .toggle-circle {
   width: 12px;
@@ -165,32 +142,7 @@ button {
   font-size: 14px;
   color: green;
 }
-
-/* NUMERIC MODAL */
-#numModal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.4);
-  display: none;
-  align-items: center;
-  justify-content: center;
-}
-
-#numModal .panel {
-  background: white;
-  padding: 16px;
-  border-radius: 12px;
-  width: 220px;
-}
-
-#numModal input {
-  width: 100%;
-  font-size: 22px;
-  text-align: center;
-  margin-bottom: 12px;
-}
 </style>
-
 </head>
 
 <body>
@@ -203,7 +155,7 @@ button {
   <div class="field">
     <label>Source</label>
     <select id="sourceSelect">
-      <option selected>Emporio</option>
+      <option>Emporio</option>
       <option>Mezzo</option>
       <option>Tetto (L)</option>
       <option>Tetto (R)</option>
@@ -223,31 +175,39 @@ button {
 
 <div class="list" id="list"></div>
 
-<div id="numModal">
-  <div class="panel">
-    <input id="numInput" type="number" step="0.5" />
-    <button id="numSave">Save</button>
-  </div>
-</div>
-
 <script>
-const items = {{items}};
+/* ---------------- CONFIG ---------------- */
+const STORAGE_KEY = "mercato-items-v2";
+
+/* ---------------- STATE ---------------- */
+let items = [];
+let Source = "Emporio";
+let Sort = "Smart";
 
 const list = document.getElementById("list");
 const sourceSelect = document.getElementById("sourceSelect");
 const sortSelect = document.getElementById("sortSelect");
 
-let Source = "Emporio";
-let Sort = "Standard";
-let activeItem = null;
+/* ---------------- LOAD ---------------- */
+async function loadItems() {
+  const cached = localStorage.getItem(STORAGE_KEY);
+  if (cached) {
+    items = JSON.parse(cached);
+    renderItems();
+    return;
+  }
 
-const modal = document.getElementById("numModal");
-const numInput = document.getElementById("numInput");
+  const res = await fetch("items.json", { cache: "no-store" });
+  items = await res.json();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  renderItems();
+}
 
-const round = v => Math.round(v * 10) / 10;
-
+/* ---------------- SORT OPTIONS ---------------- */
 function getSortOptions(source) {
-  return ["Standard", "Smart"];
+  return ["Emporio","Mezzo","Tetto (L)","Tetto (R)"].includes(source)
+    ? ["Standard","Smart","Tier"]
+    : ["Standard","Smart"];
 }
 
 function updateSort(source) {
@@ -258,87 +218,156 @@ function updateSort(source) {
     opt.textContent = o;
     sortSelect.appendChild(opt);
   });
-  Sort = "Standard";
+  Sort = sortSelect.value = getSortOptions(source).includes("Smart") ? "Smart" : "Standard";
 }
 
+/* ---------------- HELPERS ---------------- */
+const round = v => Math.round(v * 10) / 10;
+
+const naLast = (a, b) => {
+  if (a === "N/A") return 1;
+  if (b === "N/A") return -1;
+  return a.localeCompare(b);
+};
+
+function baseSort(a, b, completeKey) {
+  if (a[completeKey] !== b[completeKey])
+    return a[completeKey] ? 1 : -1;
+
+  return (
+    naLast(a.brand, b.brand) ||
+    naLast(a.identifier, b.identifier) ||
+    naLast(a.varietal, b.varietal) ||
+    naLast(b.year, a.year)
+  );
+}
+
+/* ---------------- RENDER ---------------- */
 function renderItems() {
   list.innerHTML = "";
   const completeKey = `${Source}Complete`;
 
   items.forEach(i => {
-    if (typeof i[completeKey] !== "boolean") i[completeKey] = false;
     i[Source] = Number(i[Source]) || 0;
+    if (typeof i[completeKey] !== "boolean") i[completeKey] = false;
   });
 
-  items.forEach(drawItem);
+  if (Sort === "Standard") {
+    items.sort((a,b)=>baseSort(a,b,completeKey));
+    items.forEach(drawItem);
+  }
+
+  else if (Sort === "Tier") {
+    const tiers = [...new Set(items.map(i => i.tier || "Other"))]
+      .sort((a,b)=>a.localeCompare(b));
+
+    tiers.forEach(tier => {
+      const group = items.filter(i => (i.tier || "Other") === tier);
+      if (!group.length) return;
+
+      group.sort((a,b)=>baseSort(a,b,completeKey));
+
+      const label = document.createElement("div");
+      label.className = "group-label";
+      label.textContent = tier;
+      list.appendChild(label);
+
+      group.forEach(drawItem);
+    });
+  }
+
+  else { /* SMART */
+    const tierOrder = ["House","Reserve"];
+    const tiers = [
+      ...tierOrder,
+      ...[...new Set(items.map(i => i.tier || "Other"))]
+        .filter(t=>!tierOrder.includes(t))
+    ];
+
+    tiers.forEach(tier => {
+      const group = items.filter(i => (i.tier || "Other") === tier);
+      if (!group.length) return;
+
+      group.sort((a,b)=>{
+        if (a[completeKey] !== b[completeKey])
+          return a[completeKey] ? 1 : -1;
+        if (a.color === "Red" && b.color !== "Red") return 1;
+        if (a.color !== "Red" && b.color === "Red") return -1;
+        return baseSort(a,b,completeKey);
+      });
+
+      const label = document.createElement("div");
+      label.className = "group-label";
+      label.textContent = tier;
+      list.appendChild(label);
+
+      group.forEach(drawItem);
+    });
+  }
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
 }
 
+/* ---------------- DRAW ---------------- */
 function drawItem(item) {
   const completeKey = `${Source}Complete`;
+
+  const iconHTML = item.base64
+    ? `<img src="data:image/png;base64,${item.icon}" width="28">`
+    : `<div class="icon" style="color:${item.icon}"><div class="wine"></div></div>`;
 
   const row = document.createElement("div");
   row.className = "item";
 
   row.innerHTML = `
     <div class="left">
-      <div class="icon" style="color:${item.icon}"><div class="wine"></div></div>
-      <div class="text">
-        <div class="title">${item.brand} ${item.varietal} ${item.year}</div>
-        <div class="subtitle">${item.tier ?? ""}</div>
+      <div class="icon">${iconHTML}</div>
+      <div>
+        <div class="title" style="color:${item.status ? "#000" : "#ccc"}">
+          ${[item.brand,item.identifier,item.varietal,item.year].filter(v=>v && v!=="N/A").join(" ")}
+        </div>
+        <div class="subtitle">${item.tier || ""}</div>
       </div>
     </div>
     <div class="controls">
       <button class="minus">−</button>
-      <div class="value">${round(item[Source])}</div>
+      <div class="value">${item[Source]}</div>
       <button class="plus">+</button>
-      <div class="toggle">${item[completeKey] ? "✔" : "○"}</div>
+      <div class="toggle">
+        ${item[completeKey] ? "✔" : `<div class="toggle-circle"></div>`}
+      </div>
     </div>
   `;
 
-  row.querySelector(".minus").onclick = () => {
-    item[Source] = round(item[Source] - 1);
-    renderItems();
+  row.querySelector(".minus").onclick = ()=>{ item[Source]=round(item[Source]-1); renderItems(); };
+  row.querySelector(".plus").onclick = ()=>{ item[Source]=round(item[Source]+1); renderItems(); };
+  row.querySelector(".value").onclick = ()=>{
+    const v = prompt("Enter value:", item[Source]);
+    if (v!==null && !isNaN(v)) { item[Source]=round(+v); renderItems(); }
   };
-
-  row.querySelector(".plus").onclick = () => {
-    item[Source] = round(item[Source] + 1);
+  row.querySelector(".toggle").onclick = ()=>{
+    item[completeKey]=!item[completeKey];
     renderItems();
-  };
-
-  row.querySelector(".value").onclick = () => {
-    activeItem = item;
-    numInput.value = item[Source];
-    modal.style.display = "flex";
   };
 
   list.appendChild(row);
 }
 
-numInput.onkeydown = e => {
-  if (e.key === "Enter") saveNum();
-};
-
-document.getElementById("numSave").onclick = saveNum;
-
-function saveNum() {
-  if (!activeItem) return;
-  activeItem[Source] = round(Number(numInput.value) || 0);
-  modal.style.display = "none";
-  renderItems();
-}
-
-modal.onclick = e => {
-  if (e.target === modal) modal.style.display = "none";
-};
-
+/* ---------------- EVENTS ---------------- */
 sourceSelect.onchange = e => {
   Source = e.target.value;
   updateSort(Source);
   renderItems();
 };
 
+sortSelect.onchange = e => {
+  Sort = e.target.value;
+  renderItems();
+};
+
+/* ---------------- INIT ---------------- */
 updateSort(Source);
-renderItems();
+loadItems();
 </script>
 
 </body>
