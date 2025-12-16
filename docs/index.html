@@ -312,9 +312,25 @@ function renderItems() {
 function drawItem(item) {
   const completeKey = `${Source}Complete`;
 
-  const iconHTML = item.base64
-    ? `<img src="data:image/png;base64,${item.icon}" width="28">`
-    : `<div class="icon" style="color:${item.icon}"><div class="wine"></div></div>`;
+  let iconHTML = "";
+
+  /* RESTORED BASE64 ICON BEHAVIOR */
+  if (item.base64 === true && typeof item.icon === "string" && item.icon.length > 0) {
+    iconHTML = `
+      <img
+        src="data:image/png;base64,${item.icon}"
+        width="28"
+        height="28"
+        style="object-fit:contain"
+      >
+    `;
+  } else {
+    iconHTML = `
+      <div class="icon" style="color:${item.icon || "#999"}">
+        <div class="wine"></div>
+      </div>
+    `;
+  }
 
   const row = document.createElement("div");
   row.className = "item";
@@ -324,34 +340,54 @@ function drawItem(item) {
       <div class="icon">${iconHTML}</div>
       <div>
         <div class="title" style="color:${item.status ? "#000" : "#ccc"}">
-          ${[item.brand,item.identifier,item.varietal,item.year].filter(v=>v && v!=="N/A").join(" ")}
+          ${[item.brand, item.identifier, item.varietal, item.year]
+            .filter(v => v && v !== "N/A")
+            .join(" ")}
         </div>
         <div class="subtitle">${item.tier || ""}</div>
       </div>
     </div>
+
     <div class="controls">
       <button class="minus">−</button>
       <div class="value">${item[Source]}</div>
       <button class="plus">+</button>
       <div class="toggle">
-        ${item[completeKey] ? "✔" : `<div class="toggle-circle"></div>`}
+        ${
+          item[completeKey]
+            ? `<span class="toggle-check">✔</span>`
+            : `<div class="toggle-circle"></div>`
+        }
       </div>
     </div>
   `;
 
-  row.querySelector(".minus").onclick = ()=>{ item[Source]=round(item[Source]-1); renderItems(); };
-  row.querySelector(".plus").onclick = ()=>{ item[Source]=round(item[Source]+1); renderItems(); };
-  row.querySelector(".value").onclick = ()=>{
-    const v = prompt("Enter value:", item[Source]);
-    if (v!==null && !isNaN(v)) { item[Source]=round(+v); renderItems(); }
+  row.querySelector(".minus").onclick = () => {
+    item[Source] = round(item[Source] - 1);
+    renderItems();
   };
-  row.querySelector(".toggle").onclick = ()=>{
-    item[completeKey]=!item[completeKey];
+
+  row.querySelector(".plus").onclick = () => {
+    item[Source] = round(item[Source] + 1);
+    renderItems();
+  };
+
+  row.querySelector(".value").onclick = () => {
+    const v = prompt("Enter value:", item[Source]);
+    if (v !== null && !isNaN(v)) {
+      item[Source] = round(Number(v));
+      renderItems();
+    }
+  };
+
+  row.querySelector(".toggle").onclick = () => {
+    item[completeKey] = !item[completeKey];
     renderItems();
   };
 
   list.appendChild(row);
 }
+
 
 /* ---------------- EVENTS ---------------- */
 sourceSelect.onchange = e => {
