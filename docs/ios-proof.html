@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iOS Safari Fetch Proof</title>
+
+<style>
+body {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  padding: 16px;
+}
+.ok { color: green; font-weight: bold; }
+.err { color: red; font-weight: bold; }
+pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: #f4f4f4;
+  padding: 12px;
+  border-radius: 6px;
+}
+</style>
+</head>
+
+<body>
+
+<h2>iOS Safari JSON Fetch Proof</h2>
+<div id="status">Loading…</div>
+<pre id="output"></pre>
+
+<script>
+(async () => {
+  const status = document.getElementById("status");
+  const output = document.getElementById("output");
+
+  try {
+    const url = "https://jamessdylan.github.io/Bottles-Inventory/items.json";
+
+    const res = await fetch(url, {
+      cache: "no-store",
+      credentials: "omit"
+    });
+
+    if (!res.ok) {
+      throw new Error("HTTP " + res.status);
+    }
+
+    const text = await res.text();
+    const data = JSON.parse(text);
+
+    if (!Array.isArray(data)) {
+      throw new Error("JSON is not an array");
+    }
+
+    status.innerHTML = `<span class="ok">Loaded ${data.length} items ✔</span>`;
+    output.textContent = JSON.stringify(data.slice(0, 2), null, 2);
+
+  } catch (err) {
+    status.innerHTML = `<span class="err">FAILED</span>`;
+    output.textContent = err.message;
+    console.error(err);
+  }
+})();
+</script>
+
+</body>
+</html>
