@@ -181,11 +181,9 @@ button {
 /* ---------------- STATE ---------------- */
 let items = [];
 let Source = "Emporio";
-let Sort = "Standard";   // 🔒 hard default (critical)
+let Sort = "Standard";
 
-const list = document.getElementById("list");
-const sourceSelect = document.getElementById("sourceSelect");
-const sortSelect = document.getElementById("sortSelect");
+let list, sourceSelect, sortSelect;
 
 /* ---------------- SORT OPTIONS ---------------- */
 function getSortOptions(source) {
@@ -202,7 +200,7 @@ function updateSort(source) {
     opt.textContent = o;
     sortSelect.appendChild(opt);
   });
-  sortSelect.value = Sort; // never mutates Sort
+  sortSelect.value = Sort;
 }
 
 /* ---------------- HELPERS ---------------- */
@@ -236,9 +234,6 @@ async function loadItems() {
     if (!Array.isArray(data)) throw new Error("Invalid JSON");
 
     items = data;
-
-    // 🔑 SAFE FIRST RUN ORDER
-    updateSort(Source);
     renderItems();
 
   } catch (err) {
@@ -281,7 +276,6 @@ function renderItems() {
     return;
   }
 
-  /* SMART */
   const tierOrder = ["House","Reserve"];
   const tiers = [
     ...tierOrder,
@@ -357,20 +351,25 @@ function drawItem(item) {
 }
 
 /* ---------------- EVENTS ---------------- */
-sourceSelect.onchange = e => {
-  Source = e.target.value;
+document.addEventListener("DOMContentLoaded", () => {
+  list = document.getElementById("list");
+  sourceSelect = document.getElementById("sourceSelect");
+  sortSelect = document.getElementById("sortSelect");
+
+  sourceSelect.onchange = e => {
+    Source = e.target.value;
+    updateSort(Source);
+    renderItems();
+  };
+
+  sortSelect.onchange = e => {
+    Sort = e.target.value;
+    renderItems();
+  };
+
   updateSort(Source);
-  renderItems();
-};
-
-sortSelect.onchange = e => {
-  Sort = e.target.value;
-  renderItems();
-};
-
-/* ---------------- INIT ---------------- */
-updateSort(Source);
-loadItems();
+  loadItems();
+});
 </script>
 
 </body>
