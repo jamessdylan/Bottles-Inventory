@@ -9,7 +9,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
 <style>
-:root { --green:#1f5e3b; }
+:root { --green:#1f5e3b; --green-light:rgba(255,255,255,.25); }
 
 body {
   margin:0;
@@ -22,7 +22,7 @@ body {
 }
 
 /* ---------- BACKGROUND ---------- */
-body::before {
+body::before{
   content:"";
   position:fixed;
   inset:0;
@@ -32,21 +32,21 @@ body::before {
 }
 
 /* ---------- HEADER ---------- */
-header {
+header{
   display:flex;
   justify-content:center;
   padding:24px 16px;
 }
-header img { max-width:100%; }
+header img{max-width:100%;}
 
 /* ---------- SOURCE TABS ---------- */
-.tabs {
+.tabs{
   display:flex;
   gap:6px;
   padding:10px 12px;
   overflow-x:auto;
 }
-.tab {
+.tab{
   padding:8px 14px;
   border-radius:14px;
   background:#eee;
@@ -54,18 +54,15 @@ header img { max-width:100%; }
   font-size:14px;
   cursor:pointer;
 }
-.tab.active {
-  background:#000;
-  color:#fff;
-}
+.tab.active{background:#000;color:#fff;}
 
 /* ---------- SORT ---------- */
-.section {
+.section{
   display:flex;
   justify-content:center;
   padding:12px;
 }
-select {
+select{
   font-family:"Copperplate",serif;
   font-size:18px;
   background:rgba(0,0,0,.1);
@@ -75,10 +72,10 @@ select {
 }
 
 /* ---------- LIST ---------- */
-.list { padding:8px 16px 120px; }
+.list{padding:8px 16px 140px;}
 
 /* ---------- ITEM ---------- */
-.item {
+.item{
   position:relative;
   display:flex;
   gap:16px;
@@ -90,98 +87,41 @@ select {
 }
 
 /* LEFT */
-.left {
-  display:flex;
-  gap:16px;
-  flex:1;
-  align-items:center;
-}
-.icon {
-  width:56px;
-  height:56px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
+.left{display:flex;gap:16px;flex:1;align-items:center;}
+.icon{width:56px;height:56px;display:flex;align-items:center;justify-content:center;}
 
-.wine {
-  width:26px;
-  height:34px;
+.wine{
+  width:26px;height:34px;
   border:2px solid;
   border-bottom:none;
   border-radius:0 0 12px 12px;
   position:relative;
 }
-.wine::after {
+.wine::after{
   content:"";
   position:absolute;
-  bottom:-14px;
-  left:50%;
-  width:2px;
-  height:14px;
+  bottom:-14px;left:50%;
+  width:2px;height:14px;
   background:currentColor;
   transform:translateX(-50%);
 }
 
-.text-stack {
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-  flex:1;
-}
-.title {
-  font-family:"Copperplate",serif;
-  font-size:17px;
-}
-.sub-row {
-  display:flex;
-  align-items:center;
-  gap:12px;
-}
-.subtitle {
-  font-size:12px;
-  color:#666;
-  flex:1;
-}
+.text-stack{display:flex;flex-direction:column;gap:6px;flex:1;}
+.title{font-family:"Copperplate",serif;font-size:17px;}
+.sub-row{display:flex;align-items:center;gap:12px;}
+.subtitle{font-size:12px;color:#666;flex:1;}
 
-.controls {
-  display:flex;
-  gap:10px;
-  min-width:160px;
-}
-button {
-  border:none;
-  background:rgba(0,0,0,.08);
-  border-radius:6px;
-  padding:6px 10px;
-  font-size:16px;
-}
-.value {
-  min-width:48px;
-  text-align:center;
-  font-weight:bold;
-}
+.controls{display:flex;gap:10px;min-width:160px;}
+button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px;font-size:16px;}
+.value{min-width:48px;text-align:center;font-weight:bold;}
 
-/* COMPLETE TOGGLE */
-.toggle {
-  position:absolute;
-  top:10px;
-  right:12px;
-  cursor:pointer;
-}
-.toggle-circle {
-  width:14px;
-  height:14px;
-  border-radius:50%;
-  border:2px solid black;
-}
-.toggle-check {
-  font-size:16px;
-  color:green;
-}
+/* COMPLETE */
+.toggle{position:absolute;top:10px;right:12px;cursor:pointer;}
+.toggle-circle{width:14px;height:14px;border-radius:50%;border:2px solid black;}
+.toggle-check{font-size:16px;color:green;}
 
 /* ---------- DRAWER TAB ---------- */
-.drawer-tab {
+.drawer-tab{
   position:fixed;
   top:calc(12px + env(safe-area-inset-top));
   left:0;
@@ -195,14 +135,10 @@ button {
   z-index:300;
   cursor:pointer;
 }
-.drawer-tab span {
-  color:white;
-  font-size:22px;
-  letter-spacing:2px;
-}
+.drawer-tab span{color:white;font-size:22px;letter-spacing:2px;}
 
 /* ---------- DRAWER ---------- */
-.drawer {
+.drawer{
   position:fixed;
   inset:0 auto 0 0;
   width:240px;
@@ -213,8 +149,8 @@ button {
   transition:.25s ease;
   z-index:301;
 }
-.drawer.open { transform:translateX(0); }
-.drawer button {
+.drawer.open{transform:translateX(0);}
+.drawer button{
   background:none;
   border:none;
   width:100%;
@@ -224,21 +160,19 @@ button {
 }
 
 /* ---------- OVERLAY ---------- */
-.overlay {
+.overlay{
   position:fixed;
   inset:0;
   background:rgba(0,0,0,.25);
   display:none;
   z-index:300;
 }
-.overlay.show { display:block; }
+.overlay.show{display:block;}
 
-/* ---------- BOTTOM BAR ---------- */
-.bottom-bar {
+/* ---------- FIXED ACTION BAR ---------- */
+.action-bar{
   position:fixed;
-  left:0;
-  right:0;
-  bottom:0;
+  left:0;right:0;bottom:0;
   display:flex;
   justify-content:space-around;
   padding:10px env(safe-area-inset-right)
@@ -246,25 +180,28 @@ button {
           env(safe-area-inset-left);
   background:rgba(31,94,59,.9);
   backdrop-filter:blur(12px);
-  z-index:200;
+  z-index:250;
 }
-.bottom-bar button {
+
+.action-bar button{
   background:none;
   border:none;
-  padding:6px;
-}
-.bottom-bar button.active {
-  background:rgba(255,255,255,.25);
+  padding:10px;
   border-radius:10px;
 }
-.bottom-bar svg,
-.bottom-bar img {
-  width:24px;
-  height:24px;
+
+.action-bar button.active{
+  background:var(--green-light);
+}
+
+.action-bar svg,
+.action-bar img{
+  width:26px;height:26px;
   stroke:white;
   fill:none;
 }
-.bottom-bar img {
+
+.action-bar img{
   filter:brightness(0) invert(1);
 }
 </style>
@@ -273,28 +210,54 @@ button {
 <body>
 
 <div class="drawer-tab" id="drawerTab"><span>•••</span></div>
+
 <div class="drawer" id="drawer">
   <button>New Project</button>
   <button>Sales Report</button>
   <button>Dictionary File</button>
   <button>Export</button>
 </div>
+
 <div class="overlay" id="overlay"></div>
 
-<header>
-  <img src="SiennaTransparent.png" alt="Mercato">
-</header>
+<header><img src="SiennaTransparent.png"></header>
 
 <div class="tabs" id="sourceTabs"></div>
-<section class="section">
-  <select id="sortSelect"></select>
-</section>
+<section class="section"><select id="sortSelect"></select></section>
 <div class="list" id="list"></div>
 
-<nav class="bottom-bar">
-  <button title="New Bottle"></button>
-  <button title="Undo"></button>
-  <button id="archiveBtn" title="Archive"></button>
+<!-- FIXED ACTION BAR -->
+<nav class="action-bar">
+  <!-- New Bottle (grape + plus) -->
+  <button title="New Bottle">
+    <svg viewBox="0 0 24 24">
+      <circle cx="9" cy="9" r="2"/>
+      <circle cx="13" cy="9" r="2"/>
+      <circle cx="11" cy="12" r="2"/>
+      <circle cx="9" cy="15" r="2"/>
+      <circle cx="13" cy="15" r="2"/>
+      <path d="M18 12v6"/>
+      <path d="M15 15h6"/>
+    </svg>
+  </button>
+
+  <!-- Undo -->
+  <button title="Undo">
+    <svg viewBox="0 0 24 24">
+      <path d="M9 14l-4-4 4-4"/>
+      <path d="M5 10h7a6 6 0 1 1 0 12"/>
+    </svg>
+  </button>
+
+  <!-- Archive -->
+  <button id="archiveBtn" title="Archive">
+    <svg viewBox="0 0 24 24">
+      <path d="M3 7h18"/>
+      <path d="M5 7v12h14V7"/>
+    </svg>
+  </button>
+
+  <!-- Smart Sort -->
   <button id="smartSortBtn" title="Smart Sort">
     <img src="brain.png" alt="Smart Sort">
   </button>
@@ -302,35 +265,35 @@ button {
 
 <script>
 /* ---------------- STATE ---------------- */
-const SOURCES = [
+const SOURCES=[
   "Emporio","Mezzo","Tetto (L)","Tetto (R)",
   "Wine Cellar","Liquor Closet","Prep Cooler","Other"
 ];
 
-let items = [];
-let Source = "Emporio";
-let Sort = "Standard";
+let items=[];
+let Source="Emporio";
+let Sort="Standard";
 
-const list = document.getElementById("list");
-const sortSelect = document.getElementById("sortSelect");
-const tabsEl = document.getElementById("sourceTabs");
+const list=document.getElementById("list");
+const sortSelect=document.getElementById("sortSelect");
+const tabsEl=document.getElementById("sourceTabs");
 
 /* ---------------- LOAD ---------------- */
-async function loadItems() {
-  const res = await fetch("./items.json", { cache: "no-store" });
-  items = await res.json();
+async function loadItems(){
+  const res=await fetch("./items.json",{cache:"no-store"});
+  items=await res.json();
   renderItems();
 }
 
 /* ---------------- TABS ---------------- */
-function buildSourceTabs() {
-  tabsEl.innerHTML = "";
-  SOURCES.forEach(src => {
-    const tab = document.createElement("div");
-    tab.className = "tab" + (src === Source ? " active" : "");
-    tab.textContent = src;
-    tab.onclick = () => {
-      Source = src;
+function buildSourceTabs(){
+  tabsEl.innerHTML="";
+  SOURCES.forEach(src=>{
+    const tab=document.createElement("div");
+    tab.className="tab"+(src===Source?" active":"");
+    tab.textContent=src;
+    tab.onclick=()=>{
+      Source=src;
       document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
       tab.classList.add("active");
       updateSort(Source);
@@ -341,42 +304,39 @@ function buildSourceTabs() {
 }
 
 /* ---------------- SORT ---------------- */
-function getSortOptions(src) {
-  if (src === "Prep Cooler") return ["Standard","Tier"];
-  return ["Standard","Smart","Tier"];
+function getSortOptions(src){
+  if(src==="Prep Cooler") return["Standard","Tier"];
+  return["Standard","Smart","Tier"];
 }
-function updateSort(src) {
-  sortSelect.innerHTML = "";
+function updateSort(src){
+  sortSelect.innerHTML="";
   getSortOptions(src).forEach(o=>{
     const opt=document.createElement("option");
-    opt.value=o; opt.textContent=o;
+    opt.value=o;opt.textContent=o;
     sortSelect.appendChild(opt);
   });
-  Sort = sortSelect.value = "Standard";
+  Sort=sortSelect.value="Standard";
 }
 
 /* ---------------- HELPERS ---------------- */
-const round = v => Math.round(v * 10) / 10;
-const naLast = (a,b) => a==="N/A"?1:b==="N/A"?-1:a.localeCompare(b);
-
+const round=v=>Math.round(v*10)/10;
+const naLast=(a,b)=>a==="N/A"?1:b==="N/A"?-1:a.localeCompare(b);
 function baseSort(a,b,key){
   if(a[key]!==b[key]) return a[key]?1:-1;
   return naLast(a.brand,b.brand)
-    || naLast(a.identifier,b.identifier)
-    || naLast(a.varietal,b.varietal)
-    || naLast(b.year,a.year);
+    ||naLast(a.identifier,b.identifier)
+    ||naLast(a.varietal,b.varietal)
+    ||naLast(b.year,a.year);
 }
 
 /* ---------------- RENDER ---------------- */
-function renderItems() {
+function renderItems(){
   list.innerHTML="";
   const key=`${Source}Complete`;
-
   items.forEach(i=>{
     i[Source]=Math.max(0,Number(i[Source])||0);
     if(typeof i[key]!=="boolean") i[key]=false;
   });
-
   items.sort((a,b)=>baseSort(a,b,key));
   items.forEach(drawItem);
 }
@@ -384,7 +344,6 @@ function renderItems() {
 /* ---------------- DRAW ITEM ---------------- */
 function drawItem(item){
   const key=`${Source}Complete`;
-
   const iconHTML=item.base64
     ? `<img src="data:image/png;base64,${item.icon}" width="40">`
     : `<div class="wine" style="color:${item.icon}"></div>`;
@@ -413,22 +372,9 @@ function drawItem(item){
     </div>
   `;
 
-  let t;
-  const val=row.querySelector(".value");
-  val.onpointerdown=()=>t=setTimeout(()=>{
-    const v=prompt("Enter value:",item[Source]);
-    if(v!==null&&!isNaN(v)){
-      item[Source]=Math.max(0,round(Number(v)));
-      renderItems();
-    }
-  },500);
-  val.onpointerup=()=>clearTimeout(t);
-  val.onpointerleave=()=>clearTimeout(t);
-
   row.querySelector(".minus").onclick=()=>{item[Source]=Math.max(0,round(item[Source]-1));renderItems();}
   row.querySelector(".plus").onclick=()=>{item[Source]=round(item[Source]+1);renderItems();}
   row.querySelector(".toggle").onclick=()=>{item[key]=!item[key];renderItems();}
-
   list.appendChild(row);
 }
 
@@ -437,9 +383,11 @@ buildSourceTabs();
 updateSort(Source);
 loadItems();
 
-/* ---------- UI STATES ---------- */
+/* ---------- ACTION STATES ---------- */
 archiveBtn.onclick=()=>archiveBtn.classList.toggle("active");
 smartSortBtn.onclick=()=>smartSortBtn.classList.toggle("active");
+
+/* ---------- DRAWER ---------- */
 drawerTab.onclick=()=>{
   drawer.classList.add("open");
   overlay.classList.add("show");
