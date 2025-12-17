@@ -11,6 +11,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
 }
 
+/* ---------- HEADER ---------- */
 header {
   display: flex;
   justify-content: center;
@@ -19,32 +20,34 @@ header {
 
 header img { max-width: 100%; }
 
-/* -------- SOURCE TABS -------- */
+/* ---------- SOURCE TABS ---------- */
 .tabs {
   display: flex;
   overflow-x: auto;
-  border-bottom: 1px solid #ddd;
+  gap: 8px;
+  padding: 8px 12px;
 }
 
 .tab {
-  padding: 10px 14px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  background: #eee;
   font-family: "Copperplate", serif;
   font-size: 14px;
   white-space: nowrap;
   cursor: pointer;
-  border-bottom: 3px solid transparent;
 }
 
 .tab.active {
-  border-bottom-color: #000;
-  font-weight: bold;
+  background: #000;
+  color: #fff;
 }
 
-/* -------- SORT -------- */
+/* ---------- SORT ---------- */
 .section {
   display: flex;
   justify-content: center;
-  padding: 16px;
+  padding: 12px;
 }
 
 .field {
@@ -69,7 +72,7 @@ select {
   padding: 8px 16px;
 }
 
-/* -------- LIST -------- */
+/* ---------- LIST ---------- */
 .list { padding: 0 16px 24px; }
 
 .group-label {
@@ -93,6 +96,7 @@ select {
   flex: 1;
 }
 
+/* ---------- ICON ---------- */
 .icon {
   width: 36px;
   height: 36px;
@@ -121,6 +125,7 @@ select {
   transform: translateX(-50%);
 }
 
+/* ---------- TEXT ---------- */
 .title {
   font-family: "Copperplate", serif;
   font-size: 15px;
@@ -131,6 +136,7 @@ select {
   color: #666;
 }
 
+/* ---------- CONTROLS ---------- */
 .controls {
   display: flex;
   align-items: center;
@@ -150,7 +156,10 @@ button {
   text-align: center;
   font-weight: bold;
   cursor: pointer;
+  user-select: none;
 }
+
+.toggle { cursor: pointer; }
 
 .toggle-circle {
   width: 12px;
@@ -181,7 +190,9 @@ button {
 <div class="list" id="list"></div>
 
 <script>
-/* -------- SOURCES -------- */
+/* ---------- CONFIG ---------- */
+const STORAGE_KEY = "mercato-items-v2";
+
 const SOURCES = [
   "Emporio",
   "Mezzo",
@@ -193,17 +204,7 @@ const SOURCES = [
   "Other"
 ];
 
-const SORT_RULES = {
-  "Emporio": ["Standard","Smart","Tier"],
-  "Mezzo": ["Standard","Smart","Tier"],
-  "Tetto (L)": ["Standard","Smart","Tier"],
-  "Tetto (R)": ["Standard","Smart","Tier"],
-  "Prep Cooler": ["Standard","Tier"],
-  "Wine Cellar": ["Standard","Smart"],
-  "Liquor Closet": ["Standard","Smart"],
-  "Other": ["Standard","Smart"]
-};
-
+/* ---------- STATE ---------- */
 let items = [];
 let Source = "Emporio";
 let Sort = "Standard";
@@ -212,69 +213,98 @@ const list = document.getElementById("list");
 const sortSelect = document.getElementById("sortSelect");
 const tabs = document.getElementById("sourceTabs");
 
-/* -------- TABS -------- */
-function renderTabs() {
-  tabs.innerHTML = "";
-  SOURCES.forEach(s => {
-    const t = document.createElement("div");
-    t.className = "tab" + (s === Source ? " active" : "");
-    t.textContent = s;
-    t.onclick = () => {
-      Source = s;
-      document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
-      t.classList.add("active");
-      updateSort();
-      renderItems();
-    };
-    tabs.appendChild(t);
-  });
+/* ---------- HELPERS ---------- */
+const normalize = v => Math.max(0, Math.round((+v || 0) * 10) / 10);
+
+const naLast = (a, b) => {
+  if (a === "N/A") return 1;
+  if (b === "N/A") return -1;
+  return a.localeCompare(b);
+};
+
+function baseSort(a, b, completeKey) {
+  if (a[completeKey] !== b[completeKey])
+    return a[completeKey] ? 1 : -1;
+
+  return (
+    naLast(a.brand, b.brand) ||
+    naLast(a.identifier, b.identifier) ||
+    naLast(a.varietal, b.varietal) ||
+    naLast(b.year, a.year)
+  );
 }
 
-/* -------- SORT -------- */
+/* ---------- LOAD ---------- */
+async function loadItems() {
+  const cached = localStorage.getItem(STORAGE_KEY);
+  if (cached) {
+    items = JSON.parse(cached);
+    renderItems();
+    return;
+  }
+
+  const res = await fetch("items.json", { cache: "no-store" });
+  items = await res.json();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  renderItems();
+}
+
+/* ---------- SORT OPTIONS ---------- */
+function getSortOptions(source) {
+  if (source === "Prep Cooler") return ["Standard", "Tier"];
+  if (["Emporio","Mezzo","Tetto (L)","Tetto (R)"].includes(source))
+    return ["Standard","Smart","Tier"];
+  return ["Standard","Smart"];
+}
+
 function updateSort() {
   sortSelect.innerHTML = "";
-  SORT_RULES[Source].forEach(o => {
+  getSortOptions(Source).forEach(o => {
     const opt = document.createElement("option");
     opt.value = o;
     opt.textContent = o;
     sortSelect.appendChild(opt);
   });
-  Sort = sortSelect.value = SORT_RULES[Source][0];
+  Sort = sortSelect.value = "Standard";
 }
 
-/* -------- LOAD -------- */
-async function loadItems() {
-  const res = await fetch("items.json", { cache: "no-store" });
-  items = await res.json();
-  renderItems();
+/* ---------- TABS ---------- */
+function buildTabs() {
+  tabs.innerHTML = "";
+  SOURCES.forEach(src => {
+    const tab = document.createElement("div");
+    tab.className = "tab" + (src === Source ? " active" : "");
+    tab.textContent = src;
+    tab.onclick = () => {
+      Source = src;
+      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+      tab.classList.add("active");
+      updateSort();
+      renderItems();
+    };
+    tabs.appendChild(tab);
+  });
 }
 
-/* -------- HELPERS -------- */
-const round = v => Math.round(v * 10) / 10;
-
-function baseSort(a,b,ck) {
-  if (a[ck] !== b[ck]) return a[ck] ? 1 : -1;
-  return (a.brand||"").localeCompare(b.brand||"");
-}
-
-/* -------- RENDER -------- */
+/* ---------- RENDER ---------- */
 function renderItems() {
-  if (!items.length) return;
   list.innerHTML = "";
-  const ck = `${Source}Complete`;
+  const completeKey = `${Source}Complete`;
 
-  items.forEach(i=>{
-    i[Source] = Number(i[Source]) || 0;
-    if (typeof i[ck] !== "boolean") i[ck] = false;
+  items.forEach(i => {
+    i[Source] = normalize(i[Source]);
+    if (typeof i[completeKey] !== "boolean") i[completeKey] = false;
   });
 
-  items.sort((a,b)=>baseSort(a,b,ck));
+  items.sort((a,b)=>baseSort(a,b,completeKey));
   items.forEach(drawItem);
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
 }
 
-/* -------- DRAW -------- */
+/* ---------- DRAW ---------- */
 function drawItem(item) {
-  const ck = `${Source}Complete`;
+  const completeKey = `${Source}Complete`;
 
   const iconHTML = item.base64
     ? `<img src="data:image/png;base64,${item.icon}" width="28">`
@@ -287,7 +317,7 @@ function drawItem(item) {
       <div class="icon">${iconHTML}</div>
       <div>
         <div class="title">${item.brand} ${item.varietal} ${item.year}</div>
-        <div class="subtitle">${item.tier||""}</div>
+        <div class="subtitle">${item.tier || ""}</div>
       </div>
     </div>
     <div class="controls">
@@ -295,20 +325,53 @@ function drawItem(item) {
       <div class="value">${item[Source]}</div>
       <button class="plus">+</button>
       <div class="toggle">
-        ${item[ck] ? "✔" : `<div class="toggle-circle"></div>`}
+        ${item[completeKey] ? "✔" : `<div class="toggle-circle"></div>`}
       </div>
     </div>
   `;
 
-  row.querySelector(".minus").onclick = ()=>{ item[Source]--; renderItems(); };
-  row.querySelector(".plus").onclick = ()=>{ item[Source]++; renderItems(); };
-  row.querySelector(".toggle").onclick = ()=>{ item[ck]=!item[ck]; renderItems(); };
+  row.querySelector(".minus").onclick = () => {
+    item[Source] = normalize(item[Source] - 1);
+    renderItems();
+  };
+
+  row.querySelector(".plus").onclick = () => {
+    item[Source] = normalize(item[Source] + 1);
+    renderItems();
+  };
+
+  // LONG PRESS TO EDIT
+  const valueEl = row.querySelector(".value");
+  let timer = null;
+
+  const start = () => {
+    timer = setTimeout(() => {
+      const v = prompt("Enter quantity:", item[Source]);
+      if (v !== null && !isNaN(v)) {
+        item[Source] = normalize(v);
+        renderItems();
+      }
+    }, 500);
+  };
+
+  const cancel = () => timer && clearTimeout(timer);
+
+  valueEl.addEventListener("touchstart", start);
+  valueEl.addEventListener("touchend", cancel);
+  valueEl.addEventListener("mousedown", start);
+  valueEl.addEventListener("mouseup", cancel);
+  valueEl.addEventListener("mouseleave", cancel);
+
+  row.querySelector(".toggle").onclick = () => {
+    item[completeKey] = !item[completeKey];
+    renderItems();
+  };
 
   list.appendChild(row);
 }
 
-/* -------- INIT -------- */
-renderTabs();
+/* ---------- INIT ---------- */
+buildTabs();
 updateSort();
 loadItems();
 </script>
