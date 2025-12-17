@@ -9,7 +9,6 @@
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  background: white;
 }
 
 header {
@@ -60,7 +59,6 @@ select {
 .item {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
   padding: 12px 0;
   border-bottom: 1px solid #eee;
 }
@@ -183,7 +181,9 @@ let items = [];
 let Source = "Emporio";
 let Sort = "Standard";
 
-let list, sourceSelect, sortSelect;
+const list = document.getElementById("list");
+const sourceSelect = document.getElementById("sourceSelect");
+const sortSelect = document.getElementById("sortSelect");
 
 /* ---------------- SORT OPTIONS ---------------- */
 function getSortOptions(source) {
@@ -194,12 +194,16 @@ function getSortOptions(source) {
 
 function updateSort(source) {
   sortSelect.innerHTML = "";
-  getSortOptions(source).forEach(o => {
+  const options = getSortOptions(source);
+
+  options.forEach(o => {
     const opt = document.createElement("option");
     opt.value = o;
     opt.textContent = o;
     sortSelect.appendChild(opt);
   });
+
+  Sort = "Standard";
   sortSelect.value = Sort;
 }
 
@@ -224,21 +228,24 @@ function baseSort(a, b, completeKey) {
   );
 }
 
-/* ---------------- LOAD ---------------- */
+/* ---------------- LOAD ITEMS (DEFENSIVE) ---------------- */
 async function loadItems() {
   try {
-    const res = await fetch("/Bottles-Inventory/docs/items.json", { cache: "no-store" });
-    if (!res.ok) throw new Error("Fetch failed");
+    const res = await fetch("./items.json", { cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
 
     const data = await res.json();
-    if (!Array.isArray(data)) throw new Error("Invalid JSON");
+    if (!Array.isArray(data)) throw new Error("items.json is not an array");
 
     items = data;
     renderItems();
-
   } catch (err) {
+    list.innerHTML = `
+      <div style="padding:16px;color:red;font-weight:bold">
+        Failed to load inventory:<br>${err.message}
+      </div>
+    `;
     console.error(err);
-    alert("Failed to load inventory");
   }
 }
 
@@ -276,6 +283,7 @@ function renderItems() {
     return;
   }
 
+  /* SMART */
   const tierOrder = ["House","Reserve"];
   const tiers = [
     ...tierOrder,
@@ -304,11 +312,11 @@ function renderItems() {
   });
 }
 
-/* ---------------- DRAW ---------------- */
+/* ---------------- DRAW ITEM ---------------- */
 function drawItem(item) {
   const completeKey = `${Source}Complete`;
 
-  const iconHTML = item.base64 === true
+  const iconHTML = item.base64
     ? `<img src="data:image/png;base64,${item.icon}" width="28">`
     : `<div class="icon" style="color:${item.icon}"><div class="wine"></div></div>`;
 
@@ -320,8 +328,7 @@ function drawItem(item) {
       <div class="icon">${iconHTML}</div>
       <div>
         <div class="title" style="color:${item.status ? "#000" : "#ccc"}">
-          ${[item.brand,item.identifier,item.varietal,item.year]
-            .filter(v=>v && v!=="N/A").join(" ")}
+          ${[item.brand,item.identifier,item.varietal,item.year].filter(v=>v && v!=="N/A").join(" ")}
         </div>
         <div class="subtitle">${item.tier || ""}</div>
       </div>
@@ -331,7 +338,7 @@ function drawItem(item) {
       <div class="value">${item[Source]}</div>
       <button class="plus">+</button>
       <div class="toggle">
-        ${item[completeKey] ? "✔" : `<div class="toggle-circle"></div>`}
+        ${item[completeKey] ? `<span class="toggle-check">✔</span>` : `<div class="toggle-circle"></div>`}
       </div>
     </div>
   `;
@@ -351,22 +358,19 @@ function drawItem(item) {
 }
 
 /* ---------------- EVENTS ---------------- */
+sourceSelect.onchange = e => {
+  Source = e.target.value;
+  updateSort(Source);
+  renderItems();
+};
+
+sortSelect.onchange = e => {
+  Sort = e.target.value;
+  renderItems();
+};
+
+/* ---------------- INIT (ORDER MATTERS) ---------------- */
 document.addEventListener("DOMContentLoaded", () => {
-  list = document.getElementById("list");
-  sourceSelect = document.getElementById("sourceSelect");
-  sortSelect = document.getElementById("sortSelect");
-
-  sourceSelect.onchange = e => {
-    Source = e.target.value;
-    updateSort(Source);
-    renderItems();
-  };
-
-  sortSelect.onchange = e => {
-    Sort = e.target.value;
-    renderItems();
-  };
-
   updateSort(Source);
   loadItems();
 });
