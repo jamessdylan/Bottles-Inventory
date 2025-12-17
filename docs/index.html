@@ -1,381 +1,63 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Mercato</title>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Items.json Proof Test</title>
 
 <style>
 body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-}
-
-header {
-  display: flex;
-  justify-content: center;
-  padding: 24px 16px;
-}
-
-header img { max-width: 100%; }
-
-.section {
-  display: flex;
-  justify-content: center;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
   padding: 16px;
 }
-
-.field {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-
-.field label {
-  font-size: 10px;
-  text-transform: uppercase;
-  color: #666;
-}
-
-select {
-  font-family: "Copperplate", serif;
-  font-size: 18px;
-  background: rgba(0,0,0,.1);
-  border: none;
+pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: #f4f4f4;
+  padding: 12px;
   border-radius: 6px;
-  padding: 8px 16px;
 }
-
-.list { padding: 0 16px 24px; }
-
-.group-label {
-  font-family: "Copperplate", serif;
-  font-size: 13px;
-  margin: 18px 0 6px;
-  border-bottom: 1px solid #ddd;
-}
-
-.item {
-  display: flex;
-  justify-content: space-between;
-  padding: 12px 0;
-  border-bottom: 1px solid #eee;
-}
-
-.left {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  flex: 1;
-}
-
-.icon {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.wine {
-  width: 18px;
-  height: 24px;
-  border: 2px solid;
-  border-bottom: none;
-  border-radius: 0 0 10px 10px;
-  position: relative;
-}
-
-.wine::after {
-  content: "";
-  position: absolute;
-  bottom: -12px;
-  left: 50%;
-  width: 2px;
-  height: 12px;
-  background: currentColor;
-  transform: translateX(-50%);
-}
-
-.title {
-  font-family: "Copperplate", serif;
-  font-size: 15px;
-}
-
-.subtitle {
-  font-size: 11px;
-  color: #666;
-}
-
-.controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-button {
-  border: none;
-  background: #eee;
-  border-radius: 4px;
-  padding: 4px 8px;
-  font-size: 16px;
-}
-
-.value {
-  min-width: 42px;
-  text-align: center;
+.error {
+  color: red;
   font-weight: bold;
-  cursor: pointer;
-}
-
-.toggle { cursor: pointer; }
-
-.toggle-circle {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  border: 2px solid black;
-}
-
-.toggle-check {
-  font-size: 14px;
-  color: green;
 }
 </style>
 </head>
 
 <body>
 
-<header>
-  <img src="SiennaTransparent.png" alt="Mercato">
-</header>
-
-<section class="section">
-  <div class="field">
-    <label>Source</label>
-    <select id="sourceSelect">
-      <option>Emporio</option>
-      <option>Mezzo</option>
-      <option>Tetto (L)</option>
-      <option>Tetto (R)</option>
-      <option>Wine Cellar</option>
-      <option>Liquor Closet</option>
-      <option>Other</option>
-    </select>
-  </div>
-</section>
-
-<section class="section">
-  <div class="field">
-    <label>Sort</label>
-    <select id="sortSelect"></select>
-  </div>
-</section>
-
-<div class="list" id="list"></div>
+<h2>items.json load test</h2>
+<div id="status">Loading…</div>
+<pre id="output"></pre>
 
 <script>
-/* ---------------- STATE ---------------- */
-let items = [];
-let Source = "Emporio";
-let Sort = "Standard";
+(async () => {
+  const status = document.getElementById("status");
+  const output = document.getElementById("output");
 
-const list = document.getElementById("list");
-const sourceSelect = document.getElementById("sourceSelect");
-const sortSelect = document.getElementById("sortSelect");
-
-/* ---------------- SORT OPTIONS ---------------- */
-function getSortOptions(source) {
-  return ["Emporio","Mezzo","Tetto (L)","Tetto (R)"].includes(source)
-    ? ["Standard","Smart","Tier"]
-    : ["Standard","Smart"];
-}
-
-function updateSort(source) {
-  sortSelect.innerHTML = "";
-  const options = getSortOptions(source);
-
-  options.forEach(o => {
-    const opt = document.createElement("option");
-    opt.value = o;
-    opt.textContent = o;
-    sortSelect.appendChild(opt);
-  });
-
-  Sort = "Standard";
-  sortSelect.value = Sort;
-}
-
-/* ---------------- HELPERS ---------------- */
-const round = v => Math.round(v * 10) / 10;
-
-const naLast = (a, b) => {
-  if (a === "N/A") return 1;
-  if (b === "N/A") return -1;
-  return a.localeCompare(b);
-};
-
-function baseSort(a, b, completeKey) {
-  if (a[completeKey] !== b[completeKey])
-    return a[completeKey] ? 1 : -1;
-
-  return (
-    naLast(a.brand, b.brand) ||
-    naLast(a.identifier, b.identifier) ||
-    naLast(a.varietal, b.varietal) ||
-    naLast(b.year, a.year)
-  );
-}
-
-/* ---------------- LOAD ITEMS (DEFENSIVE) ---------------- */
-async function loadItems() {
   try {
     const res = await fetch("./items.json", { cache: "no-store" });
-    if (!res.ok) throw new Error("HTTP " + res.status);
+
+    if (!res.ok) {
+      throw new Error("HTTP " + res.status);
+    }
 
     const data = await res.json();
-    if (!Array.isArray(data)) throw new Error("items.json is not an array");
 
-    items = data;
-    renderItems();
+    if (!Array.isArray(data)) {
+      throw new Error("JSON is not an array");
+    }
+
+    status.textContent = `Loaded ${data.length} items ✔`;
+    output.textContent = JSON.stringify(data, null, 2);
+
   } catch (err) {
-    list.innerHTML = `
-      <div style="padding:16px;color:red;font-weight:bold">
-        Failed to load inventory:<br>${err.message}
-      </div>
-    `;
+    status.innerHTML = `<span class="error">FAILED</span>`;
+    output.textContent = err.message;
     console.error(err);
   }
-}
-
-/* ---------------- RENDER ---------------- */
-function renderItems() {
-  list.innerHTML = "";
-  const completeKey = `${Source}Complete`;
-
-  items.forEach(i => {
-    i[Source] = Number(i[Source]) || 0;
-    if (typeof i[completeKey] !== "boolean") i[completeKey] = false;
-  });
-
-  if (Sort === "Standard") {
-    items.sort((a,b)=>baseSort(a,b,completeKey));
-    items.forEach(drawItem);
-    return;
-  }
-
-  if (Sort === "Tier") {
-    const tiers = [...new Set(items.map(i => i.tier || "Other"))];
-    tiers.forEach(tier => {
-      const group = items.filter(i => (i.tier || "Other") === tier);
-      if (!group.length) return;
-
-      group.sort((a,b)=>baseSort(a,b,completeKey));
-
-      const label = document.createElement("div");
-      label.className = "group-label";
-      label.textContent = tier;
-      list.appendChild(label);
-
-      group.forEach(drawItem);
-    });
-    return;
-  }
-
-  /* SMART */
-  const tierOrder = ["House","Reserve"];
-  const tiers = [
-    ...tierOrder,
-    ...[...new Set(items.map(i => i.tier || "Other"))]
-      .filter(t=>!tierOrder.includes(t))
-  ];
-
-  tiers.forEach(tier => {
-    const group = items.filter(i => (i.tier || "Other") === tier);
-    if (!group.length) return;
-
-    group.sort((a,b)=>{
-      if (a[completeKey] !== b[completeKey])
-        return a[completeKey] ? 1 : -1;
-      if (a.color === "Red" && b.color !== "Red") return 1;
-      if (a.color !== "Red" && b.color === "Red") return -1;
-      return baseSort(a,b,completeKey);
-    });
-
-    const label = document.createElement("div");
-    label.className = "group-label";
-    label.textContent = tier;
-    list.appendChild(label);
-
-    group.forEach(drawItem);
-  });
-}
-
-/* ---------------- DRAW ITEM ---------------- */
-function drawItem(item) {
-  const completeKey = `${Source}Complete`;
-
-  const iconHTML = item.base64
-    ? `<img src="data:image/png;base64,${item.icon}" width="28">`
-    : `<div class="icon" style="color:${item.icon}"><div class="wine"></div></div>`;
-
-  const row = document.createElement("div");
-  row.className = "item";
-
-  row.innerHTML = `
-    <div class="left">
-      <div class="icon">${iconHTML}</div>
-      <div>
-        <div class="title" style="color:${item.status ? "#000" : "#ccc"}">
-          ${[item.brand,item.identifier,item.varietal,item.year].filter(v=>v && v!=="N/A").join(" ")}
-        </div>
-        <div class="subtitle">${item.tier || ""}</div>
-      </div>
-    </div>
-    <div class="controls">
-      <button class="minus">−</button>
-      <div class="value">${item[Source]}</div>
-      <button class="plus">+</button>
-      <div class="toggle">
-        ${item[completeKey] ? `<span class="toggle-check">✔</span>` : `<div class="toggle-circle"></div>`}
-      </div>
-    </div>
-  `;
-
-  row.querySelector(".minus").onclick = ()=>{ item[Source]=round(item[Source]-1); renderItems(); };
-  row.querySelector(".plus").onclick = ()=>{ item[Source]=round(item[Source]+1); renderItems(); };
-  row.querySelector(".value").onclick = ()=>{
-    const v = prompt("Enter value:", item[Source]);
-    if (v!==null && !isNaN(v)) { item[Source]=round(+v); renderItems(); }
-  };
-  row.querySelector(".toggle").onclick = ()=>{
-    item[completeKey]=!item[completeKey];
-    renderItems();
-  };
-
-  list.appendChild(row);
-}
-
-/* ---------------- EVENTS ---------------- */
-sourceSelect.onchange = e => {
-  Source = e.target.value;
-  updateSort(Source);
-  renderItems();
-};
-
-sortSelect.onchange = e => {
-  Sort = e.target.value;
-  renderItems();
-};
-
-/* ---------------- INIT (ORDER MATTERS) ---------------- */
-document.addEventListener("DOMContentLoaded", () => {
-  updateSort(Source);
-  loadItems();
-});
+})();
 </script>
 
 </body>
 </html>
-
