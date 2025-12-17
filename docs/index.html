@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
 <title>Mercato</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -13,214 +13,238 @@ body {
 
 /* ---------- BACKGROUND ---------- */
 body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background-image: url("IMG_6048.jpeg");
-  background-repeat: no-repeat;
-  background-position: right center;
-  background-size: 1200px auto;
-  opacity: 0.65;
-  z-index: -1;
-  pointer-events: none;
+  content:"";
+  position:fixed;
+  inset:0;
+  background:url("IMG_6048.jpeg") right center / 1200px auto no-repeat;
+  opacity:.65;
+  z-index:-1;
 }
 
 /* ---------- HEADER ---------- */
 header {
-  display: flex;
-  justify-content: center;
-  padding: 24px 16px;
+  display:flex;
+  justify-content:center;
+  padding:24px 16px;
 }
-header img { max-width: 100%; }
+header img { max-width:100%; }
 
-/* ---------- TABS ---------- */
-.tabs {
-  display: flex;
-  gap: 6px;
-  padding: 10px 12px;
-  overflow-x: auto;
-}
-.tab {
-  padding: 8px 14px;
-  border-radius: 14px;
-  background: #eee;
-  font-family: "Copperplate", serif;
-  font-size: 14px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.tab.active {
-  background: #000;
-  color: #fff;
-}
-
-/* ---------- SORT ---------- */
-.section {
-  display: flex;
-  justify-content: center;
-  padding: 12px;
-}
-select {
-  font-family: "Copperplate", serif;
-  font-size: 18px;
-  background: rgba(0,0,0,.1);
-  border: none;
-  border-radius: 6px;
-  padding: 8px 16px;
-}
-
-/* ---------- LIST ---------- */
-.list {
-  padding: 8px 16px calc(160px + env(safe-area-inset-bottom));
-}
-
-/* ---------- GROUP LABEL ---------- */
-.group-label {
-  font-family: "Copperplate", serif;
-  font-size: 13px;
-  margin: 20px 0 8px;
-  border-bottom: 1px solid #ddd;
-}
-
-/* ---------- ITEM ROW ---------- */
-.item {
-  position: relative;
-  display: flex;
-  gap: 16px;
-  margin-bottom: 14px;
-  padding: 16px 18px;
-  border-radius: 16px;
-  background: rgba(255,255,255,0.35);
-  backdrop-filter: blur(6px);
-}
-
-/* ---------- LEFT COLUMN ---------- */
-.left {
-  display: flex;
-  gap: 16px;
-  flex: 1;
-  align-items: center;
-}
-
-/* ICON COLUMN */
-.icon {
-  width: 56px;
-  height: 56px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* ---------- TEXT STACK ---------- */
-.text-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex: 1;
-}
-
-/* TITLE */
-.title {
-  font-family: "Copperplate", serif;
-  font-size: 17px;
-}
-
-/* SUB + CONTROLS ROW */
-.sub-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-/* SUBTITLE */
-.subtitle {
-  font-size: 12px;
-  color: #666;
-  flex: 1;
-}
-
-/* ---------- CONTROLS ---------- */
-.controls {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  min-width: 160px;
-}
-
-button {
-  border: none;
-  background: rgba(0,0,0,0.08);
-  border-radius: 6px;
-  padding: 6px 10px;
-  font-size: 16px;
-}
-
-.value {
-  min-width: 48px;
-  text-align: center;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-/* ---------- COMPLETE TOGGLE ---------- */
-.toggle {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  cursor: pointer;
+/* ---------- DRAWER TOGGLE ---------- */
+.drawer-toggle {
+  position:fixed;
+  top:14px;
+  left:14px;
+  font-size:22px;
+  color:#0b3d2e;
+  cursor:pointer;
+  z-index:1000;
 }
 
 /* ---------- DRAWER ---------- */
 .drawer {
-  position: fixed;
-  top: 0;
-  left: -280px;
-  width: 260px;
-  height: 100%;
-  background: rgba(255,255,255,0.95);
-  backdrop-filter: blur(10px);
-  padding: 20px;
-  transition: left 0.3s ease;
-  z-index: 500;
+  position:fixed;
+  top:0;
+  left:-280px;
+  width:260px;
+  height:100%;
+  padding:20px;
+  background:rgba(255,255,255,.95);
+  backdrop-filter:blur(10px);
+  transition:left .3s ease;
+  z-index:900;
 }
-.drawer.open { left: 0; }
+.drawer.open { left:0; }
+
 .drawer button {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 10px 0;
-  background: none;
-  font-size: 16px;
+  display:block;
+  width:100%;
+  padding:10px 0;
+  background:none;
+  border:none;
+  font-size:16px;
+  text-align:left;
 }
 
 /* ---------- PAGE NAME ---------- */
 #pageName {
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 20px;
-  cursor: pointer;
+  font-size:18px;
+  font-weight:600;
+  margin-bottom:20px;
+  cursor:pointer;
+}
+
+/* ---------- TABS ---------- */
+.tabs {
+  display:flex;
+  gap:6px;
+  padding:10px 12px;
+  overflow-x:auto;
+}
+.tab {
+  padding:8px 14px;
+  border-radius:14px;
+  background:#eee;
+  font-family:"Copperplate",serif;
+  font-size:14px;
+  cursor:pointer;
+}
+.tab.active {
+  background:#000;
+  color:#fff;
+}
+
+/* ---------- SORT ---------- */
+.section {
+  display:flex;
+  justify-content:center;
+  padding:12px;
+}
+select {
+  font-family:"Copperplate",serif;
+  font-size:18px;
+  padding:8px 16px;
+  border:none;
+  border-radius:6px;
+  background:rgba(0,0,0,.1);
+}
+
+/* ---------- LIST ---------- */
+.list {
+  padding:8px 16px calc(140px + env(safe-area-inset-bottom));
+}
+
+/* ---------- ITEM ---------- */
+.item {
+  position:relative;
+  display:flex;
+  gap:16px;
+  margin-bottom:14px;
+  padding:16px 18px;
+  border-radius:16px;
+  background:rgba(255,255,255,.35);
+  backdrop-filter:blur(6px);
+}
+
+.left {
+  display:flex;
+  gap:16px;
+  flex:1;
+  align-items:center;
+}
+
+.icon {
+  width:56px;
+  height:56px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.wine {
+  width:26px;
+  height:34px;
+  border:2px solid;
+  border-bottom:none;
+  border-radius:0 0 12px 12px;
+  position:relative;
+}
+.wine::after {
+  content:"";
+  position:absolute;
+  bottom:-14px;
+  left:50%;
+  width:2px;
+  height:14px;
+  background:currentColor;
+  transform:translateX(-50%);
+}
+
+.text-stack { flex:1; display:flex; flex-direction:column; gap:6px; }
+.title { font-family:"Copperplate",serif; font-size:17px; }
+
+.sub-row {
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.subtitle { font-size:12px; color:#666; flex:1; }
+
+.controls {
+  display:flex;
+  gap:10px;
+  min-width:160px;
+  justify-content:flex-end;
+}
+
+button {
+  border:none;
+  background:rgba(0,0,0,.08);
+  border-radius:6px;
+  padding:6px 10px;
+  font-size:16px;
+}
+
+.value {
+  min-width:48px;
+  text-align:center;
+  font-weight:bold;
+}
+
+/* ---------- COMPLETE TOGGLE ---------- */
+.toggle {
+  position:absolute;
+  top:10px;
+  right:12px;
+  cursor:pointer;
 }
 
 /* ---------- ACTION BAR ---------- */
 .action-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 12px env(safe-area-inset-right) calc(12px + env(safe-area-inset-bottom)) env(safe-area-inset-left);
-  display: flex;
-  justify-content: space-around;
-  background: #0b3d2e;
-  z-index: 999;
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  display:flex;
+  justify-content:space-around;
+  padding:12px env(safe-area-inset-right)
+           calc(12px + env(safe-area-inset-bottom))
+           env(safe-area-inset-left);
+  background:#0b3d2e;
+  z-index:999;
+}
+
+.action {
+  width:44px;
+  height:44px;
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:white;
+  cursor:pointer;
+}
+
+.action.active {
+  background:rgba(255,255,255,.25);
 }
 </style>
 </head>
 
 <body>
 
+<div class="drawer-toggle" onclick="toggleDrawer()">...</div>
+
+<div class="drawer" id="drawer">
+  <div id="pageName"></div>
+  <button>New Project</button>
+  <button>Sales Report</button>
+  <button>Dictionary File</button>
+  <button>Export</button>
+</div>
+
 <header>
-  <img src="SiennaTransparent.png" alt="Mercato">
+  <img src="SiennaTransparent.png">
 </header>
 
 <div class="tabs" id="sourceTabs"></div>
@@ -231,59 +255,48 @@ button {
 
 <div class="list" id="list"></div>
 
-<!-- DRAWER -->
-<div class="drawer" id="drawer">
-  <div id="pageName"></div>
-  <button>New Project</button>
-  <button>Sales Report</button>
-  <button>Dictionary File</button>
-  <button>Export</button>
-</div>
-
-<!-- ACTION BAR -->
 <div class="action-bar">
-  <!-- icons already wired previously -->
+  <div class="action">🍇+</div>
+  <div class="action">↺</div>
+  <div class="action active">🗄</div>
+  <div class="action active">🧠</div>
+  <div class="action">⟳</div>
 </div>
 
 <script>
+/* ---------- DRAWER ---------- */
+function toggleDrawer() {
+  document.getElementById("drawer").classList.toggle("open");
+}
+
 /* ---------- PAGE NAME ---------- */
-const pageNameEl = document.getElementById("pageName");
-const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const pageNameEl=document.getElementById("pageName");
 
-function getDefaultMonthYear() {
-  const now = new Date();
-  let month = now.getMonth();
-  let year = now.getFullYear();
-  if (now.getDate() < 15) {
-    month--;
-    if (month < 0) { month = 11; year--; }
-  }
-  return { month, year };
+function defaultMonthYear(){
+  const d=new Date();
+  let m=d.getMonth(),y=d.getFullYear();
+  if(d.getDate()<15){ m--; if(m<0){m=11;y--;} }
+  return {m,y};
 }
 
-let pageDate = getDefaultMonthYear();
-
-function renderPageName() {
-  pageNameEl.textContent = `${MONTHS[pageDate.month]} ${pageDate.year} — Wine Inventory`;
+let pageDate=defaultMonthYear();
+function renderName(){
+  pageNameEl.textContent=`${MONTHS[pageDate.m]} ${pageDate.y} — Wine Inventory`;
 }
-renderPageName();
+renderName();
 
-pageNameEl.onclick = () => {
-  const month = Number(prompt("Select month (1–12):", pageDate.month + 1)) - 1;
-  if (month < 0 || month > 11) return;
-
-  const y = new Date().getFullYear();
-  const allowed = [y, y - 1, y - 2];
-  const year = Number(prompt(`Select year:\n${allowed.join("\n")}`, pageDate.year));
-  if (!allowed.includes(year)) return;
-
-  pageDate = { month, year };
-  renderPageName();
+pageNameEl.onclick=()=>{
+  const m=Number(prompt("Month (1–12)",pageDate.m+1))-1;
+  if(m<0||m>11)return;
+  const y=new Date().getFullYear();
+  const years=[y,y-1,y-2];
+  const yr=Number(prompt(`Year:\n${years.join("\n")}`,pageDate.y));
+  if(!years.includes(yr))return;
+  pageDate={m, y:yr};
+  renderName();
 };
 </script>
 
 </body>
 </html>
-
-
-
