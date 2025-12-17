@@ -2,55 +2,58 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Mercato Inventory</title>
+<title>Mercato</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-  background: white;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
 }
 
 header {
-  text-align: center;
-  padding: 20px;
+  display: flex;
+  justify-content: center;
+  padding: 24px 16px;
 }
+
+header img { max-width: 100%; }
 
 .section {
   display: flex;
   justify-content: center;
-  padding: 12px;
+  padding: 16px;
 }
 
 .field {
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 6px;
 }
 
-label {
-  font-size: 11px;
+.field label {
+  font-size: 10px;
+  text-transform: uppercase;
   color: #666;
-  margin-bottom: 4px;
 }
 
 select {
-  font-size: 17px;
-  padding: 6px 14px;
-  border-radius: 6px;
+  font-family: "Copperplate", serif;
+  font-size: 18px;
+  background: rgba(0,0,0,.1);
   border: none;
-  background: #eee;
+  border-radius: 6px;
+  padding: 8px 16px;
 }
 
-.list {
-  padding: 0 16px 32px;
-}
+.list { padding: 0 16px 24px; }
 
 .group-label {
+  font-family: "Copperplate", serif;
   font-size: 13px;
-  margin-top: 20px;
-  border-bottom: 1px solid #ccc;
+  margin: 18px 0 6px;
+  border-bottom: 1px solid #ddd;
 }
 
 .item {
@@ -64,6 +67,7 @@ select {
   display: flex;
   gap: 12px;
   align-items: center;
+  flex: 1;
 }
 
 .icon {
@@ -76,8 +80,8 @@ select {
 
 .wine {
   width: 18px;
-  height: 22px;
-  border: 2px solid currentColor;
+  height: 24px;
+  border: 2px solid;
   border-bottom: none;
   border-radius: 0 0 10px 10px;
   position: relative;
@@ -86,12 +90,22 @@ select {
 .wine::after {
   content: "";
   position: absolute;
-  bottom: -10px;
+  bottom: -12px;
   left: 50%;
   width: 2px;
-  height: 10px;
+  height: 12px;
   background: currentColor;
   transform: translateX(-50%);
+}
+
+.title {
+  font-family: "Copperplate", serif;
+  font-size: 15px;
+}
+
+.subtitle {
+  font-size: 11px;
+  color: #666;
 }
 
 .controls {
@@ -104,15 +118,29 @@ button {
   border: none;
   background: #eee;
   border-radius: 4px;
-  padding: 4px 10px;
+  padding: 4px 8px;
   font-size: 16px;
 }
 
 .value {
-  min-width: 36px;
+  min-width: 42px;
   text-align: center;
   font-weight: bold;
   cursor: pointer;
+}
+
+.toggle { cursor: pointer; }
+
+.toggle-circle {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid black;
+}
+
+.toggle-check {
+  font-size: 14px;
+  color: green;
 }
 </style>
 </head>
@@ -120,7 +148,7 @@ button {
 <body>
 
 <header>
-  <img src="SiennaTransparent.png" style="max-width:90%">
+  <img src="SiennaTransparent.png" alt="Mercato">
 </header>
 
 <section class="section">
@@ -145,114 +173,190 @@ button {
   </div>
 </section>
 
-<div id="list" class="list"></div>
+<div class="list" id="list"></div>
 
 <script>
+/* ---------------- CONFIG ---------------- */
+const STORAGE_KEY = "mercato-items-v2";
+
+/* ---------------- STATE ---------------- */
 let items = [];
 let Source = "Emporio";
-let Sort = "Standard";
+let Sort = "Smart";
 
 const list = document.getElementById("list");
 const sourceSelect = document.getElementById("sourceSelect");
 const sortSelect = document.getElementById("sortSelect");
 
-/* ---------- LOAD ITEMS ---------- */
-fetch("/Bottles-Inventory/items.json")
-  .then(r => r.json())
-  .then(data => {
-    items = data;
-    setupSort();
+/* ---------------- LOAD ---------------- */
+async function loadItems() {
+  const cached = localStorage.getItem(STORAGE_KEY);
+  if (cached) {
+    items = JSON.parse(cached);
     renderItems();
-  })
-  .catch(e => console.error("LOAD ERROR:", e));
+    return;
+  }
 
-/* ---------- SORT SETUP ---------- */
-function setupSort() {
+  const res = await fetch("items.json", { cache: "no-store" });
+  items = await res.json();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  renderItems();
+}
+
+/* ---------------- SORT OPTIONS ---------------- */
+function getSortOptions(source) {
+  return ["Emporio","Mezzo","Tetto (L)","Tetto (R)"].includes(source)
+    ? ["Standard","Smart","Tier"]
+    : ["Standard","Smart"];
+}
+
+function updateSort(source) {
   sortSelect.innerHTML = "";
-  const opts = ["Standard","Smart","Tier"];
-  opts.forEach(o => {
-    const el = document.createElement("option");
-    el.value = o;
-    el.textContent = o;
-    sortSelect.appendChild(el);
+  getSortOptions(source).forEach(o => {
+    const opt = document.createElement("option");
+    opt.value = o;
+    opt.textContent = o;
+    sortSelect.appendChild(opt);
   });
-  sortSelect.selectedIndex = 0;
-  Sort = sortSelect.value;
+  Sort = sortSelect.value = getSortOptions(source).includes("Smart") ? "Smart" : "Standard";
 }
 
-/* ---------- SORT LOGIC ---------- */
-function baseSort(a,b,ck) {
-  if (a[ck] !== b[ck]) return a[ck] ? 1 : -1;
-  return (a.brand||"").localeCompare(b.brand||"");
+/* ---------------- HELPERS ---------------- */
+const round = v => Math.round(v * 10) / 10;
+
+const naLast = (a, b) => {
+  if (a === "N/A") return 1;
+  if (b === "N/A") return -1;
+  return a.localeCompare(b);
+};
+
+function baseSort(a, b, completeKey) {
+  if (a[completeKey] !== b[completeKey])
+    return a[completeKey] ? 1 : -1;
+
+  return (
+    naLast(a.brand, b.brand) ||
+    naLast(a.identifier, b.identifier) ||
+    naLast(a.varietal, b.varietal) ||
+    naLast(b.year, a.year)
+  );
 }
 
-/* ---------- RENDER ---------- */
+/* ---------------- RENDER ---------------- */
 function renderItems() {
   list.innerHTML = "";
   const completeKey = `${Source}Complete`;
 
-  let working = [...items];
+  items.forEach(i => {
+    i[Source] = Number(i[Source]) || 0;
+    if (typeof i[completeKey] !== "boolean") i[completeKey] = false;
+  });
 
   if (Sort === "Standard") {
-    working.sort((a,b)=>baseSort(a,b,completeKey));
-    working.forEach(drawItem);
-    return;
+    items.sort((a,b)=>baseSort(a,b,completeKey));
+    items.forEach(drawItem);
   }
 
-  const tiers = [...new Set(working.map(i=>i.tier||"Other"))];
-  tiers.forEach(tier => {
-    const group = working.filter(i=>(i.tier||"Other")===tier);
-    if (!group.length) return;
+  else if (Sort === "Tier") {
+    const tiers = [...new Set(items.map(i => i.tier || "Other"))]
+      .sort((a,b)=>a.localeCompare(b));
 
-    const label = document.createElement("div");
-    label.className = "group-label";
-    label.textContent = tier;
-    list.appendChild(label);
+    tiers.forEach(tier => {
+      const group = items.filter(i => (i.tier || "Other") === tier);
+      if (!group.length) return;
 
-    group.sort((a,b)=>baseSort(a,b,completeKey)).forEach(drawItem);
-  });
+      group.sort((a,b)=>baseSort(a,b,completeKey));
+
+      const label = document.createElement("div");
+      label.className = "group-label";
+      label.textContent = tier;
+      list.appendChild(label);
+
+      group.forEach(drawItem);
+    });
+  }
+
+  else { /* SMART */
+    const tierOrder = ["House","Reserve"];
+    const tiers = [
+      ...tierOrder,
+      ...[...new Set(items.map(i => i.tier || "Other"))]
+        .filter(t=>!tierOrder.includes(t))
+    ];
+
+    tiers.forEach(tier => {
+      const group = items.filter(i => (i.tier || "Other") === tier);
+      if (!group.length) return;
+
+      group.sort((a,b)=>{
+        if (a[completeKey] !== b[completeKey])
+          return a[completeKey] ? 1 : -1;
+        if (a.color === "Red" && b.color !== "Red") return 1;
+        if (a.color !== "Red" && b.color === "Red") return -1;
+        return baseSort(a,b,completeKey);
+      });
+
+      const label = document.createElement("div");
+      label.className = "group-label";
+      label.textContent = tier;
+      list.appendChild(label);
+
+      group.forEach(drawItem);
+    });
+  }
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
 }
 
-/* ---------- DRAW ---------- */
+/* ---------------- DRAW ---------------- */
 function drawItem(item) {
-  let iconHTML;
-  if (item.base64 === true && item.icon) {
-    iconHTML = `<img src="data:image/png;base64,${item.icon}" style="width:26px">`;
-  } else {
-    iconHTML = `<div class="wine" style="color:${item.icon || "#999"}"></div>`;
-  }
+  const completeKey = `${Source}Complete`;
+
+  const iconHTML = item.base64
+    ? `<img src="data:image/png;base64,${item.icon}" width="28">`
+    : `<div class="icon" style="color:${item.icon}"><div class="wine"></div></div>`;
 
   const row = document.createElement("div");
   row.className = "item";
+
   row.innerHTML = `
     <div class="left">
       <div class="icon">${iconHTML}</div>
       <div>
-        <div>${item.brand} ${item.varietal} ${item.year}</div>
-        <div style="font-size:11px;color:#666">${item.tier||""}</div>
+        <div class="title" style="color:${item.status ? "#000" : "#ccc"}">
+          ${[item.brand,item.identifier,item.varietal,item.year].filter(v=>v && v!=="N/A").join(" ")}
+        </div>
+        <div class="subtitle">${item.tier || ""}</div>
       </div>
     </div>
     <div class="controls">
       <button class="minus">−</button>
-      <div class="value">${item[Source]||0}</div>
+      <div class="value">${item[Source]}</div>
       <button class="plus">+</button>
+      <div class="toggle">
+        ${item[completeKey] ? "✔" : `<div class="toggle-circle"></div>`}
+      </div>
     </div>
   `;
 
-  row.querySelector(".minus").onclick = ()=>{ item[Source]--; renderItems(); };
-  row.querySelector(".plus").onclick = ()=>{ item[Source]++; renderItems(); };
+  row.querySelector(".minus").onclick = ()=>{ item[Source]=round(item[Source]-1); renderItems(); };
+  row.querySelector(".plus").onclick = ()=>{ item[Source]=round(item[Source]+1); renderItems(); };
   row.querySelector(".value").onclick = ()=>{
-    const v = prompt("Enter value", item[Source]||0);
-    if (v !== null && !isNaN(v)) item[Source] = Number(v);
+    const v = prompt("Enter value:", item[Source]);
+    if (v!==null && !isNaN(v)) { item[Source]=round(+v); renderItems(); }
+  };
+  row.querySelector(".toggle").onclick = ()=>{
+    item[completeKey]=!item[completeKey];
     renderItems();
   };
 
   list.appendChild(row);
 }
 
-/* ---------- EVENTS ---------- */
+/* ---------------- EVENTS ---------------- */
 sourceSelect.onchange = e => {
   Source = e.target.value;
+  updateSort(Source);
   renderItems();
 };
 
@@ -260,6 +364,10 @@ sortSelect.onchange = e => {
   Sort = e.target.value;
   renderItems();
 };
+
+/* ---------------- INIT ---------------- */
+updateSort(Source);
+loadItems();
 </script>
 
 </body>
