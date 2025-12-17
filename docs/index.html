@@ -6,28 +6,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-/* ---------- SAFE BACKGROUND ---------- */
-.page-bg {
-  position: fixed;
-  inset: 0;
-  background-image: url("/Bottles-Inventory/docs/background.jpg");
-  background-repeat: no-repeat;
-  background-position: center top;
-  background-size: cover;
-  z-index: -2;
-}
-
-.page-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(255,255,255,0.85);
-  z-index: -1;
-}
-
-/* ---------- EXISTING STYLES (UNCHANGED) ---------- */
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  position: relative;
+}
+
+/* BACKGROUND IMAGE — SAFE iOS METHOD */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("Background Image.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.2;
+  z-index: -1;
 }
 
 header {
@@ -38,23 +33,32 @@ header {
 
 header img { max-width: 100%; }
 
+.tabs {
+  display: flex;
+  gap: 6px;
+  padding: 10px 12px;
+  overflow-x: auto;
+}
+
+.tab {
+  padding: 8px 14px;
+  border-radius: 14px;
+  background: #eee;
+  font-family: "Copperplate", serif;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tab.active {
+  background: #000;
+  color: #fff;
+}
+
 .section {
   display: flex;
   justify-content: center;
-  padding: 16px;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-
-.field label {
-  font-size: 10px;
-  text-transform: uppercase;
-  color: #666;
+  padding: 12px;
 }
 
 select {
@@ -148,86 +152,84 @@ button {
   cursor: pointer;
 }
 
-.toggle { cursor: pointer; }
-
 .toggle-circle {
   width: 12px;
   height: 12px;
   border-radius: 50%;
   border: 2px solid black;
 }
+
+.toggle-check {
+  font-size: 14px;
+  color: green;
+}
 </style>
 </head>
 
 <body>
 
-<div class="page-bg"></div>
-<div class="page-overlay"></div>
-
 <header>
   <img src="SiennaTransparent.png" alt="Mercato">
 </header>
 
-<section class="section">
-  <div class="field">
-    <label>Source</label>
-    <select id="sourceSelect">
-      <option>Emporio</option>
-      <option>Mezzo</option>
-      <option>Tetto (L)</option>
-      <option>Tetto (R)</option>
-      <option>Wine Cellar</option>
-      <option>Liquor Closet</option>
-      <option>Prep Cooler</option>
-      <option>Other</option>
-    </select>
-  </div>
-</section>
+<div class="tabs" id="sourceTabs"></div>
 
 <section class="section">
-  <div class="field">
-    <label>Sort</label>
-    <select id="sortSelect"></select>
-  </div>
+  <select id="sortSelect"></select>
 </section>
 
 <div class="list" id="list"></div>
 
 <script>
-/* ---------------- CONFIG ---------------- */
-const STORAGE_KEY = "mercato-items-v2";
-
 /* ---------------- STATE ---------------- */
+const SOURCES = [
+  "Emporio",
+  "Mezzo",
+  "Tetto (L)",
+  "Tetto (R)",
+  "Wine Cellar",
+  "Liquor Closet",
+  "Prep Cooler",
+  "Other"
+];
+
 let items = [];
 let Source = "Emporio";
-let Sort = "Smart";
+let Sort = "Standard";
 
 const list = document.getElementById("list");
-const sourceSelect = document.getElementById("sourceSelect");
 const sortSelect = document.getElementById("sortSelect");
+const tabsEl = document.getElementById("sourceTabs");
 
 /* ---------------- LOAD ---------------- */
 async function loadItems() {
-  const cached = localStorage.getItem(STORAGE_KEY);
-  if (cached) {
-    items = JSON.parse(cached);
-    renderItems();
-    return;
-  }
-
-  const res = await fetch("items.json", { cache: "no-store" });
+  const res = await fetch("./items.json", { cache: "no-store" });
   items = await res.json();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   renderItems();
+}
+
+/* ---------------- TABS ---------------- */
+function buildSourceTabs() {
+  tabsEl.innerHTML = "";
+  SOURCES.forEach(src => {
+    const tab = document.createElement("div");
+    tab.className = "tab" + (src === Source ? " active" : "");
+    tab.textContent = src;
+    tab.onclick = () => {
+      Source = src;
+      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+      tab.classList.add("active");
+      updateSort(Source);
+      renderItems();
+    };
+    tabsEl.appendChild(tab);
+  });
 }
 
 /* ---------------- SORT OPTIONS ---------------- */
 function getSortOptions(source) {
-  return source === "Prep Cooler"
-    ? ["Standard","Tier"]
-    : ["Emporio","Mezzo","Tetto (L)","Tetto (R)"].includes(source)
-      ? ["Standard","Smart","Tier"]
-      : ["Standard","Smart"];
+  if (source === "Prep Cooler") return ["Standard","Tier"];
+  return ["Standard","Smart","Tier"];
 }
 
 function updateSort(source) {
@@ -238,27 +240,27 @@ function updateSort(source) {
     opt.textContent = o;
     sortSelect.appendChild(opt);
   });
-  Sort = sortSelect.value = getSortOptions(source).includes("Smart") ? "Smart" : "Standard";
+  Sort = sortSelect.value = "Standard";
 }
 
 /* ---------------- HELPERS ---------------- */
 const round = v => Math.round(v * 10) / 10;
 
-const naLast = (a, b) => {
+const naLast = (a,b) => {
   if (a === "N/A") return 1;
   if (b === "N/A") return -1;
   return a.localeCompare(b);
 };
 
-function baseSort(a, b, completeKey) {
+function baseSort(a,b,completeKey) {
   if (a[completeKey] !== b[completeKey])
     return a[completeKey] ? 1 : -1;
 
   return (
-    naLast(a.brand, b.brand) ||
-    naLast(a.identifier, b.identifier) ||
-    naLast(a.varietal, b.varietal) ||
-    naLast(b.year, a.year)
+    naLast(a.brand,b.brand) ||
+    naLast(a.identifier,b.identifier) ||
+    naLast(a.varietal,b.varietal) ||
+    naLast(b.year,a.year)
   );
 }
 
@@ -272,10 +274,52 @@ function renderItems() {
     if (typeof i[completeKey] !== "boolean") i[completeKey] = false;
   });
 
-  items.sort((a,b)=>baseSort(a,b,completeKey));
-  items.forEach(drawItem);
+  if (Sort === "Standard") {
+    items.sort((a,b)=>baseSort(a,b,completeKey));
+    items.forEach(drawItem);
+    return;
+  }
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  if (Sort === "Tier") {
+    const tiers = [...new Set(items.map(i=>i.tier||"Other"))];
+    tiers.forEach(tier => {
+      const group = items.filter(i=>(i.tier||"Other")===tier);
+      if (!group.length) return;
+      group.sort((a,b)=>baseSort(a,b,completeKey));
+      addGroup(tier, group);
+    });
+    return;
+  }
+
+  /* SMART */
+  const tierOrder = ["House","Reserve"];
+  const tiers = [
+    ...tierOrder,
+    ...[...new Set(items.map(i=>i.tier||"Other"))].filter(t=>!tierOrder.includes(t))
+  ];
+
+  tiers.forEach(tier => {
+    const group = items.filter(i=>(i.tier||"Other")===tier);
+    if (!group.length) return;
+
+    group.sort((a,b)=>{
+      if (a[completeKey] !== b[completeKey])
+        return a[completeKey] ? 1 : -1;
+      if (a.color==="Red" && b.color!=="Red") return 1;
+      if (a.color!=="Red" && b.color==="Red") return -1;
+      return baseSort(a,b,completeKey);
+    });
+
+    addGroup(tier, group);
+  });
+}
+
+function addGroup(labelText, group) {
+  const label = document.createElement("div");
+  label.className = "group-label";
+  label.textContent = labelText;
+  list.appendChild(label);
+  group.forEach(drawItem);
 }
 
 /* ---------------- DRAW ---------------- */
@@ -294,9 +338,9 @@ function drawItem(item) {
       <div class="icon">${iconHTML}</div>
       <div>
         <div class="title" style="color:${item.status ? "#000" : "#ccc"}">
-          ${[item.brand,item.identifier,item.varietal,item.year].filter(v=>v && v!=="N/A").join(" ")}
+          ${[item.brand,item.identifier,item.varietal,item.year].filter(v=>v&&v!=="N/A").join(" ")}
         </div>
-        <div class="subtitle">${item.tier || ""}</div>
+        <div class="subtitle">${item.tier||""}</div>
       </div>
     </div>
     <div class="controls">
@@ -304,25 +348,39 @@ function drawItem(item) {
       <div class="value">${item[Source]}</div>
       <button class="plus">+</button>
       <div class="toggle">
-        ${item[completeKey] ? "✔" : `<div class="toggle-circle"></div>`}
+        ${item[completeKey] ? `<span class="toggle-check">✔</span>` : `<div class="toggle-circle"></div>`}
       </div>
     </div>
   `;
 
-  row.querySelector(".minus").onclick = ()=>{ item[Source]=round(Math.max(0,item[Source]-1)); renderItems(); };
-  row.querySelector(".plus").onclick = ()=>{ item[Source]=round(item[Source]+1); renderItems(); };
+  let pressTimer;
+  const valueEl = row.querySelector(".value");
 
-  row.querySelector(".value").addEventListener("contextmenu", e => {
-    e.preventDefault();
-    const v = prompt("Enter value:", item[Source]);
-    if (v!==null && !isNaN(v)) {
-      item[Source]=round(Math.max(0, +v));
-      renderItems();
-    }
-  });
+  valueEl.onpointerdown = () => {
+    pressTimer = setTimeout(() => {
+      const v = prompt("Enter value:", item[Source]);
+      if (v !== null && !isNaN(v)) {
+        item[Source] = Math.max(0, round(Number(v)));
+        renderItems();
+      }
+    }, 500);
+  };
 
-  row.querySelector(".toggle").onclick = ()=>{
-    item[completeKey]=!item[completeKey];
+  valueEl.onpointerup = () => clearTimeout(pressTimer);
+  valueEl.onpointerleave = () => clearTimeout(pressTimer);
+
+  row.querySelector(".minus").onclick = () => {
+    item[Source] = Math.max(0, round(item[Source] - 1));
+    renderItems();
+  };
+
+  row.querySelector(".plus").onclick = () => {
+    item[Source] = round(item[Source] + 1);
+    renderItems();
+  };
+
+  row.querySelector(".toggle").onclick = () => {
+    item[completeKey] = !item[completeKey];
     renderItems();
   };
 
@@ -330,18 +388,13 @@ function drawItem(item) {
 }
 
 /* ---------------- EVENTS ---------------- */
-sourceSelect.onchange = e => {
-  Source = e.target.value;
-  updateSort(Source);
-  renderItems();
-};
-
 sortSelect.onchange = e => {
   Sort = e.target.value;
   renderItems();
 };
 
 /* ---------------- INIT ---------------- */
+buildSourceTabs();
 updateSort(Source);
 loadItems();
 </script>
