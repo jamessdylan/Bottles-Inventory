@@ -113,7 +113,7 @@ select{
 
 .controls{display:flex;gap:10px;min-width:160px;}
 button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px;font-size:16px;}
-.value{min-width:48px;text-align:center;font-weight:bold;}
+.value{min-width:48px;text-align:center;font-weight:bold;cursor:pointer;}
 
 /* COMPLETE */
 .toggle{position:absolute;top:10px;right:12px;cursor:pointer;}
@@ -230,7 +230,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 <div class="list" id="list"></div>
 
 <nav class="action-bar">
-  <!-- New Bottle -->
   <button title="New Bottle">
     <svg viewBox="0 0 24 24">
       <circle cx="9" cy="9" r="2"/>
@@ -243,7 +242,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
     </svg>
   </button>
 
-  <!-- Undo -->
   <button title="Undo">
     <svg viewBox="0 0 24 24">
       <path d="M9 14l-4-4 4-4"/>
@@ -251,7 +249,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
     </svg>
   </button>
 
-  <!-- Archive -->
   <button id="archiveBtn" title="Archive">
     <svg viewBox="0 0 24 24">
       <path d="M3 7h18"/>
@@ -259,7 +256,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
     </svg>
   </button>
 
-  <!-- Smart Sort -->
   <button id="smartSortBtn" title="Smart Sort">
     <img src="brain.png">
   </button>
@@ -271,8 +267,7 @@ const pageTitleEl=document.getElementById("pageTitle");
 
 function defaultTitle(){
   const d=new Date();
-  const cutoff=d.getDate()<15;
-  if(cutoff) d.setMonth(d.getMonth()-1);
+  if(d.getDate()<15) d.setMonth(d.getMonth()-1);
   return d.toLocaleString("default",{month:"long",year:"numeric"})+" Wine Inventory";
 }
 
@@ -280,7 +275,7 @@ let pageTitle=defaultTitle();
 pageTitleEl.textContent=pageTitle;
 
 pageTitleEl.onclick=()=>{
-  const month=prompt("Month (e.g. March):",pageTitle.split(" ")[0]);
+  const month=prompt("Month:",pageTitle.split(" ")[0]);
   if(!month) return;
   const year=prompt("Year:",new Date().getFullYear());
   if(!year) return;
@@ -396,9 +391,26 @@ function drawItem(item){
     </div>
   `;
 
+  /* 🔹 RESTORED LONG-PRESS EDIT 🔹 */
+  let pressTimer;
+  const valueEl=row.querySelector(".value");
+
+  valueEl.onpointerdown=()=>{
+    pressTimer=setTimeout(()=>{
+      const v=prompt("Enter value:",item[Source]);
+      if(v!==null&&!isNaN(v)){
+        item[Source]=Math.max(0,round(Number(v)));
+        renderItems();
+      }
+    },450);
+  };
+  valueEl.onpointerup=()=>clearTimeout(pressTimer);
+  valueEl.onpointerleave=()=>clearTimeout(pressTimer);
+
   row.querySelector(".minus").onclick=()=>{item[Source]=Math.max(0,round(item[Source]-1));renderItems();}
   row.querySelector(".plus").onclick=()=>{item[Source]=round(item[Source]+1);renderItems();}
   row.querySelector(".toggle").onclick=()=>{item[key]=!item[key];renderItems();}
+
   list.appendChild(row);
 }
 
