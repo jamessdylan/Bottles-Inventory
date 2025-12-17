@@ -4,13 +4,11 @@
 <meta charset="UTF-8" />
 <title>Mercato</title>
 
-<!-- FULLSCREEN / STANDALONE SUPPORT -->
+<!-- FULLSCREEN / STANDALONE -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Mercato">
-
-<meta name="viewport"
-  content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
 <style>
 body {
@@ -83,18 +81,10 @@ select {
 
 /* ---------- LIST ---------- */
 .list {
-  padding: 8px 16px 24px;
+  padding: 8px 16px 120px; /* room for bottom bar */
 }
 
-/* ---------- GROUP LABEL ---------- */
-.group-label {
-  font-family: "Copperplate", serif;
-  font-size: 13px;
-  margin: 20px 0 8px;
-  border-bottom: 1px solid #ddd;
-}
-
-/* ---------- ITEM ROW ---------- */
+/* ---------- ITEM ---------- */
 .item {
   position: relative;
   display: flex;
@@ -104,10 +94,9 @@ select {
   border-radius: 16px;
   background: rgba(255,255,255,0.35);
   backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
 }
 
-/* ---------- LEFT COLUMN ---------- */
+/* ---------- LEFT ---------- */
 .left {
   display: flex;
   gap: 16px;
@@ -115,7 +104,6 @@ select {
   align-items: center;
 }
 
-/* ICON COLUMN */
 .icon {
   width: 56px;
   height: 56px;
@@ -124,7 +112,7 @@ select {
   justify-content: center;
 }
 
-/* CSS WINE ICON */
+/* CSS wine icon */
 .wine {
   width: 26px;
   height: 34px;
@@ -144,7 +132,6 @@ select {
   transform: translateX(-50%);
 }
 
-/* ---------- TEXT STACK ---------- */
 .text-stack {
   display: flex;
   flex-direction: column;
@@ -152,20 +139,17 @@ select {
   flex: 1;
 }
 
-/* TITLE */
 .title {
   font-family: "Copperplate", serif;
   font-size: 17px;
 }
 
-/* SUB + CONTROLS ROW */
 .sub-row {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-/* SUBTITLE */
 .subtitle {
   font-size: 12px;
   color: #666;
@@ -176,7 +160,6 @@ select {
 .controls {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   gap: 10px;
   min-width: 160px;
 }
@@ -215,13 +198,126 @@ button {
   font-size: 16px;
   color: green;
 }
+
+/* ---------- TOP-LEFT DRAWER ---------- */
+.drawer-tab {
+  position: fixed;
+  top: calc(12px + env(safe-area-inset-top));
+  left: 0;
+  width: 36px;
+  height: 44px;
+  background: rgba(255,255,255,0.45);
+  backdrop-filter: blur(8px);
+  border-radius: 0 12px 12px 0;
+  cursor: pointer;
+  z-index: 200;
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 240px;
+  background: rgba(255,255,255,0.6);
+  backdrop-filter: blur(14px);
+  padding: calc(24px + env(safe-area-inset-top)) 20px 20px;
+  transform: translateX(-100%);
+  transition: transform .25s ease;
+  z-index: 201;
+}
+.drawer.open { transform: translateX(0); }
+
+.drawer button {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 14px 0;
+  text-align: left;
+  font-size: 16px;
+}
+
+/* ---------- OVERLAY ---------- */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.2);
+  display: none;
+  z-index: 200;
+}
+.overlay.show { display: block; }
+
+/* ---------- BOTTOM BAR ---------- */
+.bottom-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: space-around;
+  padding: 10px env(safe-area-inset-right)
+           calc(10px + env(safe-area-inset-bottom))
+           env(safe-area-inset-left);
+  background: rgba(255,255,255,0.5);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(0,0,0,0.1);
+  z-index: 150;
+}
+
+.bottom-bar button {
+  background: none;
+  border: none;
+  padding: 6px;
+}
+
+.bottom-bar svg {
+  width: 24px;
+  height: 24px;
+  stroke: #000;
+  fill: none;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------- CONFIRM ---------- */
+.confirm {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.3);
+  z-index: 300;
+}
+.confirm.show { display: flex; }
+
+.confirm-box {
+  background: white;
+  padding: 20px;
+  border-radius: 14px;
+  width: 280px;
+  text-align: center;
+}
 </style>
 </head>
 
 <body>
 
+<div class="drawer-tab" id="drawerTab"></div>
+
+<div class="drawer" id="drawer">
+  <button>New Project</button>
+  <button>Sales Report</button>
+  <button>Dictionary File</button>
+  <button>Export</button>
+</div>
+
+<div class="overlay" id="overlay"></div>
+
 <header>
-  <img src="SiennaTransparent.png" alt="Mercato">
+  <img src="SiennaTransparent.png">
 </header>
 
 <div class="tabs" id="sourceTabs"></div>
@@ -232,13 +328,50 @@ button {
 
 <div class="list" id="list"></div>
 
-<script>
-/* SAFARI BAR COLLAPSE (SAFE NO-OP IN STANDALONE) */
-window.addEventListener("load", () => {
-  setTimeout(() => window.scrollTo(0, 1), 50);
-});
+<nav class="bottom-bar">
+  <button title="New Bottle">
+    <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+  <button title="Undo">
+    <svg viewBox="0 0 24 24"><path d="M9 14l-4-4 4-4"/><path d="M5 10h7a6 6 0 1 1 0 12"/></svg>
+  </button>
+  <button title="Archive">
+    <svg viewBox="0 0 24 24"><path d="M3 7h18"/><path d="M5 7v12h14V7"/></svg>
+  </button>
+  <button title="Smart Sort">
+    <svg viewBox="0 0 24 24"><path d="M12 3v18"/><path d="M5 8h14"/><path d="M7 16h10"/></svg>
+  </button>
+  <button id="resetBtn" title="Reset Bottles">
+    <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>
+  </button>
+</nav>
 
-/* ---------------- STATE ---------------- */
+<div class="confirm" id="confirm">
+  <div class="confirm-box">
+    <p>Reset all bottle counts for this source?</p>
+    <button onclick="confirm.classList.remove('show')">Cancel</button>
+    <button>Reset</button>
+  </div>
+</div>
+
+<script>
+/* ---------- DRAWER ---------- */
+const drawer = document.getElementById("drawer");
+const overlay = document.getElementById("overlay");
+
+drawerTab.onclick = () => {
+  drawer.classList.add("open");
+  overlay.classList.add("show");
+};
+overlay.onclick = () => {
+  drawer.classList.remove("open");
+  overlay.classList.remove("show");
+};
+
+/* ---------- CONFIRM ---------- */
+resetBtn.onclick = () => confirm.classList.add("show");
+
+/* ---------- STATE ---------- */
 const SOURCES = [
   "Emporio","Mezzo","Tetto (L)","Tetto (R)",
   "Wine Cellar","Liquor Closet","Prep Cooler","Other"
@@ -252,14 +385,14 @@ const list = document.getElementById("list");
 const sortSelect = document.getElementById("sortSelect");
 const tabsEl = document.getElementById("sourceTabs");
 
-/* ---------------- LOAD ---------------- */
+/* ---------- LOAD ---------- */
 async function loadItems() {
   const res = await fetch("./items.json", { cache: "no-store" });
   items = await res.json();
   renderItems();
 }
 
-/* ---------------- TABS ---------------- */
+/* ---------- TABS ---------- */
 function buildSourceTabs() {
   tabsEl.innerHTML = "";
   SOURCES.forEach(src => {
@@ -277,7 +410,7 @@ function buildSourceTabs() {
   });
 }
 
-/* ---------------- SORT ---------------- */
+/* ---------- SORT ---------- */
 function getSortOptions(src) {
   if (src === "Prep Cooler") return ["Standard","Tier"];
   return ["Standard","Smart","Tier"];
@@ -292,7 +425,7 @@ function updateSort(src) {
   Sort = sortSelect.value = "Standard";
 }
 
-/* ---------------- HELPERS ---------------- */
+/* ---------- HELPERS ---------- */
 const round = v => Math.round(v * 10) / 10;
 const naLast = (a,b) => a==="N/A"?1:b==="N/A"?-1:a.localeCompare(b);
 
@@ -304,7 +437,7 @@ function baseSort(a,b,key){
     || naLast(b.year,a.year);
 }
 
-/* ---------------- RENDER ---------------- */
+/* ---------- RENDER ---------- */
 function renderItems() {
   list.innerHTML="";
   const key=`${Source}Complete`;
@@ -318,7 +451,7 @@ function renderItems() {
   items.forEach(drawItem);
 }
 
-/* ---------------- DRAW ITEM ---------------- */
+/* ---------- DRAW ITEM ---------- */
 function drawItem(item){
   const key=`${Source}Complete`;
 
@@ -369,7 +502,7 @@ function drawItem(item){
   list.appendChild(row);
 }
 
-/* ---------------- INIT ---------------- */
+/* ---------- INIT ---------- */
 buildSourceTabs();
 updateSort(Source);
 loadItems();
