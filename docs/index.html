@@ -171,8 +171,10 @@ button {
 <div class="list" id="list"></div>
 
 <script>
+/* ---------------- CONFIG ---------------- */
 const STORAGE_KEY = "mercato-items-v2";
 
+/* ---------------- STATE ---------------- */
 let items = [];
 let Source = "Emporio";
 let Sort = "Smart";
@@ -181,30 +183,42 @@ const list = document.getElementById("list");
 const sourceSelect = document.getElementById("sourceSelect");
 const sortSelect = document.getElementById("sortSelect");
 
-/* ---------- LOAD ---------- */
+/* ---------------- LOAD (DEFENSIVE) ---------------- */
 async function loadItems() {
   try {
     const cached = localStorage.getItem(STORAGE_KEY);
     if (cached) {
-      items = JSON.parse(cached);
-      renderItems();
-      return;
+      try {
+        items = JSON.parse(cached);
+        renderItems();
+        return;
+      } catch {
+        localStorage.removeItem(STORAGE_KEY);
+      }
     }
 
-    const res = await fetch("./items.json", { cache: "no-store" });
-    if (!res.ok) throw new Error("Fetch failed");
+    const res = await fetch(
+      "items.json?v=" + Date.now(),
+      { cache: "no-store" }
+    );
 
-    items = await res.json();
+    const text = await res.text();
+    items = JSON.parse(text);
+
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
     renderItems();
 
   } catch (err) {
-    list.innerHTML = "<p style='color:red'>Failed to load inventory</p>";
-    console.error(err);
+    console.error("Failed to load inventory", err);
+    list.innerHTML = `
+      <div style="padding:16px;color:red">
+        Failed to load inventory.
+      </div>
+    `;
   }
 }
 
-/* ---------- SORT ---------- */
+/* ---------------- SORT OPTIONS ---------------- */
 function getSortOptions(source) {
   return ["Emporio","Mezzo","Tetto (L)","Tetto (R)"].includes(source)
     ? ["Standard","Smart","Tier"]
@@ -213,20 +227,37 @@ function getSortOptions(source) {
 
 function updateSort(source) {
   sortSelect.innerHTML = "";
-  const opts = getSortOptions(source);
-  opts.forEach(o => {
+  getSortOptions(source).forEach(o => {
     const opt = document.createElement("option");
     opt.value = o;
     opt.textContent = o;
     sortSelect.appendChild(opt);
   });
-  Sort = sortSelect.value = opts.includes("Smart") ? "Smart" : "Standard";
+  Sort = sortSelect.value = "Standard";
 }
 
-/* ---------- HELPERS ---------- */
+/* ---------------- HELPERS ---------------- */
 const round = v => Math.round(v * 10) / 10;
 
-/* ---------- RENDER ---------- */
+const naLast = (a, b) => {
+  if (a === "N/A") return 1;
+  if (b === "N/A") return -1;
+  return a.localeCompare(b);
+};
+
+function baseSort(a, b, completeKey) {
+  if (a[completeKey] !== b[completeKey])
+    return a[completeKey] ? 1 : -1;
+
+  return (
+    naLast(a.brand, b.brand) ||
+    naLast(a.identifier, b.identifier) ||
+    naLast(a.varietal, b.varietal) ||
+    naLast(b.year, a.year)
+  );
+}
+
+/* ---------------- RENDER ---------------- */
 function renderItems() {
   list.innerHTML = "";
   const completeKey = `${Source}Complete`;
@@ -236,65 +267,63 @@ function renderItems() {
     if (typeof i[completeKey] !== "boolean") i[completeKey] = false;
   });
 
+  items.sort((a,b)=>baseSort(a,b,completeKey));
   items.forEach(drawItem);
+
   localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
 }
 
-/* ---------- DRAW ---------- */
+/* ---------------- DRAW ---------------- */
 function drawItem(item) {
   const completeKey = `${Source}Complete`;
 
-  const icon = document.createElement("div");
-  icon.className = "icon";
-
-  if (item.base64) {
-    const img = document.createElement("img");
-    img.src = `data:image/png;base64,${item.icon}`;
-    img.width = 28;
-    icon.appendChild(img);
-  } else {
-    icon.style.color = item.icon;
-    const wine = document.createElement("div");
-    wine.className = "wine";
-    icon.appendChild(wine);
-  }
+  const iconHTML = item.base64
+    ? `<img src="data:image/png;base64,${item.icon}" width="28">`
+    : `<div style="color:${item.icon}"><div class="wine"></div></div>`;
 
   const row = document.createElement("div");
   row.className = "item";
 
   row.innerHTML = `
-    <div class="left"></div>
+    <div class="left">
+      <div class="icon">${iconHTML}</div>
+      <div>
+        <div class="title">
+          ${[item.brand,item.identifier,item.varietal,item.year]
+            .filter(v=>v && v!=="N/A").join(" ")}
+        </div>
+        <div class="subtitle">${item.tier || ""}</div>
+      </div>
+    </div>
     <div class="controls">
       <button class="minus">−</button>
       <div class="value">${item[Source]}</div>
       <button class="plus">+</button>
-      <div class="toggle">
-        ${item[completeKey] ? "✔" : `<div class="toggle-circle"></div>`}
-      </div>
     </div>
   `;
 
-  row.querySelector(".left").appendChild(icon);
-
-  const text = document.createElement("div");
-  text.innerHTML = `
-    <div class="title">${item.brand || ""}</div>
-    <div class="subtitle">${item.tier || ""}</div>
-  `;
-  row.querySelector(".left").appendChild(text);
-
   row.querySelector(".minus").onclick = ()=>{ item[Source]=round(item[Source]-1); renderItems(); };
   row.querySelector(".plus").onclick = ()=>{ item[Source]=round(item[Source]+1); renderItems(); };
-  row.querySelector(".toggle").onclick = ()=>{ item[completeKey]=!item[completeKey]; renderItems(); };
 
   list.appendChild(row);
 }
 
-/* ---------- INIT ---------- */
+/* ---------------- EVENTS ---------------- */
+sourceSelect.onchange = e => {
+  Source = e.target.value;
+  updateSort(Source);
+  renderItems();
+};
+
+sortSelect.onchange = e => {
+  Sort = e.target.value;
+  renderItems();
+};
+
+/* ---------------- INIT ---------------- */
 updateSort(Source);
 loadItems();
 </script>
 
 </body>
 </html>
-
