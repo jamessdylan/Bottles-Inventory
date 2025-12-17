@@ -9,296 +9,177 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
 <style>
-:root {
-  --mercato-green: #1f5e3b;
-}
+:root { --mercato-green:#1f5e3b; }
 
 body {
-  margin: 0;
+  margin:0;
   padding:
     env(safe-area-inset-top)
     env(safe-area-inset-right)
     env(safe-area-inset-bottom)
     env(safe-area-inset-left);
-  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
 }
 
 /* ---------- BACKGROUND ---------- */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background-image: url("IMG_6048.jpeg");
-  background-repeat: no-repeat;
-  background-position: right center;
-  background-size: 1200px auto;
-  opacity: 0.65;
-  z-index: -1;
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:url("IMG_6048.jpeg") no-repeat right center / 1200px auto;
+  opacity:.65;
+  z-index:-1;
 }
 
 /* ---------- HEADER ---------- */
-header {
-  display: flex;
-  justify-content: center;
-  padding: 24px 16px;
-}
-header img { max-width: 100%; }
+header{display:flex;justify-content:center;padding:24px 16px;}
+header img{max-width:100%;}
 
-/* ---------- SOURCE TABS ---------- */
-.tabs {
-  display: flex;
-  gap: 6px;
-  padding: 10px 12px;
-  overflow-x: auto;
+/* ---------- TABS ---------- */
+.tabs{display:flex;gap:6px;padding:10px 12px;overflow-x:auto;}
+.tab{
+  padding:8px 14px;
+  border-radius:14px;
+  background:#eee;
+  font-family:"Copperplate",serif;
+  font-size:14px;
+  cursor:pointer;
 }
-.tab {
-  padding: 8px 14px;
-  border-radius: 14px;
-  background: #eee;
-  font-family: "Copperplate", serif;
-  font-size: 14px;
-  cursor: pointer;
-}
-.tab.active {
-  background: #000;
-  color: #fff;
-}
+.tab.active{background:#000;color:#fff;}
 
 /* ---------- SORT ---------- */
-.section {
-  display: flex;
-  justify-content: center;
-  padding: 12px;
-}
-select {
-  font-family: "Copperplate", serif;
-  font-size: 18px;
-  background: rgba(0,0,0,.1);
-  border: none;
-  border-radius: 6px;
-  padding: 8px 16px;
+.section{display:flex;justify-content:center;padding:12px;}
+select{
+  font-family:"Copperplate",serif;
+  font-size:18px;
+  background:rgba(0,0,0,.1);
+  border:none;
+  border-radius:6px;
+  padding:8px 16px;
 }
 
 /* ---------- LIST ---------- */
-.list {
-  padding: 8px 16px 120px;
-}
+.list{padding:8px 16px 120px;}
 
 /* ---------- ITEM ---------- */
-.item {
-  position: relative;
-  display: flex;
-  gap: 16px;
-  margin-bottom: 14px;
-  padding: 16px 18px;
-  border-radius: 16px;
-  background: rgba(255,255,255,0.35);
-  backdrop-filter: blur(6px);
+.item{
+  position:relative;
+  display:flex;
+  gap:16px;
+  margin-bottom:14px;
+  padding:16px 18px;
+  border-radius:16px;
+  background:rgba(255,255,255,.35);
+  backdrop-filter:blur(6px);
 }
 
 /* LEFT */
-.left {
-  display: flex;
-  gap: 16px;
-  flex: 1;
-  align-items: center;
+.left{display:flex;gap:16px;flex:1;align-items:center;}
+.icon{width:56px;height:56px;display:flex;align-items:center;justify-content:center;}
+
+.wine{
+  width:26px;height:34px;
+  border:2px solid;
+  border-bottom:none;
+  border-radius:0 0 12px 12px;
+  position:relative;
+}
+.wine::after{
+  content:"";
+  position:absolute;
+  bottom:-14px;left:50%;
+  width:2px;height:14px;
+  background:currentColor;
+  transform:translateX(-50%);
 }
 
-.icon {
-  width: 56px;
-  height: 56px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+.text-stack{display:flex;flex-direction:column;gap:6px;flex:1;}
+.title{font-family:"Copperplate",serif;font-size:17px;}
+.sub-row{display:flex;align-items:center;gap:12px;}
+.subtitle{font-size:12px;color:#666;flex:1;}
 
-.wine {
-  width: 26px;
-  height: 34px;
-  border: 2px solid;
-  border-bottom: none;
-  border-radius: 0 0 12px 12px;
-  position: relative;
+.controls{display:flex;gap:10px;min-width:160px;}
+button{
+  border:none;
+  background:rgba(0,0,0,.08);
+  border-radius:6px;
+  padding:6px 10px;
+  font-size:16px;
 }
-.wine::after {
-  content: "";
-  position: absolute;
-  bottom: -14px;
-  left: 50%;
-  width: 2px;
-  height: 14px;
-  background: currentColor;
-  transform: translateX(-50%);
-}
+.value{min-width:48px;text-align:center;font-weight:bold;}
 
-.text-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex: 1;
-}
-
-.title {
-  font-family: "Copperplate", serif;
-  font-size: 17px;
-}
-
-.sub-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.subtitle {
-  font-size: 12px;
-  color: #666;
-  flex: 1;
-}
-
-.controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 160px;
-}
-
-button {
-  border: none;
-  background: rgba(0,0,0,0.08);
-  border-radius: 6px;
-  padding: 6px 10px;
-  font-size: 16px;
-}
-
-.value {
-  min-width: 48px;
-  text-align: center;
-  font-weight: bold;
-}
-
-/* ---------- COMPLETE TOGGLE ---------- */
-.toggle {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  cursor: pointer;
-}
-.toggle-circle {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  border: 2px solid black;
+/* COMPLETE */
+.toggle{position:absolute;top:10px;right:12px;cursor:pointer;}
+.toggle-circle{
+  width:14px;height:14px;
+  border-radius:50%;
+  border:2px solid black;
 }
 
 /* ---------- DRAWER TAB ---------- */
-.drawer-tab {
-  position: fixed;
-  top: calc(12px + env(safe-area-inset-top));
-  left: 0;
-  width: 42px;
-  height: 46px;
-  background: rgba(31,94,59,0.85);
-  backdrop-filter: blur(8px);
-  border-radius: 0 12px 12px 0;
-  cursor: pointer;
-  z-index: 200;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.drawer-tab{
+  position:fixed;
+  top:calc(12px + env(safe-area-inset-top));
+  left:0;
+  width:42px;height:46px;
+  background:rgba(31,94,59,.85);
+  backdrop-filter:blur(8px);
+  border-radius:0 12px 12px 0;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;z-index:200;
 }
-.drawer-tab svg {
-  width: 18px;
-  height: 18px;
-  stroke: white;
-  fill: none;
-  stroke-width: 1.8;
-}
+.drawer-tab svg{width:18px;height:18px;stroke:white;fill:none;stroke-width:1.8;}
 
 /* ---------- DRAWER ---------- */
-.drawer {
-  position: fixed;
-  inset: 0 auto 0 0;
-  width: 240px;
-  background: rgba(255,255,255,0.6);
-  backdrop-filter: blur(14px);
-  padding: calc(24px + env(safe-area-inset-top)) 20px;
-  transform: translateX(-100%);
-  transition: transform .25s ease;
-  z-index: 201;
+.drawer{
+  position:fixed;inset:0 auto 0 0;
+  width:240px;
+  background:rgba(255,255,255,.6);
+  backdrop-filter:blur(14px);
+  padding:calc(24px + env(safe-area-inset-top)) 20px;
+  transform:translateX(-100%);
+  transition:.25s ease;
+  z-index:201;
 }
-.drawer.open { transform: translateX(0); }
-.drawer button {
-  background: none;
-  border: none;
-  width: 100%;
-  text-align: left;
-  padding: 14px 0;
-  font-size: 16px;
+.drawer.open{transform:translateX(0);}
+.drawer button{
+  background:none;border:none;
+  width:100%;text-align:left;
+  padding:14px 0;fontfont-size:16px;
 }
 
 /* ---------- OVERLAY ---------- */
-.overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.25);
-  display: none;
-  z-index: 200;
+.overlay{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.25);
+  display:none;z-index:200;
 }
-.overlay.show { display: block; }
+.overlay.show{display:block;}
 
 /* ---------- BOTTOM BAR ---------- */
-.bottom-bar {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  justify-content: space-around;
-  padding: 10px env(safe-area-inset-right)
-           calc(10px + env(safe-area-inset-bottom))
-           env(safe-area-inset-left);
-  background: rgba(31,94,59,0.85);
-  backdrop-filter: blur(12px);
-  z-index: 150;
+.bottom-bar{
+  position:fixed;left:0;right:0;bottom:0;
+  display:flex;justify-content:space-around;
+  padding:10px env(safe-area-inset-right)
+          calc(10px + env(safe-area-inset-bottom))
+          env(safe-area-inset-left);
+  background:rgba(31,94,59,.85);
+  backdrop-filter:blur(12px);
+  z-index:150;
 }
-.bottom-bar button {
-  background: none;
-  border: none;
-}
-.bottom-bar svg {
-  width: 24px;
-  height: 24px;
-  stroke: white;
-  fill: none;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-/* ---------- CONFIRM ---------- */
-.confirm {
-  position: fixed;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0,0,0,.3);
-  z-index: 300;
-}
-.confirm.show { display: flex; }
-.confirm-box {
-  background: white;
-  padding: 20px;
-  border-radius: 14px;
-  width: 280px;
-  text-align: center;
+.bottom-bar button{background:none;border:none;}
+.bottom-bar svg{
+  width:24px;height:24px;
+  stroke:white;fill:none;
+  stroke-width:1.8;
+  stroke-linecap:round;
+  stroke-linejoin:round;
 }
 </style>
 </head>
 
 <body>
 
-<!-- DRAWER -->
 <div class="drawer-tab" id="drawerTab">
   <svg viewBox="0 0 24 24">
     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -315,31 +196,22 @@ button {
 
 <div class="overlay" id="overlay"></div>
 
-<header>
-  <img src="SiennaTransparent.png">
-</header>
-
+<header><img src="SiennaTransparent.png"></header>
 <div class="tabs" id="sourceTabs"></div>
 <section class="section"><select id="sortSelect"></select></section>
 <div class="list" id="list"></div>
 
-<!-- BOTTOM BAR -->
 <nav class="bottom-bar">
-  <!-- Grape + Plus -->
   <button title="New Bottle">
     <svg viewBox="0 0 24 24">
-      <circle cx="9" cy="10" r="2"/>
-      <circle cx="13" cy="10" r="2"/>
+      <circle cx="9" cy="10" r="2"/><circle cx="13" cy="10" r="2"/>
       <circle cx="11" cy="13" r="2"/>
-      <circle cx="9" cy="16" r="2"/>
-      <circle cx="13" cy="16" r="2"/>
+      <circle cx="9" cy="16" r="2"/><circle cx="13" cy="16" r="2"/>
       <path d="M11 6c0-1.5 1-2.5 2.5-3"/>
-      <path d="M18 12v6"/>
-      <path d="M15 15h6"/>
+      <path d="M18 12v6"/><path d="M15 15h6"/>
     </svg>
   </button>
 
-  <!-- Undo -->
   <button title="Undo">
     <svg viewBox="0 0 24 24">
       <path d="M9 14l-4-4 4-4"/>
@@ -347,15 +219,12 @@ button {
     </svg>
   </button>
 
-  <!-- Archive -->
   <button title="Archive">
     <svg viewBox="0 0 24 24">
-      <path d="M3 7h18"/>
-      <path d="M5 7v12h14V7"/>
+      <path d="M3 7h18"/><path d="M5 7v12h14V7"/>
     </svg>
   </button>
 
-  <!-- Brain -->
   <button title="Smart Sort">
     <svg viewBox="0 0 24 24">
       <path d="M9 4c-2 0-4 2-4 4 0 1 .5 2 1.2 2.6C5 11.4 4 12.8 4 14.5 4 17 6 19 8.5 19H9"/>
@@ -363,39 +232,120 @@ button {
       <path d="M12 4v15"/>
     </svg>
   </button>
-
-  <!-- Reset -->
-  <button id="resetBtn" title="Reset Bottles">
-    <svg viewBox="0 0 24 24">
-      <path d="M21 12a9 9 0 1 1-2.6-6.4"/>
-      <path d="M21 3v6h-6"/>
-    </svg>
-  </button>
 </nav>
 
-<div class="confirm" id="confirm">
-  <div class="confirm-box">
-    <p>Reset all bottle counts for this source?</p>
-    <button onclick="confirm.classList.remove('show')">Cancel</button>
-    <button>Reset</button>
-  </div>
-</div>
-
 <script>
-const drawer = document.getElementById("drawer");
-const overlay = document.getElementById("overlay");
-const confirmBox = document.getElementById("confirm");
+/* ---------------- STATE ---------------- */
+const SOURCES=[
+  "Emporio","Mezzo","Tetto (L)","Tetto (R)",
+  "Wine Cellar","Liquor Closet","Prep Cooler","Other"
+];
+let items=[],Source="Emporio",Sort="Standard";
 
-drawerTab.onclick = () => {
+const list=document.getElementById("list");
+const sortSelect=document.getElementById("sortSelect");
+const tabsEl=document.getElementById("sourceTabs");
+
+/* ---------------- LOAD ---------------- */
+async function loadItems(){
+  const res=await fetch("./items.json",{cache:"no-store"});
+  items=await res.json();
+  buildSourceTabs();
+  updateSort(Source);
+  renderItems();
+}
+
+/* ---------------- TABS ---------------- */
+function buildSourceTabs(){
+  tabsEl.innerHTML="";
+  SOURCES.forEach(src=>{
+    const t=document.createElement("div");
+    t.className="tab"+(src===Source?" active":"");
+    t.textContent=src;
+    t.onclick=()=>{
+      Source=src;
+      document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+      t.classList.add("active");
+      updateSort(Source);
+      renderItems();
+    };
+    tabsEl.appendChild(t);
+  });
+}
+
+/* ---------------- SORT ---------------- */
+function updateSort(){
+  sortSelect.innerHTML="";
+  ["Standard","Smart","Tier"].forEach(o=>{
+    const opt=document.createElement("option");
+    opt.value=o;opt.textContent=o;
+    sortSelect.appendChild(opt);
+  });
+  Sort=sortSelect.value;
+}
+
+/* ---------------- HELPERS ---------------- */
+const round=v=>Math.round(v*10)/10;
+
+/* ---------------- RENDER ---------------- */
+function renderItems(){
+  list.innerHTML="";
+  const key=`${Source}Complete`;
+  items.forEach(i=>{
+    i[Source]=Math.max(0,Number(i[Source])||0);
+    if(typeof i[key]!=="boolean") i[key]=false;
+  });
+
+  items.forEach(drawItem);
+}
+
+/* ---------------- DRAW ---------------- */
+function drawItem(item){
+  const key=`${Source}Complete`;
+  const iconHTML=item.base64
+    ? `<img src="data:image/png;base64,${item.icon}" width="40">`
+    : `<div class="wine" style="color:${item.icon}"></div>`;
+
+  const row=document.createElement("div");
+  row.className="item";
+  row.innerHTML=`
+    <div class="left">
+      <div class="icon">${iconHTML}</div>
+      <div class="text-stack">
+        <div class="title" style="color:${item.status?'#000':'#ccc'}">
+          ${[item.brand,item.identifier,item.varietal,item.year].filter(v=>v&&v!=="N/A").join(" ")}
+        </div>
+        <div class="sub-row">
+          <div class="subtitle">${item.tier||""}</div>
+          <div class="controls">
+            <button class="minus">−</button>
+            <div class="value">${item[Source]}</div>
+            <button class="plus">+</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="toggle">
+      ${item[key]?`✔`:`<div class="toggle-circle"></div>`}
+    </div>
+  `;
+  row.querySelector(".minus").onclick=()=>{item[Source]=round(item[Source]-1);renderItems();}
+  row.querySelector(".plus").onclick=()=>{item[Source]=round(item[Source]+1);renderItems();}
+  row.querySelector(".toggle").onclick=()=>{item[key]=!item[key];renderItems();}
+  list.appendChild(row);
+}
+
+/* ---------------- DRAWER ---------------- */
+drawerTab.onclick=()=>{
   drawer.classList.add("open");
   overlay.classList.add("show");
 };
-overlay.onclick = () => {
+overlay.onclick=()=>{
   drawer.classList.remove("open");
   overlay.classList.remove("show");
 };
 
-resetBtn.onclick = () => confirmBox.classList.add("show");
+loadItems();
 </script>
 
 </body>
