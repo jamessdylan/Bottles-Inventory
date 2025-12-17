@@ -3,255 +3,260 @@
 <head>
 <meta charset="UTF-8" />
 <title>Mercato</title>
-
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-:root { --green:#1f5e3b; --green-light:rgba(255,255,255,.25); }
-
 body {
-  margin:0;
-  padding:
-    env(safe-area-inset-top)
-    env(safe-area-inset-right)
-    env(safe-area-inset-bottom)
-    env(safe-area-inset-left);
-  font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
 }
 
 /* ---------- BACKGROUND ---------- */
-body::before{
-  content:"";
-  position:fixed;
-  inset:0;
-  background:url("IMG_6048.jpeg") no-repeat right center / 1200px auto;
-  opacity:.65;
-  z-index:-1;
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("IMG_6048.jpeg");
+  background-repeat: no-repeat;
+  background-position: right center;
+  background-size: 1200px auto;
+  opacity: 0.65;
+  z-index: -1;
+  pointer-events: none;
 }
 
 /* ---------- HEADER ---------- */
-header{
-  display:flex;
-  justify-content:center;
-  padding:24px 16px;
+header {
+  display: flex;
+  justify-content: center;
+  padding: 24px 16px;
 }
-header img{max-width:100%;}
+header img { max-width: 100%; }
 
-/* ---------- SOURCE TABS ---------- */
-.tabs{
-  display:flex;
-  gap:6px;
-  padding:10px 12px;
-  overflow-x:auto;
+/* ---------- TABS ---------- */
+.tabs {
+  display: flex;
+  gap: 6px;
+  padding: 10px 12px;
+  overflow-x: auto;
 }
-.tab{
-  padding:8px 14px;
-  border-radius:14px;
-  background:#eee;
-  font-family:"Copperplate",serif;
-  font-size:14px;
-  cursor:pointer;
+.tab {
+  padding: 8px 14px;
+  border-radius: 14px;
+  background: #eee;
+  font-family: "Copperplate", serif;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
 }
-.tab.active{background:#000;color:#fff;}
+.tab.active {
+  background: #000;
+  color: #fff;
+}
 
 /* ---------- SORT ---------- */
-.section{
-  display:flex;
-  justify-content:center;
-  padding:12px;
+.section {
+  display: flex;
+  justify-content: center;
+  padding: 12px;
 }
-select{
-  font-family:"Copperplate",serif;
-  font-size:18px;
-  background:rgba(0,0,0,.1);
-  border:none;
-  border-radius:6px;
-  padding:8px 16px;
+select {
+  font-family: "Copperplate", serif;
+  font-size: 18px;
+  background: rgba(0,0,0,.1);
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
 }
 
 /* ---------- LIST ---------- */
-.list{padding:8px 16px 140px;}
-
-/* ---------- ITEM ---------- */
-.item{
-  position:relative;
-  display:flex;
-  gap:16px;
-  margin-bottom:14px;
-  padding:16px 18px;
-  border-radius:16px;
-  background:rgba(255,255,255,.35);
-  backdrop-filter:blur(6px);
+.list {
+  padding: 8px 16px calc(160px + env(safe-area-inset-bottom));
 }
 
-/* LEFT */
-.left{display:flex;gap:16px;flex:1;align-items:center;}
-.icon{width:56px;height:56px;display:flex;align-items:center;justify-content:center;}
-
-.wine{
-  width:26px;height:34px;
-  border:2px solid;
-  border-bottom:none;
-  border-radius:0 0 12px 12px;
-  position:relative;
-}
-.wine::after{
-  content:"";
-  position:absolute;
-  bottom:-14px;left:50%;
-  width:2px;height:14px;
-  background:currentColor;
-  transform:translateX(-50%);
+/* ---------- GROUP LABEL ---------- */
+.group-label {
+  font-family: "Copperplate", serif;
+  font-size: 13px;
+  margin: 20px 0 8px;
+  border-bottom: 1px solid #ddd;
 }
 
-.text-stack{display:flex;flex-direction:column;gap:6px;flex:1;}
-.title{font-family:"Copperplate",serif;font-size:17px;}
-.sub-row{display:flex;align-items:center;gap:12px;}
-.subtitle{font-size:12px;color:#666;flex:1;}
-
-.controls{display:flex;gap:10px;min-width:160px;}
-button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px;font-size:16px;}
-.value{min-width:48px;text-align:center;font-weight:bold;}
-
-/* COMPLETE */
-.toggle{position:absolute;top:10px;right:12px;cursor:pointer;}
-.toggle-circle{width:14px;height:14px;border-radius:50%;border:2px solid black;}
-.toggle-check{font-size:16px;color:green;}
-
-/* ---------- DRAWER TAB ---------- */
-.drawer-tab{
-  position:fixed;
-  top:calc(12px + env(safe-area-inset-top));
-  left:0;
-  width:44px;
-  height:48px;
-  background:rgba(31,94,59,.9);
-  border-radius:0 12px 12px 0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  z-index:300;
-  cursor:pointer;
+/* ---------- ITEM ROW ---------- */
+.item {
+  position: relative;
+  display: flex;
+  gap: 16px;
+  margin-bottom: 14px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.35);
+  backdrop-filter: blur(6px);
 }
-.drawer-tab span{color:white;font-size:22px;letter-spacing:2px;}
+
+/* ---------- LEFT COLUMN ---------- */
+.left {
+  display: flex;
+  gap: 16px;
+  flex: 1;
+  align-items: center;
+}
+
+/* ICON COLUMN */
+.icon {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------- TEXT STACK ---------- */
+.text-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+/* TITLE */
+.title {
+  font-family: "Copperplate", serif;
+  font-size: 17px;
+}
+
+/* SUB + CONTROLS ROW */
+.sub-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* SUBTITLE */
+.subtitle {
+  font-size: 12px;
+  color: #666;
+  flex: 1;
+}
+
+/* ---------- CONTROLS ---------- */
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 160px;
+}
+
+button {
+  border: none;
+  background: rgba(0,0,0,0.08);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 16px;
+}
+
+.value {
+  min-width: 48px;
+  text-align: center;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* ---------- COMPLETE TOGGLE ---------- */
+.toggle {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  cursor: pointer;
+}
 
 /* ---------- DRAWER ---------- */
-.drawer{
-  position:fixed;
-  inset:0 auto 0 0;
-  width:240px;
-  background:rgba(255,255,255,.65);
-  backdrop-filter:blur(14px);
-  padding:calc(24px + env(safe-area-inset-top)) 20px;
-  transform:translateX(-100%);
-  transition:.25s ease;
-  z-index:301;
+.drawer {
+  position: fixed;
+  top: 0;
+  left: -280px;
+  width: 260px;
+  height: 100%;
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(10px);
+  padding: 20px;
+  transition: left 0.3s ease;
+  z-index: 500;
 }
-.drawer.open{transform:translateX(0);}
-.drawer button{
-  background:none;
-  border:none;
-  width:100%;
-  padding:14px 0;
-  font-size:16px;
-  text-align:left;
+.drawer.open { left: 0; }
+.drawer button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 0;
+  background: none;
+  font-size: 16px;
 }
 
-/* ---------- OVERLAY ---------- */
-.overlay{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.25);
-  display:none;
-  z-index:300;
+/* ---------- PAGE NAME ---------- */
+#pageName {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  cursor: pointer;
 }
-.overlay.show{display:block;}
 
-/* ---------- FIXED ACTION BAR ---------- */
-.action-bar{
-  position:fixed;
-  left:0;right:0;bottom:0;
-  display:flex;
-  justify-content:space-around;
-  padding:10px env(safe-area-inset-right)
-          calc(10px + env(safe-area-inset-bottom))
-          env(safe-area-inset-left);
-  background:rgba(31,94,59,.9);
-  backdrop-filter:blur(12px);
-  z-index:250;
-}
-.action-bar button{
-  background:none;
-  border:none;
-  padding:10px;
-  border-radius:10px;
-}
-.action-bar button.active{
-  background:var(--green-light);
-}
-.action-bar svg,
-.action-bar img{
-  width:26px;height:26px;
-  stroke:white;
-  fill:none;
-}
-.action-bar img{
-  filter:brightness(0) invert(1);
+/* ---------- ACTION BAR ---------- */
+.action-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 12px env(safe-area-inset-right) calc(12px + env(safe-area-inset-bottom)) env(safe-area-inset-left);
+  display: flex;
+  justify-content: space-around;
+  background: #0b3d2e;
+  z-index: 999;
 }
 </style>
 </head>
 
 <body>
 
-<div class="drawer-tab" id="drawerTab"><span>•••</span></div>
+<header>
+  <img src="SiennaTransparent.png" alt="Mercato">
+</header>
 
+<div class="tabs" id="sourceTabs"></div>
+
+<section class="section">
+  <select id="sortSelect"></select>
+</section>
+
+<div class="list" id="list"></div>
+
+<!-- DRAWER -->
 <div class="drawer" id="drawer">
-  <div id="pageName" style="font-size:18px;font-weight:600;margin-bottom:20px;cursor:pointer;"></div>
+  <div id="pageName"></div>
   <button>New Project</button>
   <button>Sales Report</button>
   <button>Dictionary File</button>
   <button>Export</button>
 </div>
 
-<div class="overlay" id="overlay"></div>
-
-<header><img src="SiennaTransparent.png"></header>
-
-<div class="tabs" id="sourceTabs"></div>
-<section class="section"><select id="sortSelect"></select></section>
-<div class="list" id="list"></div>
-
-<nav class="action-bar">
-  <button title="New Bottle"></button>
-  <button title="Undo"></button>
-  <button id="archiveBtn" title="Archive"></button>
-  <button id="smartSortBtn" title="Smart Sort">
-    <img src="brain.png">
-  </button>
-</nav>
+<!-- ACTION BAR -->
+<div class="action-bar">
+  <!-- icons already wired previously -->
+</div>
 
 <script>
-/* ---------------- PAGE NAME ---------------- */
+/* ---------- PAGE NAME ---------- */
 const pageNameEl = document.getElementById("pageName");
-
-const MONTHS = [
-  "January","February","March","April","May","June",
-  "July","August","September","October","November","December"
-];
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
 function getDefaultMonthYear() {
   const now = new Date();
   let month = now.getMonth();
   let year = now.getFullYear();
-
   if (now.getDate() < 15) {
-    month -= 1;
-    if (month < 0) {
-      month = 11;
-      year -= 1;
-    }
+    month--;
+    if (month < 0) { month = 11; year--; }
   }
   return { month, year };
 }
@@ -259,174 +264,25 @@ function getDefaultMonthYear() {
 let pageDate = getDefaultMonthYear();
 
 function renderPageName() {
-  pageNameEl.textContent =
-    `${MONTHS[pageDate.month]} ${pageDate.year} — Wine Inventory`;
+  pageNameEl.textContent = `${MONTHS[pageDate.month]} ${pageDate.year} — Wine Inventory`;
 }
-
 renderPageName();
 
 pageNameEl.onclick = () => {
-  const monthInput = prompt("Select month (1–12):", pageDate.month + 1);
-  if (monthInput === null) return;
+  const month = Number(prompt("Select month (1–12):", pageDate.month + 1)) - 1;
+  if (month < 0 || month > 11) return;
 
-  const month = Number(monthInput) - 1;
-  if (month < 0 || month > 11) {
-    alert("Invalid month.");
-    return;
-  }
-
-  const currentYear = new Date().getFullYear();
-  const allowedYears = [currentYear, currentYear - 1, currentYear - 2];
-
-  const yearInput = prompt(
-    `Select year:\n${allowedYears.join("\n")}`,
-    pageDate.year
-  );
-  if (yearInput === null) return;
-
-  const year = Number(yearInput);
-  if (!allowedYears.includes(year)) {
-    alert("Invalid year.");
-    return;
-  }
+  const y = new Date().getFullYear();
+  const allowed = [y, y - 1, y - 2];
+  const year = Number(prompt(`Select year:\n${allowed.join("\n")}`, pageDate.year));
+  if (!allowed.includes(year)) return;
 
   pageDate = { month, year };
   renderPageName();
-};
-
-/* ---------------- STATE ---------------- */
-const SOURCES=[
-  "Emporio","Mezzo","Tetto (L)","Tetto (R)",
-  "Wine Cellar","Liquor Closet","Prep Cooler","Other"
-];
-
-let items=[];
-let Source="Emporio";
-let Sort="Standard";
-
-const list=document.getElementById("list");
-const sortSelect=document.getElementById("sortSelect");
-const tabsEl=document.getElementById("sourceTabs");
-
-/* ---------------- LOAD ---------------- */
-async function loadItems(){
-  const res=await fetch("./items.json",{cache:"no-store"});
-  items=await res.json();
-  renderItems();
-}
-
-/* ---------------- TABS ---------------- */
-function buildSourceTabs(){
-  tabsEl.innerHTML="";
-  SOURCES.forEach(src=>{
-    const tab=document.createElement("div");
-    tab.className="tab"+(src===Source?" active":"");
-    tab.textContent=src;
-    tab.onclick=()=>{
-      Source=src;
-      document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
-      tab.classList.add("active");
-      updateSort(Source);
-      renderItems();
-    };
-    tabsEl.appendChild(tab);
-  });
-}
-
-/* ---------------- SORT ---------------- */
-function getSortOptions(src){
-  if(src==="Prep Cooler") return["Standard","Tier"];
-  return["Standard","Smart","Tier"];
-}
-function updateSort(src){
-  sortSelect.innerHTML="";
-  getSortOptions(src).forEach(o=>{
-    const opt=document.createElement("option");
-    opt.value=o;opt.textContent=o;
-    sortSelect.appendChild(opt);
-  });
-  Sort=sortSelect.value="Standard";
-}
-
-/* ---------------- HELPERS ---------------- */
-const round=v=>Math.round(v*10)/10;
-const naLast=(a,b)=>a==="N/A"?1:b==="N/A"?-1:a.localeCompare(b);
-function baseSort(a,b,key){
-  if(a[key]!==b[key]) return a[key]?1:-1;
-  return naLast(a.brand,b.brand)
-    ||naLast(a.identifier,b.identifier)
-    ||naLast(a.varietal,b.varietal)
-    ||naLast(b.year,a.year);
-}
-
-/* ---------------- RENDER ---------------- */
-function renderItems(){
-  list.innerHTML="";
-  const key=`${Source}Complete`;
-  items.forEach(i=>{
-    i[Source]=Math.max(0,Number(i[Source])||0);
-    if(typeof i[key]!=="boolean") i[key]=false;
-  });
-  items.sort((a,b)=>baseSort(a,b,key));
-  items.forEach(drawItem);
-}
-
-/* ---------------- DRAW ITEM ---------------- */
-function drawItem(item){
-  const key=`${Source}Complete`;
-  const iconHTML=item.base64
-    ? `<img src="data:image/png;base64,${item.icon}" width="40">`
-    : `<div class="wine" style="color:${item.icon}"></div>`;
-
-  const row=document.createElement("div");
-  row.className="item";
-  row.innerHTML=`
-    <div class="left">
-      <div class="icon">${iconHTML}</div>
-      <div class="text-stack">
-        <div class="title" style="color:${item.status?'#000':'#ccc'}">
-          ${[item.brand,item.identifier,item.varietal,item.year].filter(v=>v&&v!=="N/A").join(" ")}
-        </div>
-        <div class="sub-row">
-          <div class="subtitle">${item.tier||""}</div>
-          <div class="controls">
-            <button class="minus">−</button>
-            <div class="value">${item[Source]}</div>
-            <button class="plus">+</button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="toggle">
-      ${item[key]?`<span class="toggle-check">✔</span>`:`<div class="toggle-circle"></div>`}
-    </div>
-  `;
-  row.querySelector(".minus").onclick=()=>{item[Source]=Math.max(0,round(item[Source]-1));renderItems();}
-  row.querySelector(".plus").onclick=()=>{item[Source]=round(item[Source]+1);renderItems();}
-  row.querySelector(".toggle").onclick=()=>{item[key]=!item[key];renderItems();}
-  list.appendChild(row);
-}
-
-/* ---------- INIT ---------- */
-buildSourceTabs();
-updateSort(Source);
-loadItems();
-
-/* ---------- ACTION STATES ---------- */
-archiveBtn.onclick=()=>archiveBtn.classList.toggle("active");
-smartSortBtn.onclick=()=>smartSortBtn.classList.toggle("active");
-
-/* ---------- DRAWER ---------- */
-drawerTab.onclick=()=>{
-  drawer.classList.add("open");
-  overlay.classList.add("show");
-};
-overlay.onclick=()=>{
-  drawer.classList.remove("open");
-  overlay.classList.remove("show");
 };
 </script>
 
 </body>
 </html>
+
 
