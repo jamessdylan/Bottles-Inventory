@@ -3,11 +3,23 @@
 <head>
 <meta charset="UTF-8" />
 <title>Mercato</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- FULLSCREEN / STANDALONE SUPPORT -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mercato">
+
+<meta name="viewport"
+  content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
 <style>
 body {
   margin: 0;
+  padding:
+    env(safe-area-inset-top)
+    env(safe-area-inset-right)
+    env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
   font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
 }
 
@@ -84,13 +96,12 @@ select {
 
 /* ---------- ITEM ROW ---------- */
 .item {
-  position: relative; /* ⬅️ REQUIRED FOR TOGGLE OVERLAY */
+  position: relative;
   display: flex;
   gap: 16px;
   margin-bottom: 14px;
   padding: 16px 18px;
   border-radius: 16px;
-
   background: rgba(255,255,255,0.35);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
@@ -185,7 +196,7 @@ button {
   cursor: pointer;
 }
 
-/* ---------- COMPLETE TOGGLE (OVERLAY) ---------- */
+/* ---------- COMPLETE TOGGLE ---------- */
 .toggle {
   position: absolute;
   top: 10px;
@@ -222,6 +233,11 @@ button {
 <div class="list" id="list"></div>
 
 <script>
+/* SAFARI BAR COLLAPSE (SAFE NO-OP IN STANDALONE) */
+window.addEventListener("load", () => {
+  setTimeout(() => window.scrollTo(0, 1), 50);
+});
+
 /* ---------------- STATE ---------------- */
 const SOURCES = [
   "Emporio","Mezzo","Tetto (L)","Tetto (R)",
