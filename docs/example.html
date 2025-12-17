@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Wine Inventory Export</title>
+<style>
+  body{font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;margin:0;padding:24px;color:#111;}
+  .logo{text-align:center;margin-bottom:12px;}
+  .logo img{max-width:260px;}
+  .title-band{background:#1f5e3b;color:white;text-align:center;padding:14px 12px;border-radius:8px;font-family:"Copperplate",serif;font-size:20px;margin-bottom:26px;}
+  h2{margin-top:36px;margin-bottom:10px;border-bottom:2px solid #1f5e3b;padding-bottom:4px;font-size:18px;}
+  h3{margin:18px 0 6px;font-size:15px;color:#444;}
+  table{width:100%;border-collapse:collapse;font-size:14px;margin-bottom:12px;}
+  th{background:#f0f0f0;text-align:left;padding:8px;}
+  td{padding:8px;border-bottom:1px solid #ddd;}
+  .qty{text-align:center;font-weight:bold;}
+  .money{text-align:right;white-space:nowrap;}
+  .subtotal{font-weight:bold;background:#fafafa;}
+  .color-red{background:#fbeaea;}
+  .color-white{background:#fdfdf4;}
+  .color-rose{background:#fdecef;}
+  .grand-total{margin-top:28px;font-size:18px;font-weight:bold;text-align:right;}
+  .inactive{margin-top:36px;font-size:14px;}
+  .inactive ul{padding-left:18px;}
+</style>
+</head>
+<body>
+
+<div class="logo">
+  <img src="SiennaTransparent.png" alt="Sienna Mercato">
+</div>
+
+<div class="title-band">March 2025 Wine Inventory</div>
+
+<h2>House Wines</h2>
+<h3>Red</h3>
+<table class="color-red">
+<thead><tr><th>Qty</th><th>Wine</th><th class="money">Price</th><th class="money">Total</th></tr></thead>
+<tbody>
+<tr><td class="qty">6</td><td>Antinori · Sangiovese · 2020</td><td class="money">$85</td><td class="money">$510</td></tr>
+</tbody>
+</table>
+
+<h3>White</h3>
+<table class="color-white">
+<tbody>
+<tr><td class="qty">4</td><td>Jermann · Pinot Grigio · 2022</td><td class="money">$42</td><td class="money">$168</td></tr>
+<tr class="subtotal"><td colspan="3">House Subtotal</td><td class="money">$678</td></tr>
+</tbody>
+</table>
+
+<h2>Reserve Wines</h2>
+<h3>Rosé / Sparkling</h3>
+<table class="color-rose">
+<tbody>
+<tr><td class="qty">2</td><td>Ruinart · Brut Rosé · NV</td><td class="money">$140</td><td class="money">$280</td></tr>
+<tr class="subtotal"><td colspan="3">Reserve Subtotal</td><td class="money">$280</td></tr>
+</tbody>
+</table>
+
+<div class="grand-total">Grand Total Inventory Value: $958</div>
+
+<div class="inactive">
+<h2>Inactive Wines</h2>
+<ul>
+<li>Ridge · Monte Bello · 2018</li>
+<li>Ornellaia · Bolgheri Superiore · 2017</li>
+</ul>
+</div>
+
+</body>
+</html>
