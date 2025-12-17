@@ -182,25 +182,21 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   backdrop-filter:blur(12px);
   z-index:250;
 }
-
 .action-bar button{
   background:none;
   border:none;
   padding:10px;
   border-radius:10px;
 }
-
 .action-bar button.active{
   background:var(--green-light);
 }
-
 .action-bar svg,
 .action-bar img{
   width:26px;height:26px;
   stroke:white;
   fill:none;
 }
-
 .action-bar img{
   filter:brightness(0) invert(1);
 }
@@ -212,6 +208,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 <div class="drawer-tab" id="drawerTab"><span>•••</span></div>
 
 <div class="drawer" id="drawer">
+  <div id="pageName" style="font-size:18px;font-weight:600;margin-bottom:20px;cursor:pointer;"></div>
   <button>New Project</button>
   <button>Sales Report</button>
   <button>Dictionary File</button>
@@ -226,44 +223,77 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 <section class="section"><select id="sortSelect"></select></section>
 <div class="list" id="list"></div>
 
-<!-- FIXED ACTION BAR -->
 <nav class="action-bar">
-  <!-- New Bottle (grape + plus) -->
-  <button title="New Bottle">
-    <svg viewBox="0 0 24 24">
-      <circle cx="9" cy="9" r="2"/>
-      <circle cx="13" cy="9" r="2"/>
-      <circle cx="11" cy="12" r="2"/>
-      <circle cx="9" cy="15" r="2"/>
-      <circle cx="13" cy="15" r="2"/>
-      <path d="M18 12v6"/>
-      <path d="M15 15h6"/>
-    </svg>
-  </button>
-
-  <!-- Undo -->
-  <button title="Undo">
-    <svg viewBox="0 0 24 24">
-      <path d="M9 14l-4-4 4-4"/>
-      <path d="M5 10h7a6 6 0 1 1 0 12"/>
-    </svg>
-  </button>
-
-  <!-- Archive -->
-  <button id="archiveBtn" title="Archive">
-    <svg viewBox="0 0 24 24">
-      <path d="M3 7h18"/>
-      <path d="M5 7v12h14V7"/>
-    </svg>
-  </button>
-
-  <!-- Smart Sort -->
+  <button title="New Bottle"></button>
+  <button title="Undo"></button>
+  <button id="archiveBtn" title="Archive"></button>
   <button id="smartSortBtn" title="Smart Sort">
-    <img src="brain.png" alt="Smart Sort">
+    <img src="brain.png">
   </button>
 </nav>
 
 <script>
+/* ---------------- PAGE NAME ---------------- */
+const pageNameEl = document.getElementById("pageName");
+
+const MONTHS = [
+  "January","February","March","April","May","June",
+  "July","August","September","October","November","December"
+];
+
+function getDefaultMonthYear() {
+  const now = new Date();
+  let month = now.getMonth();
+  let year = now.getFullYear();
+
+  if (now.getDate() < 15) {
+    month -= 1;
+    if (month < 0) {
+      month = 11;
+      year -= 1;
+    }
+  }
+  return { month, year };
+}
+
+let pageDate = getDefaultMonthYear();
+
+function renderPageName() {
+  pageNameEl.textContent =
+    `${MONTHS[pageDate.month]} ${pageDate.year} — Wine Inventory`;
+}
+
+renderPageName();
+
+pageNameEl.onclick = () => {
+  const monthInput = prompt("Select month (1–12):", pageDate.month + 1);
+  if (monthInput === null) return;
+
+  const month = Number(monthInput) - 1;
+  if (month < 0 || month > 11) {
+    alert("Invalid month.");
+    return;
+  }
+
+  const currentYear = new Date().getFullYear();
+  const allowedYears = [currentYear, currentYear - 1, currentYear - 2];
+
+  const yearInput = prompt(
+    `Select year:\n${allowedYears.join("\n")}`,
+    pageDate.year
+  );
+  if (yearInput === null) return;
+
+  const year = Number(yearInput);
+  if (!allowedYears.includes(year)) {
+    alert("Invalid year.");
+    return;
+  }
+
+  pageDate = { month, year };
+  renderPageName();
+};
+
 /* ---------------- STATE ---------------- */
 const SOURCES=[
   "Emporio","Mezzo","Tetto (L)","Tetto (R)",
@@ -371,7 +401,6 @@ function drawItem(item){
       ${item[key]?`<span class="toggle-check">✔</span>`:`<div class="toggle-circle"></div>`}
     </div>
   `;
-
   row.querySelector(".minus").onclick=()=>{item[Source]=Math.max(0,round(item[Source]-1));renderItems();}
   row.querySelector(".plus").onclick=()=>{item[Source]=round(item[Source]+1);renderItems();}
   row.querySelector(".toggle").onclick=()=>{item[key]=!item[key];renderItems();}
