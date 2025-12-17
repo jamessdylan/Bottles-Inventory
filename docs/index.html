@@ -80,36 +80,44 @@ select {
   border-bottom: 1px solid #ddd;
 }
 
-/* ---------- ITEM ROW (NEW LAYOUT) ---------- */
-
+/* ---------- ITEM ROW (FROSTED) ---------- */
 .item {
-  display: grid;
-  grid-template-columns: 64px 1fr;
-  gap: 12px;
-  padding: 16px 0;
-  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  padding: 14px;
+  margin: 10px 0;
+  border-radius: 14px;
+
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+
+  border: 1px solid rgba(255,255,255,0.4);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+}
+/* --------------------------------------- */
+
+.left {
+  display: flex;
+  gap: 14px;
   align-items: center;
+  flex: 1;
 }
 
 .icon {
-  width: 64px;
-  height: 64px;
+  width: 56px;
+  height: 56px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.icon img {
-  max-width: 100%;
-  max-height: 100%;
-}
-
 .wine {
-  width: 28px;
-  height: 38px;
+  width: 22px;
+  height: 32px;
   border: 2px solid;
   border-bottom: none;
-  border-radius: 0 0 12px 12px;
+  border-radius: 0 0 10px 10px;
   position: relative;
 }
 
@@ -124,22 +132,13 @@ select {
   transform: translateX(-50%);
 }
 
-.item-content {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-rows: auto auto;
-  column-gap: 12px;
-  row-gap: 6px;
-  align-items: center;
-}
-
 .title {
   font-family: "Copperplate", serif;
   font-size: 18px;
 }
 
 .subtitle {
-  font-size: 12px;
+  font-size: 13px;
   color: #666;
 }
 
@@ -158,26 +157,21 @@ button {
 }
 
 .value {
-  min-width: 44px;
+  min-width: 46px;
   text-align: center;
   font-weight: bold;
   cursor: pointer;
 }
 
-.toggle {
-  justify-self: end;
-  cursor: pointer;
-}
-
 .toggle-circle {
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   border: 2px solid black;
 }
 
 .toggle-check {
-  font-size: 18px;
+  font-size: 16px;
   color: green;
 }
 </style>
@@ -343,33 +337,28 @@ function drawItem(item) {
   const completeKey = `${Source}Complete`;
 
   const iconHTML = item.base64
-    ? `<img src="data:image/png;base64,${item.icon}">`
-    : `<div style="color:${item.icon}"><div class="wine"></div></div>`;
+    ? `<img src="data:image/png;base64,${item.icon}" width="42">`
+    : `<div class="icon" style="color:${item.icon}"><div class="wine"></div></div>`;
 
   const row = document.createElement("div");
   row.className = "item";
 
   row.innerHTML = `
-    <div class="icon">${iconHTML}</div>
-
-    <div class="item-content">
-      <div class="title" style="color:${item.status ? "#000" : "#ccc"}">
-        ${[item.brand,item.identifier,item.varietal,item.year]
-          .filter(v=>v && v!=="N/A").join(" ")}
+    <div class="left">
+      <div class="icon">${iconHTML}</div>
+      <div>
+        <div class="title" style="color:${item.status ? "#000" : "#ccc"}">
+          ${[item.brand,item.identifier,item.varietal,item.year].filter(v=>v&&v!=="N/A").join(" ")}
+        </div>
+        <div class="subtitle">${item.tier||""}</div>
       </div>
-
+    </div>
+    <div class="controls">
+      <button class="minus">−</button>
+      <div class="value">${item[Source]}</div>
+      <button class="plus">+</button>
       <div class="toggle">
-        ${item[completeKey]
-          ? `<span class="toggle-check">✔</span>`
-          : `<div class="toggle-circle"></div>`}
-      </div>
-
-      <div class="subtitle">${item.tier || ""}</div>
-
-      <div class="controls">
-        <button class="minus">−</button>
-        <div class="value">${item[Source]}</div>
-        <button class="plus">+</button>
+        ${item[completeKey] ? `<span class="toggle-check">✔</span>` : `<div class="toggle-circle"></div>`}
       </div>
     </div>
   `;
