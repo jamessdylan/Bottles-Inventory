@@ -3,13 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Items.json Proof Test</title>
+<title>iOS Safari Fetch Proof</title>
 
 <style>
 body {
   font-family: -apple-system, BlinkMacSystemFont, sans-serif;
   padding: 16px;
 }
+.ok { color: green; font-weight: bold; }
+.err { color: red; font-weight: bold; }
 pre {
   white-space: pre-wrap;
   word-break: break-word;
@@ -17,16 +19,12 @@ pre {
   padding: 12px;
   border-radius: 6px;
 }
-.error {
-  color: red;
-  font-weight: bold;
-}
 </style>
 </head>
 
 <body>
 
-<h2>items.json load test</h2>
+<h2>iOS Safari JSON Fetch Proof</h2>
 <div id="status">Loading…</div>
 <pre id="output"></pre>
 
@@ -36,23 +34,29 @@ pre {
   const output = document.getElementById("output");
 
   try {
-    const res = await fetch("./items.json", { cache: "no-store" });
+    const url = "https://jamessdylan.github.io/Bottles-Inventory/items.json";
+
+    const res = await fetch(url, {
+      cache: "no-store",
+      credentials: "omit"
+    });
 
     if (!res.ok) {
       throw new Error("HTTP " + res.status);
     }
 
-    const data = await res.json();
+    const text = await res.text();
+    const data = JSON.parse(text);
 
     if (!Array.isArray(data)) {
       throw new Error("JSON is not an array");
     }
 
-    status.textContent = `Loaded ${data.length} items ✔`;
-    output.textContent = JSON.stringify(data, null, 2);
+    status.innerHTML = `<span class="ok">Loaded ${data.length} items ✔</span>`;
+    output.textContent = JSON.stringify(data.slice(0, 2), null, 2);
 
   } catch (err) {
-    status.innerHTML = `<span class="error">FAILED</span>`;
+    status.innerHTML = `<span class="err">FAILED</span>`;
     output.textContent = err.message;
     console.error(err);
   }
