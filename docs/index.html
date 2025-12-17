@@ -1,86 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <title>Mercato</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
 <style>
+:root { --green:#1f5e3b; --green-light:rgba(255,255,255,.25); }
+
 body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  margin:0;
+  padding:
+    env(safe-area-inset-top)
+    env(safe-area-inset-right)
+    env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+  font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
 }
 
 /* ---------- BACKGROUND ---------- */
-body::before {
+body::before{
   content:"";
   position:fixed;
   inset:0;
-  background:url("IMG_6048.jpeg") right center / 1200px auto no-repeat;
+  background:url("IMG_6048.jpeg") no-repeat right center / 1200px auto;
   opacity:.65;
   z-index:-1;
 }
 
 /* ---------- HEADER ---------- */
-header {
+header{
   display:flex;
   justify-content:center;
   padding:24px 16px;
 }
-header img { max-width:100%; }
+header img{max-width:100%;}
 
-/* ---------- DRAWER TOGGLE ---------- */
-.drawer-toggle {
-  position:fixed;
-  top:14px;
-  left:14px;
-  font-size:22px;
-  color:#0b3d2e;
-  cursor:pointer;
-  z-index:1000;
-}
-
-/* ---------- DRAWER ---------- */
-.drawer {
-  position:fixed;
-  top:0;
-  left:-280px;
-  width:260px;
-  height:100%;
-  padding:20px;
-  background:rgba(255,255,255,.95);
-  backdrop-filter:blur(10px);
-  transition:left .3s ease;
-  z-index:900;
-}
-.drawer.open { left:0; }
-
-.drawer button {
-  display:block;
-  width:100%;
-  padding:10px 0;
-  background:none;
-  border:none;
-  font-size:16px;
-  text-align:left;
-}
-
-/* ---------- PAGE NAME ---------- */
-#pageName {
-  font-size:18px;
-  font-weight:600;
-  margin-bottom:20px;
-  cursor:pointer;
-}
-
-/* ---------- TABS ---------- */
-.tabs {
+/* ---------- SOURCE TABS ---------- */
+.tabs{
   display:flex;
   gap:6px;
   padding:10px 12px;
   overflow-x:auto;
 }
-.tab {
+.tab{
   padding:8px 14px;
   border-radius:14px;
   background:#eee;
@@ -88,33 +54,28 @@ header img { max-width:100%; }
   font-size:14px;
   cursor:pointer;
 }
-.tab.active {
-  background:#000;
-  color:#fff;
-}
+.tab.active{background:#000;color:#fff;}
 
 /* ---------- SORT ---------- */
-.section {
+.section{
   display:flex;
   justify-content:center;
   padding:12px;
 }
-select {
+select{
   font-family:"Copperplate",serif;
   font-size:18px;
-  padding:8px 16px;
+  background:rgba(0,0,0,.1);
   border:none;
   border-radius:6px;
-  background:rgba(0,0,0,.1);
+  padding:8px 16px;
 }
 
 /* ---------- LIST ---------- */
-.list {
-  padding:8px 16px calc(140px + env(safe-area-inset-bottom));
-}
+.list{padding:8px 16px 140px;}
 
 /* ---------- ITEM ---------- */
-.item {
+.item{
   position:relative;
   display:flex;
   gap:16px;
@@ -125,178 +86,342 @@ select {
   backdrop-filter:blur(6px);
 }
 
-.left {
-  display:flex;
-  gap:16px;
-  flex:1;
-  align-items:center;
-}
+/* LEFT */
+.left{display:flex;gap:16px;flex:1;align-items:center;}
+.icon{width:56px;height:56px;display:flex;align-items:center;justify-content:center;}
 
-.icon {
-  width:56px;
-  height:56px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-
-.wine {
-  width:26px;
-  height:34px;
+.wine{
+  width:26px;height:34px;
   border:2px solid;
   border-bottom:none;
   border-radius:0 0 12px 12px;
   position:relative;
 }
-.wine::after {
+.wine::after{
   content:"";
   position:absolute;
-  bottom:-14px;
-  left:50%;
-  width:2px;
-  height:14px;
+  bottom:-14px;left:50%;
+  width:2px;height:14px;
   background:currentColor;
   transform:translateX(-50%);
 }
 
-.text-stack { flex:1; display:flex; flex-direction:column; gap:6px; }
-.title { font-family:"Copperplate",serif; font-size:17px; }
+.text-stack{display:flex;flex-direction:column;gap:6px;flex:1;}
+.title{font-family:"Copperplate",serif;font-size:17px;}
+.sub-row{display:flex;align-items:center;gap:12px;}
+.subtitle{font-size:12px;color:#666;flex:1;}
 
-.sub-row {
-  display:flex;
-  align-items:center;
-  gap:12px;
-}
+.controls{display:flex;gap:10px;min-width:160px;}
+button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px;font-size:16px;}
+.value{min-width:48px;text-align:center;font-weight:bold;}
 
-.subtitle { font-size:12px; color:#666; flex:1; }
+/* COMPLETE */
+.toggle{position:absolute;top:10px;right:12px;cursor:pointer;}
+.toggle-circle{width:14px;height:14px;border-radius:50%;border:2px solid black;}
+.toggle-check{font-size:16px;color:green;}
 
-.controls {
-  display:flex;
-  gap:10px;
-  min-width:160px;
-  justify-content:flex-end;
-}
-
-button {
-  border:none;
-  background:rgba(0,0,0,.08);
-  border-radius:6px;
-  padding:6px 10px;
-  font-size:16px;
-}
-
-.value {
-  min-width:48px;
-  text-align:center;
-  font-weight:bold;
-}
-
-/* ---------- COMPLETE TOGGLE ---------- */
-.toggle {
-  position:absolute;
-  top:10px;
-  right:12px;
-  cursor:pointer;
-}
-
-/* ---------- ACTION BAR ---------- */
-.action-bar {
+/* ---------- DRAWER TAB ---------- */
+.drawer-tab{
   position:fixed;
-  bottom:0;
+  top:calc(12px + env(safe-area-inset-top));
   left:0;
-  right:0;
-  display:flex;
-  justify-content:space-around;
-  padding:12px env(safe-area-inset-right)
-           calc(12px + env(safe-area-inset-bottom))
-           env(safe-area-inset-left);
-  background:#0b3d2e;
-  z-index:999;
-}
-
-.action {
   width:44px;
-  height:44px;
-  border-radius:12px;
+  height:48px;
+  background:rgba(31,94,59,.9);
+  border-radius:0 12px 12px 0;
   display:flex;
   align-items:center;
   justify-content:center;
-  color:white;
+  z-index:300;
+  cursor:pointer;
+}
+.drawer-tab span{color:white;font-size:22px;letter-spacing:2px;}
+
+/* ---------- DRAWER ---------- */
+.drawer{
+  position:fixed;
+  inset:0 auto 0 0;
+  width:240px;
+  background:rgba(255,255,255,.65);
+  backdrop-filter:blur(14px);
+  padding:calc(24px + env(safe-area-inset-top)) 20px;
+  transform:translateX(-100%);
+  transition:.25s ease;
+  z-index:301;
+}
+.drawer.open{transform:translateX(0);}
+.drawer button{
+  background:none;
+  border:none;
+  width:100%;
+  padding:14px 0;
+  font-size:16px;
+  text-align:left;
+}
+
+/* ---------- DRAWER TITLE ---------- */
+.drawer-title{
+  font-family:"Copperplate",serif;
+  font-size:18px;
+  margin-bottom:18px;
   cursor:pointer;
 }
 
-.action.active {
-  background:rgba(255,255,255,.25);
+/* ---------- OVERLAY ---------- */
+.overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.25);
+  display:none;
+  z-index:300;
 }
+.overlay.show{display:block;}
+
+/* ---------- FIXED ACTION BAR ---------- */
+.action-bar{
+  position:fixed;
+  left:0;right:0;bottom:0;
+  display:flex;
+  justify-content:space-around;
+  padding:10px env(safe-area-inset-right)
+          calc(10px + env(safe-area-inset-bottom))
+          env(safe-area-inset-left);
+  background:rgba(31,94,59,.9);
+  backdrop-filter:blur(12px);
+  z-index:250;
+}
+
+.action-bar button{
+  background:none;
+  border:none;
+  padding:10px;
+  border-radius:10px;
+}
+.action-bar button.active{background:var(--green-light);}
+
+.action-bar svg,
+.action-bar img{
+  width:26px;height:26px;
+  stroke:white;
+  fill:none;
+}
+.action-bar img{filter:brightness(0) invert(1);}
 </style>
 </head>
 
 <body>
 
-<div class="drawer-toggle" onclick="toggleDrawer()">...</div>
+<div class="drawer-tab" id="drawerTab"><span>•••</span></div>
 
 <div class="drawer" id="drawer">
-  <div id="pageName"></div>
+  <div class="drawer-title" id="pageTitle"></div>
   <button>New Project</button>
   <button>Sales Report</button>
   <button>Dictionary File</button>
   <button>Export</button>
 </div>
 
-<header>
-  <img src="SiennaTransparent.png">
-</header>
+<div class="overlay" id="overlay"></div>
+
+<header><img src="SiennaTransparent.png"></header>
 
 <div class="tabs" id="sourceTabs"></div>
-
-<section class="section">
-  <select id="sortSelect"></select>
-</section>
-
+<section class="section"><select id="sortSelect"></select></section>
 <div class="list" id="list"></div>
 
-<div class="action-bar">
-  <div class="action">🍇+</div>
-  <div class="action">↺</div>
-  <div class="action active">🗄</div>
-  <div class="action active">🧠</div>
-  <div class="action">⟳</div>
-</div>
+<nav class="action-bar">
+  <!-- New Bottle -->
+  <button title="New Bottle">
+    <svg viewBox="0 0 24 24">
+      <circle cx="9" cy="9" r="2"/>
+      <circle cx="13" cy="9" r="2"/>
+      <circle cx="11" cy="12" r="2"/>
+      <circle cx="9" cy="15" r="2"/>
+      <circle cx="13" cy="15" r="2"/>
+      <path d="M18 12v6"/>
+      <path d="M15 15h6"/>
+    </svg>
+  </button>
+
+  <!-- Undo -->
+  <button title="Undo">
+    <svg viewBox="0 0 24 24">
+      <path d="M9 14l-4-4 4-4"/>
+      <path d="M5 10h7a6 6 0 1 1 0 12"/>
+    </svg>
+  </button>
+
+  <!-- Archive -->
+  <button id="archiveBtn" title="Archive">
+    <svg viewBox="0 0 24 24">
+      <path d="M3 7h18"/>
+      <path d="M5 7v12h14V7"/>
+    </svg>
+  </button>
+
+  <!-- Smart Sort -->
+  <button id="smartSortBtn" title="Smart Sort">
+    <img src="brain.png">
+  </button>
+</nav>
 
 <script>
-/* ---------- DRAWER ---------- */
-function toggleDrawer() {
-  document.getElementById("drawer").classList.toggle("open");
-}
+/* ---------- PAGE TITLE ---------- */
+const pageTitleEl=document.getElementById("pageTitle");
 
-/* ---------- PAGE NAME ---------- */
-const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
-const pageNameEl=document.getElementById("pageName");
-
-function defaultMonthYear(){
+function defaultTitle(){
   const d=new Date();
-  let m=d.getMonth(),y=d.getFullYear();
-  if(d.getDate()<15){ m--; if(m<0){m=11;y--;} }
-  return {m,y};
+  const cutoff=d.getDate()<15;
+  if(cutoff) d.setMonth(d.getMonth()-1);
+  return d.toLocaleString("default",{month:"long",year:"numeric"})+" Wine Inventory";
 }
 
-let pageDate=defaultMonthYear();
-function renderName(){
-  pageNameEl.textContent=`${MONTHS[pageDate.m]} ${pageDate.y} — Wine Inventory`;
-}
-renderName();
+let pageTitle=defaultTitle();
+pageTitleEl.textContent=pageTitle;
 
-pageNameEl.onclick=()=>{
-  const m=Number(prompt("Month (1–12)",pageDate.m+1))-1;
-  if(m<0||m>11)return;
-  const y=new Date().getFullYear();
-  const years=[y,y-1,y-2];
-  const yr=Number(prompt(`Year:\n${years.join("\n")}`,pageDate.y));
-  if(!years.includes(yr))return;
-  pageDate={m, y:yr};
-  renderName();
+pageTitleEl.onclick=()=>{
+  const month=prompt("Month (e.g. March):",pageTitle.split(" ")[0]);
+  if(!month) return;
+  const year=prompt("Year:",new Date().getFullYear());
+  if(!year) return;
+  pageTitle=`${month} ${year} Wine Inventory`;
+  pageTitleEl.textContent=pageTitle;
+};
+
+/* ---------------- STATE ---------------- */
+const SOURCES=[
+  "Emporio","Mezzo","Tetto (L)","Tetto (R)",
+  "Wine Cellar","Liquor Closet","Prep Cooler","Other"
+];
+
+let items=[];
+let Source="Emporio";
+let Sort="Standard";
+
+const list=document.getElementById("list");
+const sortSelect=document.getElementById("sortSelect");
+const tabsEl=document.getElementById("sourceTabs");
+
+/* ---------------- LOAD ---------------- */
+async function loadItems(){
+  const res=await fetch("./items.json",{cache:"no-store"});
+  items=await res.json();
+  renderItems();
+}
+
+/* ---------------- TABS ---------------- */
+function buildSourceTabs(){
+  tabsEl.innerHTML="";
+  SOURCES.forEach(src=>{
+    const tab=document.createElement("div");
+    tab.className="tab"+(src===Source?" active":"");
+    tab.textContent=src;
+    tab.onclick=()=>{
+      Source=src;
+      document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+      tab.classList.add("active");
+      updateSort(Source);
+      renderItems();
+    };
+    tabsEl.appendChild(tab);
+  });
+}
+
+/* ---------------- SORT ---------------- */
+function getSortOptions(src){
+  if(src==="Prep Cooler") return["Standard","Tier"];
+  return["Standard","Smart","Tier"];
+}
+function updateSort(src){
+  sortSelect.innerHTML="";
+  getSortOptions(src).forEach(o=>{
+    const opt=document.createElement("option");
+    opt.value=o;opt.textContent=o;
+    sortSelect.appendChild(opt);
+  });
+  Sort=sortSelect.value="Standard";
+}
+
+/* ---------------- HELPERS ---------------- */
+const round=v=>Math.round(v*10)/10;
+const naLast=(a,b)=>a==="N/A"?1:b==="N/A"?-1:a.localeCompare(b);
+function baseSort(a,b,key){
+  if(a[key]!==b[key]) return a[key]?1:-1;
+  return naLast(a.brand,b.brand)
+    ||naLast(a.identifier,b.identifier)
+    ||naLast(a.varietal,b.varietal)
+    ||naLast(b.year,a.year);
+}
+
+/* ---------------- RENDER ---------------- */
+function renderItems(){
+  list.innerHTML="";
+  const key=`${Source}Complete`;
+  items.forEach(i=>{
+    i[Source]=Math.max(0,Number(i[Source])||0);
+    if(typeof i[key]!=="boolean") i[key]=false;
+  });
+  items.sort((a,b)=>baseSort(a,b,key));
+  items.forEach(drawItem);
+}
+
+/* ---------------- DRAW ITEM ---------------- */
+function drawItem(item){
+  const key=`${Source}Complete`;
+  const iconHTML=item.base64
+    ? `<img src="data:image/png;base64,${item.icon}" width="40">`
+    : `<div class="wine" style="color:${item.icon}"></div>`;
+
+  const row=document.createElement("div");
+  row.className="item";
+  row.innerHTML=`
+    <div class="left">
+      <div class="icon">${iconHTML}</div>
+      <div class="text-stack">
+        <div class="title" style="color:${item.status?'#000':'#ccc'}">
+          ${[item.brand,item.identifier,item.varietal,item.year].filter(v=>v&&v!=="N/A").join(" ")}
+        </div>
+        <div class="sub-row">
+          <div class="subtitle">${item.tier||""}</div>
+          <div class="controls">
+            <button class="minus">−</button>
+            <div class="value">${item[Source]}</div>
+            <button class="plus">+</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="toggle">
+      ${item[key]?`<span class="toggle-check">✔</span>`:`<div class="toggle-circle"></div>`}
+    </div>
+  `;
+
+  row.querySelector(".minus").onclick=()=>{item[Source]=Math.max(0,round(item[Source]-1));renderItems();}
+  row.querySelector(".plus").onclick=()=>{item[Source]=round(item[Source]+1);renderItems();}
+  row.querySelector(".toggle").onclick=()=>{item[key]=!item[key];renderItems();}
+  list.appendChild(row);
+}
+
+/* ---------- INIT ---------- */
+buildSourceTabs();
+updateSort(Source);
+loadItems();
+
+/* ---------- ACTION STATES ---------- */
+archiveBtn.onclick=()=>archiveBtn.classList.toggle("active");
+smartSortBtn.onclick=()=>smartSortBtn.classList.toggle("active");
+
+/* ---------- DRAWER ---------- */
+drawerTab.onclick=()=>{
+  drawer.classList.add("open");
+  overlay.classList.add("show");
+};
+overlay.onclick=()=>{
+  drawer.classList.remove("open");
+  overlay.classList.remove("show");
 };
 </script>
 
 </body>
 </html>
+
