@@ -9,6 +9,7 @@
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  background: white;
 }
 
 header {
@@ -129,7 +130,9 @@ button {
   cursor: pointer;
 }
 
-.toggle { cursor: pointer; }
+.toggle {
+  cursor: pointer;
+}
 
 .toggle-circle {
   width: 12px;
@@ -179,32 +182,11 @@ button {
 /* ---------------- STATE ---------------- */
 let items = [];
 let Source = "Emporio";
-let Sort = "Smart";
+let Sort = "Standard";
 
 const list = document.getElementById("list");
 const sourceSelect = document.getElementById("sourceSelect");
 const sortSelect = document.getElementById("sortSelect");
-
-/* ---------------- LOAD (iOS SAFE) ---------------- */
-async function loadItems() {
-  try {
-    const res = await fetch(
-      "https://jamessdylan.github.io/Bottles-Inventory/items.json",
-      { cache: "no-store" }
-    );
-
-    if (!res.ok) throw new Error("Fetch failed");
-
-    const text = await res.text();     // iOS Safari fix
-    items = JSON.parse(text);
-
-    updateSort(Source);
-    renderItems();
-  } catch (err) {
-    console.error(err);
-    alert("Failed to load inventory");
-  }
-}
 
 /* ---------------- SORT OPTIONS ---------------- */
 function getSortOptions(source) {
@@ -216,13 +198,16 @@ function getSortOptions(source) {
 function updateSort(source) {
   sortSelect.innerHTML = "";
   const opts = getSortOptions(source);
+
   opts.forEach(o => {
     const opt = document.createElement("option");
     opt.value = o;
     opt.textContent = o;
     sortSelect.appendChild(opt);
   });
-  Sort = sortSelect.value = opts.includes("Smart") ? "Smart" : "Standard";
+
+  Sort = opts.includes("Standard") ? "Standard" : opts[0];
+  sortSelect.value = Sort;
 }
 
 /* ---------------- HELPERS ---------------- */
@@ -246,6 +231,27 @@ function baseSort(a, b, completeKey) {
   );
 }
 
+/* ---------------- LOAD ---------------- */
+async function loadItems() {
+  try {
+    const res = await fetch(
+      "https://jamessdylan.github.io/Bottles-Inventory/items.json",
+      { cache: "no-store" }
+    );
+
+    if (!res.ok) throw new Error("Fetch failed");
+
+    const text = await res.text();
+    items = JSON.parse(text);
+
+    updateSort(Source);
+    renderItems();
+  } catch (err) {
+    console.error("Failed to load inventory:", err);
+    alert("Failed to load inventory");
+  }
+}
+
 /* ---------------- RENDER ---------------- */
 function renderItems() {
   list.innerHTML = "";
@@ -262,23 +268,46 @@ function renderItems() {
     return;
   }
 
-  const tierOrder = Sort === "Tier" ? [] : ["House","Reserve"];
+  if (Sort === "Tier") {
+    const tiers = [...new Set(items.map(i => i.tier || "Other"))];
+    tiers.forEach(tier => {
+      const group = items.filter(i => (i.tier || "Other") === tier);
+      if (!group.length) return;
+
+      const label = document.createElement("div");
+      label.className = "group-label";
+      label.textContent = tier;
+      list.appendChild(label);
+
+      group.sort((a,b)=>baseSort(a,b,completeKey));
+      group.forEach(drawItem);
+    });
+    return;
+  }
+
+  /* SMART */
+  const tierOrder = ["House","Reserve"];
   const tiers = [
     ...tierOrder,
-    ...[...new Set(items.map(i => i.tier || "Other"))]
-      .filter(t => !tierOrder.includes(t))
+    ...[...new Set(items.map(i => i.tier || "Other"))].filter(t => !tierOrder.includes(t))
   ];
 
   tiers.forEach(tier => {
     const group = items.filter(i => (i.tier || "Other") === tier);
     if (!group.length) return;
 
-    group.sort((a,b)=>baseSort(a,b,completeKey));
-
     const label = document.createElement("div");
     label.className = "group-label";
     label.textContent = tier;
     list.appendChild(label);
+
+    group.sort((a,b)=>{
+      if (a[completeKey] !== b[completeKey])
+        return a[completeKey] ? 1 : -1;
+      if (a.color === "Red" && b.color !== "Red") return 1;
+      if (a.color !== "Red" && b.color === "Red") return -1;
+      return baseSort(a,b,completeKey);
+    });
 
     group.forEach(drawItem);
   });
@@ -290,31 +319,27 @@ function drawItem(item) {
 
   const iconHTML = item.base64
     ? `<img src="data:image/png;base64,${item.icon}" width="28">`
-    : `<div class="icon" style="color:${item.icon}">
-         <div class="wine"></div>
-       </div>`;
+    : `<div class="icon" style="color:${item.icon}"><div class="wine"></div></div>`;
 
   const row = document.createElement("div");
   row.className = "item";
 
   row.innerHTML = `
     <div class="left">
-      ${iconHTML}
+      <div class="icon">${iconHTML}</div>
       <div>
         <div class="title" style="color:${item.status ? "#000" : "#ccc"}">
-          ${[item.brand,item.identifier,item.varietal,item.year]
-            .filter(v=>v && v!=="N/A").join(" ")}
+          ${[item.brand,item.identifier,item.varietal,item.year].filter(v=>v && v!=="N/A").join(" ")}
         </div>
         <div class="subtitle">${item.tier || ""}</div>
       </div>
     </div>
-
     <div class="controls">
       <button class="minus">−</button>
       <div class="value">${item[Source]}</div>
       <button class="plus">+</button>
       <div class="toggle">
-        ${item[completeKey] ? "✔" : `<div class="toggle-circle"></div>`}
+        ${item[completeKey] ? `<span class="toggle-check">✔</span>` : `<div class="toggle-circle"></div>`}
       </div>
     </div>
   `;
