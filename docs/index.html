@@ -9,6 +9,7 @@
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  background: white;
 }
 
 header {
@@ -59,6 +60,7 @@ select {
 .item {
   display: flex;
   justify-content: space-between;
+  gap: 12px;
   padding: 12px 0;
   border-bottom: 1px solid #eee;
 }
@@ -179,7 +181,7 @@ button {
 /* ---------------- STATE ---------------- */
 let items = [];
 let Source = "Emporio";
-let Sort = null;
+let Sort = "Standard";   // 🔒 hard default (critical)
 
 const list = document.getElementById("list");
 const sourceSelect = document.getElementById("sourceSelect");
@@ -194,17 +196,13 @@ function getSortOptions(source) {
 
 function updateSort(source) {
   sortSelect.innerHTML = "";
-  const opts = getSortOptions(source);
-
-  opts.forEach(o => {
+  getSortOptions(source).forEach(o => {
     const opt = document.createElement("option");
     opt.value = o;
     opt.textContent = o;
     sortSelect.appendChild(opt);
   });
-
-  Sort = opts.includes("Standard") ? "Standard" : opts[0];
-  sortSelect.value = Sort;
+  sortSelect.value = Sort; // never mutates Sort
 }
 
 /* ---------------- HELPERS ---------------- */
@@ -228,6 +226,27 @@ function baseSort(a, b, completeKey) {
   );
 }
 
+/* ---------------- LOAD ---------------- */
+async function loadItems() {
+  try {
+    const res = await fetch("items.json", { cache: "no-store" });
+    if (!res.ok) throw new Error("Fetch failed");
+
+    const data = await res.json();
+    if (!Array.isArray(data)) throw new Error("Invalid JSON");
+
+    items = data;
+
+    // 🔑 SAFE FIRST RUN ORDER
+    updateSort(Source);
+    renderItems();
+
+  } catch (err) {
+    console.error(err);
+    alert("Failed to load inventory");
+  }
+}
+
 /* ---------------- RENDER ---------------- */
 function renderItems() {
   list.innerHTML = "";
@@ -245,15 +264,19 @@ function renderItems() {
   }
 
   if (Sort === "Tier") {
-    const tiers = [...new Set(items.map(i => i.tier || "Other"))].sort();
+    const tiers = [...new Set(items.map(i => i.tier || "Other"))];
     tiers.forEach(tier => {
       const group = items.filter(i => (i.tier || "Other") === tier);
       if (!group.length) return;
+
+      group.sort((a,b)=>baseSort(a,b,completeKey));
+
       const label = document.createElement("div");
       label.className = "group-label";
       label.textContent = tier;
       list.appendChild(label);
-      group.sort((a,b)=>baseSort(a,b,completeKey)).forEach(drawItem);
+
+      group.forEach(drawItem);
     });
     return;
   }
@@ -262,24 +285,28 @@ function renderItems() {
   const tierOrder = ["House","Reserve"];
   const tiers = [
     ...tierOrder,
-    ...[...new Set(items.map(i => i.tier || "Other"))].filter(t=>!tierOrder.includes(t))
+    ...[...new Set(items.map(i => i.tier || "Other"))]
+      .filter(t=>!tierOrder.includes(t))
   ];
 
   tiers.forEach(tier => {
     const group = items.filter(i => (i.tier || "Other") === tier);
     if (!group.length) return;
 
+    group.sort((a,b)=>{
+      if (a[completeKey] !== b[completeKey])
+        return a[completeKey] ? 1 : -1;
+      if (a.color === "Red" && b.color !== "Red") return 1;
+      if (a.color !== "Red" && b.color === "Red") return -1;
+      return baseSort(a,b,completeKey);
+    });
+
     const label = document.createElement("div");
     label.className = "group-label";
     label.textContent = tier;
     list.appendChild(label);
 
-    group.sort((a,b)=>{
-      if (a[completeKey] !== b[completeKey]) return a[completeKey] ? 1 : -1;
-      if (a.color === "Red" && b.color !== "Red") return 1;
-      if (a.color !== "Red" && b.color === "Red") return -1;
-      return baseSort(a,b,completeKey);
-    }).forEach(drawItem);
+    group.forEach(drawItem);
   });
 }
 
@@ -287,7 +314,7 @@ function renderItems() {
 function drawItem(item) {
   const completeKey = `${Source}Complete`;
 
-  const iconHTML = item.base64
+  const iconHTML = item.base64 === true
     ? `<img src="data:image/png;base64,${item.icon}" width="28">`
     : `<div class="icon" style="color:${item.icon}"><div class="wine"></div></div>`;
 
@@ -299,7 +326,8 @@ function drawItem(item) {
       <div class="icon">${iconHTML}</div>
       <div>
         <div class="title" style="color:${item.status ? "#000" : "#ccc"}">
-          ${[item.brand,item.identifier,item.varietal,item.year].filter(v=>v && v!=="N/A").join(" ")}
+          ${[item.brand,item.identifier,item.varietal,item.year]
+            .filter(v=>v && v!=="N/A").join(" ")}
         </div>
         <div class="subtitle">${item.tier || ""}</div>
       </div>
@@ -328,27 +356,6 @@ function drawItem(item) {
   list.appendChild(row);
 }
 
-/* ---------------- LOAD (CRITICAL FIX) ---------------- */
-async function loadItems() {
-  try {
-    const res = await fetch("items.json", { cache: "no-store" });
-    if (!res.ok) throw new Error("Fetch failed");
-
-    const text = await res.text();
-    const data = JSON.parse(text);
-    if (!Array.isArray(data)) throw new Error("Invalid JSON");
-
-    items = data;
-
-    updateSort(Source);
-    renderItems();
-
-  } catch (err) {
-    console.error(err);
-    alert("Failed to load inventory");
-  }
-}
-
 /* ---------------- EVENTS ---------------- */
 sourceSelect.onchange = e => {
   Source = e.target.value;
@@ -362,6 +369,7 @@ sortSelect.onchange = e => {
 };
 
 /* ---------------- INIT ---------------- */
+updateSort(Source);
 loadItems();
 </script>
 
