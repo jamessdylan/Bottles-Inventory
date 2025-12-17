@@ -19,6 +19,28 @@ header {
 
 header img { max-width: 100%; }
 
+/* -------- SOURCE TABS -------- */
+.tabs {
+  display: flex;
+  overflow-x: auto;
+  border-bottom: 1px solid #ddd;
+}
+
+.tab {
+  padding: 10px 14px;
+  font-family: "Copperplate", serif;
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+}
+
+.tab.active {
+  border-bottom-color: #000;
+  font-weight: bold;
+}
+
+/* -------- SORT -------- */
 .section {
   display: flex;
   justify-content: center;
@@ -47,6 +69,7 @@ select {
   padding: 8px 16px;
 }
 
+/* -------- LIST -------- */
 .list { padding: 0 16px 24px; }
 
 .group-label {
@@ -129,18 +152,11 @@ button {
   cursor: pointer;
 }
 
-.toggle { cursor: pointer; }
-
 .toggle-circle {
   width: 12px;
   height: 12px;
   border-radius: 50%;
   border: 2px solid black;
-}
-
-.toggle-check {
-  font-size: 14px;
-  color: green;
 }
 </style>
 </head>
@@ -151,21 +167,10 @@ button {
   <img src="SiennaTransparent.png" alt="Mercato">
 </header>
 
-<section class="section">
-  <div class="field">
-    <label>Source</label>
-    <select id="sourceSelect">
-      <option>Emporio</option>
-      <option>Mezzo</option>
-      <option>Tetto (L)</option>
-      <option>Tetto (R)</option>
-      <option>Wine Cellar</option>
-      <option>Liquor Closet</option>
-      <option>Other</option>
-    </select>
-  </div>
-</section>
+<!-- SOURCE TABS -->
+<div class="tabs" id="sourceTabs"></div>
 
+<!-- SORT -->
 <section class="section">
   <div class="field">
     <label>Sort</label>
@@ -176,119 +181,100 @@ button {
 <div class="list" id="list"></div>
 
 <script>
-/* ---------------- STATE ---------------- */
+/* -------- SOURCES -------- */
+const SOURCES = [
+  "Emporio",
+  "Mezzo",
+  "Tetto (L)",
+  "Tetto (R)",
+  "Wine Cellar",
+  "Liquor Closet",
+  "Prep Cooler",
+  "Other"
+];
+
+const SORT_RULES = {
+  "Emporio": ["Standard","Smart","Tier"],
+  "Mezzo": ["Standard","Smart","Tier"],
+  "Tetto (L)": ["Standard","Smart","Tier"],
+  "Tetto (R)": ["Standard","Smart","Tier"],
+  "Prep Cooler": ["Standard","Tier"],
+  "Wine Cellar": ["Standard","Smart"],
+  "Liquor Closet": ["Standard","Smart"],
+  "Other": ["Standard","Smart"]
+};
+
 let items = [];
 let Source = "Emporio";
 let Sort = "Standard";
 
 const list = document.getElementById("list");
-const sourceSelect = document.getElementById("sourceSelect");
 const sortSelect = document.getElementById("sortSelect");
+const tabs = document.getElementById("sourceTabs");
 
-/* ---------------- SORT OPTIONS ---------------- */
-function getSortOptions(source) {
-  return ["Emporio","Mezzo","Tetto (L)","Tetto (R)"].includes(source)
-    ? ["Standard","Smart","Tier"]
-    : ["Standard","Smart"];
+/* -------- TABS -------- */
+function renderTabs() {
+  tabs.innerHTML = "";
+  SOURCES.forEach(s => {
+    const t = document.createElement("div");
+    t.className = "tab" + (s === Source ? " active" : "");
+    t.textContent = s;
+    t.onclick = () => {
+      Source = s;
+      document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+      t.classList.add("active");
+      updateSort();
+      renderItems();
+    };
+    tabs.appendChild(t);
+  });
 }
 
-function updateSort(source) {
+/* -------- SORT -------- */
+function updateSort() {
   sortSelect.innerHTML = "";
-  getSortOptions(source).forEach(o => {
+  SORT_RULES[Source].forEach(o => {
     const opt = document.createElement("option");
     opt.value = o;
     opt.textContent = o;
     sortSelect.appendChild(opt);
   });
-  Sort = sortSelect.value = getSortOptions(source)[0];
+  Sort = sortSelect.value = SORT_RULES[Source][0];
 }
 
-/* ---------------- LOAD ITEMS ---------------- */
+/* -------- LOAD -------- */
 async function loadItems() {
-  try {
-    const res = await fetch("items.json", { cache: "no-store" });
-    items = await res.json();
-    renderItems();
-  } catch (e) {
-    console.error("Failed to load inventory", e);
-  }
+  const res = await fetch("items.json", { cache: "no-store" });
+  items = await res.json();
+  renderItems();
 }
 
-/* ---------------- HELPERS ---------------- */
+/* -------- HELPERS -------- */
 const round = v => Math.round(v * 10) / 10;
 
-const naLast = (a, b) => {
-  if (a === "N/A") return 1;
-  if (b === "N/A") return -1;
-  return a.localeCompare(b);
-};
-
-function baseSort(a, b, completeKey) {
-  if (a[completeKey] !== b[completeKey])
-    return a[completeKey] ? 1 : -1;
-
-  return (
-    naLast(a.brand, b.brand) ||
-    naLast(a.identifier, b.identifier) ||
-    naLast(a.varietal, b.varietal) ||
-    naLast(b.year, a.year)
-  );
+function baseSort(a,b,ck) {
+  if (a[ck] !== b[ck]) return a[ck] ? 1 : -1;
+  return (a.brand||"").localeCompare(b.brand||"");
 }
 
-/* ---------------- RENDER ---------------- */
+/* -------- RENDER -------- */
 function renderItems() {
-  if (!Array.isArray(items) || !Sort) return;
-
+  if (!items.length) return;
   list.innerHTML = "";
-  const completeKey = `${Source}Complete`;
+  const ck = `${Source}Complete`;
 
-  items.forEach(i => {
+  items.forEach(i=>{
     i[Source] = Number(i[Source]) || 0;
-    if (typeof i[completeKey] !== "boolean") i[completeKey] = false;
+    if (typeof i[ck] !== "boolean") i[ck] = false;
   });
 
-  if (Sort === "Standard") {
-    items.sort((a,b)=>baseSort(a,b,completeKey));
-    items.forEach(drawItem);
-    return;
-  }
-
-  if (Sort === "Tier") {
-    const tiers = [...new Set(items.map(i => i.tier || "Other"))];
-    tiers.forEach(tier => {
-      const group = items.filter(i => (i.tier || "Other") === tier);
-      if (!group.length) return;
-      const label = document.createElement("div");
-      label.className = "group-label";
-      label.textContent = tier;
-      list.appendChild(label);
-      group.sort((a,b)=>baseSort(a,b,completeKey));
-      group.forEach(drawItem);
-    });
-    return;
-  }
-
-  /* SMART */
-  const tierOrder = ["House","Reserve"];
-  const tiers = [...tierOrder, ...new Set(items.map(i => i.tier || "Other"))];
-
-  tiers.forEach(tier => {
-    const group = items.filter(i => (i.tier || "Other") === tier);
-    if (!group.length) return;
-
-    const label = document.createElement("div");
-    label.className = "group-label";
-    label.textContent = tier;
-    list.appendChild(label);
-
-    group.sort((a,b)=>baseSort(a,b,completeKey));
-    group.forEach(drawItem);
-  });
+  items.sort((a,b)=>baseSort(a,b,ck));
+  items.forEach(drawItem);
 }
 
-/* ---------------- DRAW ---------------- */
+/* -------- DRAW -------- */
 function drawItem(item) {
-  const completeKey = `${Source}Complete`;
+  const ck = `${Source}Complete`;
 
   const iconHTML = item.base64
     ? `<img src="data:image/png;base64,${item.icon}" width="28">`
@@ -296,13 +282,12 @@ function drawItem(item) {
 
   const row = document.createElement("div");
   row.className = "item";
-
   row.innerHTML = `
     <div class="left">
       <div class="icon">${iconHTML}</div>
       <div>
-        <div class="title">${[item.brand,item.identifier,item.varietal,item.year].filter(v=>v && v!=="N/A").join(" ")}</div>
-        <div class="subtitle">${item.tier || ""}</div>
+        <div class="title">${item.brand} ${item.varietal} ${item.year}</div>
+        <div class="subtitle">${item.tier||""}</div>
       </div>
     </div>
     <div class="controls">
@@ -310,39 +295,21 @@ function drawItem(item) {
       <div class="value">${item[Source]}</div>
       <button class="plus">+</button>
       <div class="toggle">
-        ${item[completeKey] ? "✔" : `<div class="toggle-circle"></div>`}
+        ${item[ck] ? "✔" : `<div class="toggle-circle"></div>`}
       </div>
     </div>
   `;
 
-  row.querySelector(".minus").onclick = ()=>{ item[Source]=round(item[Source]-1); renderItems(); };
-  row.querySelector(".plus").onclick = ()=>{ item[Source]=round(item[Source]+1); renderItems(); };
-  row.querySelector(".value").onclick = ()=>{
-    const v = prompt("Enter value:", item[Source]);
-    if (v!==null && !isNaN(v)) { item[Source]=round(+v); renderItems(); }
-  };
-  row.querySelector(".toggle").onclick = ()=>{
-    item[completeKey]=!item[completeKey];
-    renderItems();
-  };
+  row.querySelector(".minus").onclick = ()=>{ item[Source]--; renderItems(); };
+  row.querySelector(".plus").onclick = ()=>{ item[Source]++; renderItems(); };
+  row.querySelector(".toggle").onclick = ()=>{ item[ck]=!item[ck]; renderItems(); };
 
   list.appendChild(row);
 }
 
-/* ---------------- EVENTS ---------------- */
-sourceSelect.onchange = e => {
-  Source = e.target.value;
-  updateSort(Source);
-  renderItems();
-};
-
-sortSelect.onchange = e => {
-  Sort = e.target.value;
-  renderItems();
-};
-
-/* ---------------- INIT ---------------- */
-updateSort(Source);
+/* -------- INIT -------- */
+renderTabs();
+updateSort();
 loadItems();
 </script>
 
