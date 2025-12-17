@@ -84,12 +84,11 @@ select {
 
 /* ---------- ITEM ROW ---------- */
 .item {
+  position: relative; /* ⬅️ REQUIRED FOR TOGGLE OVERLAY */
   display: flex;
-  justify-content: space-between;
-  align-items: stretch;
-  gap: 14px;
+  gap: 16px;
   margin-bottom: 14px;
-  padding: 14px 16px;
+  padding: 16px 18px;
   border-radius: 16px;
 
   background: rgba(255,255,255,0.35);
@@ -105,7 +104,7 @@ select {
   align-items: center;
 }
 
-/* ICON COLUMN (BIGGER) */
+/* ICON COLUMN */
 .icon {
   width: 56px;
   height: 56px;
@@ -186,11 +185,12 @@ button {
   cursor: pointer;
 }
 
-/* ---------- COMPLETE TOGGLE ---------- */
+/* ---------- COMPLETE TOGGLE (OVERLAY) ---------- */
 .toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  cursor: pointer;
 }
 
 .toggle-circle {
@@ -199,6 +199,7 @@ button {
   border-radius: 50%;
   border: 2px solid black;
 }
+
 .toggle-check {
   font-size: 16px;
   color: green;
@@ -297,30 +298,8 @@ function renderItems() {
     if(typeof i[key]!=="boolean") i[key]=false;
   });
 
-  if(Sort==="Standard"){
-    items.sort((a,b)=>baseSort(a,b,key));
-    items.forEach(drawItem);
-    return;
-  }
-
-  if(Sort==="Tier"){
-    [...new Set(items.map(i=>i.tier||"Other"))].forEach(t=>{
-      const g=items.filter(i=>(i.tier||"Other")===t);
-      if(!g.length)return;
-      g.sort((a,b)=>baseSort(a,b,key));
-      addGroup(t,g);
-    });
-    return;
-  }
-}
-
-/* ---------------- GROUP ---------------- */
-function addGroup(labelText, group){
-  const l=document.createElement("div");
-  l.className="group-label";
-  l.textContent=labelText;
-  list.appendChild(l);
-  group.forEach(drawItem);
+  items.sort((a,b)=>baseSort(a,b,key));
+  items.forEach(drawItem);
 }
 
 /* ---------------- DRAW ITEM ---------------- */
@@ -373,9 +352,6 @@ function drawItem(item){
 
   list.appendChild(row);
 }
-
-/* ---------------- EVENTS ---------------- */
-sortSelect.onchange=e=>{Sort=e.target.value;renderItems();}
 
 /* ---------------- INIT ---------------- */
 buildSourceTabs();
