@@ -130,9 +130,7 @@ button {
   cursor: pointer;
 }
 
-.toggle {
-  cursor: pointer;
-}
+.toggle { cursor: pointer; }
 
 .toggle-circle {
   width: 12px;
@@ -179,7 +177,6 @@ button {
 <div class="list" id="list"></div>
 
 <script>
-/* ---------------- STATE ---------------- */
 let items = [];
 let Source = "Emporio";
 let Sort = "Standard";
@@ -188,7 +185,7 @@ const list = document.getElementById("list");
 const sourceSelect = document.getElementById("sourceSelect");
 const sortSelect = document.getElementById("sortSelect");
 
-/* ---------------- SORT OPTIONS ---------------- */
+/* SORT OPTIONS */
 function getSortOptions(source) {
   return ["Emporio","Mezzo","Tetto (L)","Tetto (R)"].includes(source)
     ? ["Standard","Smart","Tier"]
@@ -198,61 +195,39 @@ function getSortOptions(source) {
 function updateSort(source) {
   sortSelect.innerHTML = "";
   const opts = getSortOptions(source);
-
   opts.forEach(o => {
     const opt = document.createElement("option");
     opt.value = o;
     opt.textContent = o;
     sortSelect.appendChild(opt);
   });
-
-  Sort = opts.includes("Standard") ? "Standard" : opts[0];
+  Sort = "Standard";
   sortSelect.value = Sort;
 }
 
-/* ---------------- HELPERS ---------------- */
-const round = v => Math.round(v * 10) / 10;
-
-const naLast = (a, b) => {
-  if (a === "N/A") return 1;
-  if (b === "N/A") return -1;
-  return a.localeCompare(b);
-};
-
-function baseSort(a, b, completeKey) {
-  if (a[completeKey] !== b[completeKey])
-    return a[completeKey] ? 1 : -1;
-
-  return (
-    naLast(a.brand, b.brand) ||
-    naLast(a.identifier, b.identifier) ||
-    naLast(a.varietal, b.varietal) ||
-    naLast(b.year, a.year)
-  );
-}
-
-/* ---------------- LOAD ---------------- */
+/* LOAD ITEMS — SAFE */
 async function loadItems() {
   try {
-    const res = await fetch(
-      "https://jamessdylan.github.io/Bottles-Inventory/items.json",
-      { cache: "no-store" }
-    );
-
-    if (!res.ok) throw new Error("Fetch failed");
-
+    const res = await fetch("./items.json", { cache: "no-store" });
     const text = await res.text();
     items = JSON.parse(text);
-
     updateSort(Source);
     renderItems();
-  } catch (err) {
-    console.error("Failed to load inventory:", err);
+  } catch (e) {
+    console.error(e);
     alert("Failed to load inventory");
   }
 }
 
-/* ---------------- RENDER ---------------- */
+/* HELPERS */
+const round = v => Math.round(v * 10) / 10;
+
+function baseSort(a, b, k) {
+  if (a[k] !== b[k]) return a[k] ? 1 : -1;
+  return (a.brand||"").localeCompare(b.brand||"");
+}
+
+/* RENDER */
 function renderItems() {
   list.innerHTML = "";
   const completeKey = `${Source}Complete`;
@@ -262,58 +237,10 @@ function renderItems() {
     if (typeof i[completeKey] !== "boolean") i[completeKey] = false;
   });
 
-  if (Sort === "Standard") {
-    items.sort((a,b)=>baseSort(a,b,completeKey));
-    items.forEach(drawItem);
-    return;
-  }
-
-  if (Sort === "Tier") {
-    const tiers = [...new Set(items.map(i => i.tier || "Other"))];
-    tiers.forEach(tier => {
-      const group = items.filter(i => (i.tier || "Other") === tier);
-      if (!group.length) return;
-
-      const label = document.createElement("div");
-      label.className = "group-label";
-      label.textContent = tier;
-      list.appendChild(label);
-
-      group.sort((a,b)=>baseSort(a,b,completeKey));
-      group.forEach(drawItem);
-    });
-    return;
-  }
-
-  /* SMART */
-  const tierOrder = ["House","Reserve"];
-  const tiers = [
-    ...tierOrder,
-    ...[...new Set(items.map(i => i.tier || "Other"))].filter(t => !tierOrder.includes(t))
-  ];
-
-  tiers.forEach(tier => {
-    const group = items.filter(i => (i.tier || "Other") === tier);
-    if (!group.length) return;
-
-    const label = document.createElement("div");
-    label.className = "group-label";
-    label.textContent = tier;
-    list.appendChild(label);
-
-    group.sort((a,b)=>{
-      if (a[completeKey] !== b[completeKey])
-        return a[completeKey] ? 1 : -1;
-      if (a.color === "Red" && b.color !== "Red") return 1;
-      if (a.color !== "Red" && b.color === "Red") return -1;
-      return baseSort(a,b,completeKey);
-    });
-
-    group.forEach(drawItem);
-  });
+  items.sort((a,b)=>baseSort(a,b,completeKey));
+  items.forEach(drawItem);
 }
 
-/* ---------------- DRAW ---------------- */
 function drawItem(item) {
   const completeKey = `${Source}Complete`;
 
@@ -323,54 +250,32 @@ function drawItem(item) {
 
   const row = document.createElement("div");
   row.className = "item";
-
   row.innerHTML = `
     <div class="left">
       <div class="icon">${iconHTML}</div>
       <div>
-        <div class="title" style="color:${item.status ? "#000" : "#ccc"}">
-          ${[item.brand,item.identifier,item.varietal,item.year].filter(v=>v && v!=="N/A").join(" ")}
-        </div>
-        <div class="subtitle">${item.tier || ""}</div>
+        <div class="title">${item.brand}</div>
+        <div class="subtitle">${item.tier||""}</div>
       </div>
     </div>
     <div class="controls">
       <button class="minus">−</button>
       <div class="value">${item[Source]}</div>
       <button class="plus">+</button>
-      <div class="toggle">
-        ${item[completeKey] ? `<span class="toggle-check">✔</span>` : `<div class="toggle-circle"></div>`}
-      </div>
     </div>
   `;
 
-  row.querySelector(".minus").onclick = ()=>{ item[Source]=round(item[Source]-1); renderItems(); };
-  row.querySelector(".plus").onclick = ()=>{ item[Source]=round(item[Source]+1); renderItems(); };
-  row.querySelector(".value").onclick = ()=>{
-    const v = prompt("Enter value:", item[Source]);
-    if (v!==null && !isNaN(v)) { item[Source]=round(+v); renderItems(); }
-  };
-  row.querySelector(".toggle").onclick = ()=>{
-    item[completeKey]=!item[completeKey];
-    renderItems();
-  };
+  row.querySelector(".minus").onclick=()=>{item[Source]--;renderItems();}
+  row.querySelector(".plus").onclick=()=>{item[Source]++;renderItems();}
 
   list.appendChild(row);
 }
 
-/* ---------------- EVENTS ---------------- */
-sourceSelect.onchange = e => {
-  Source = e.target.value;
-  updateSort(Source);
-  renderItems();
-};
+/* EVENTS */
+sourceSelect.onchange=e=>{Source=e.target.value;updateSort(Source);renderItems();}
+sortSelect.onchange=e=>{Sort=e.target.value;renderItems();}
 
-sortSelect.onchange = e => {
-  Sort = e.target.value;
-  renderItems();
-};
-
-/* ---------------- INIT ---------------- */
+/* INIT */
 loadItems();
 </script>
 
