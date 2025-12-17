@@ -6,6 +6,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
+
+/* ---------- BACKGROUND IMAGE ---------- */
+body {
+  background-image: url("background.png"); /* ← adjust filename if needed */
+  background-repeat: no-repeat;
+  background-position: center top;
+  background-size: cover;
+  background-attachment: fixed;
+
+  /* iOS Safari stability */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Readability overlay */
+.bg-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.85);
+  pointer-events: none;
+  z-index: -1;
+}
+
+<div class="bg-overlay"></div>
+
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
