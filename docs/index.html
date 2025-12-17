@@ -128,7 +128,12 @@ button{
   display:flex;align-items:center;justify-content:center;
   cursor:pointer;z-index:200;
 }
-.drawer-tab svg{width:18px;height:18px;stroke:white;fill:none;stroke-width:1.8;}
+.drawer-tab span{
+  color:white;
+  font-size:22px;
+  font-weight:600;
+  letter-spacing:2px;
+}
 
 /* ---------- DRAWER ---------- */
 .drawer{
@@ -145,7 +150,7 @@ button{
 .drawer button{
   background:none;border:none;
   width:100%;text-align:left;
-  padding:14px 0;fontfont-size:16px;
+  padding:14px 0;font-size:16px;
 }
 
 /* ---------- OVERLAY ---------- */
@@ -167,13 +172,23 @@ button{
   backdrop-filter:blur(12px);
   z-index:150;
 }
-.bottom-bar button{background:none;border:none;}
-.bottom-bar svg{
+.bottom-bar button{
+  background:none;
+  border:none;
+  padding:6px;
+}
+.bottom-bar button.active{
+  background:rgba(255,255,255,.25);
+  border-radius:10px;
+}
+.bottom-bar svg,
+.bottom-bar img{
   width:24px;height:24px;
-  stroke:white;fill:none;
-  stroke-width:1.8;
-  stroke-linecap:round;
-  stroke-linejoin:round;
+  stroke:white;
+  fill:none;
+}
+.bottom-bar img{
+  filter:brightness(0) invert(1);
 }
 </style>
 </head>
@@ -181,10 +196,7 @@ button{
 <body>
 
 <div class="drawer-tab" id="drawerTab">
-  <svg viewBox="0 0 24 24">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-    <path d="M14 2v6h6"/>
-  </svg>
+  <span>•••</span>
 </div>
 
 <div class="drawer" id="drawer">
@@ -197,11 +209,13 @@ button{
 <div class="overlay" id="overlay"></div>
 
 <header><img src="SiennaTransparent.png"></header>
+
 <div class="tabs" id="sourceTabs"></div>
 <section class="section"><select id="sortSelect"></select></section>
 <div class="list" id="list"></div>
 
 <nav class="bottom-bar">
+  <!-- New Bottle -->
   <button title="New Bottle">
     <svg viewBox="0 0 24 24">
       <circle cx="9" cy="10" r="2"/><circle cx="13" cy="10" r="2"/>
@@ -212,6 +226,7 @@ button{
     </svg>
   </button>
 
+  <!-- Undo -->
   <button title="Undo">
     <svg viewBox="0 0 24 24">
       <path d="M9 14l-4-4 4-4"/>
@@ -219,123 +234,28 @@ button{
     </svg>
   </button>
 
-  <button title="Archive">
+  <!-- Archive -->
+  <button id="archiveBtn" title="Archive">
     <svg viewBox="0 0 24 24">
       <path d="M3 7h18"/><path d="M5 7v12h14V7"/>
     </svg>
   </button>
 
-  <button title="Smart Sort">
-    <svg viewBox="0 0 24 24">
-      <path d="M9 4c-2 0-4 2-4 4 0 1 .5 2 1.2 2.6C5 11.4 4 12.8 4 14.5 4 17 6 19 8.5 19H9"/>
-      <path d="M15 4c2 0 4 2 4 4 0 1-.5 2-1.2 2.6 1.2.8 2.2 2.2 2.2 3.9C20 17 18 19 15.5 19H15"/>
-      <path d="M12 4v15"/>
-    </svg>
+  <!-- Smart Sort -->
+  <button id="smartSortBtn" title="Smart Sort">
+    <img src="brain.png" alt="Smart Sort">
   </button>
 </nav>
 
 <script>
-/* ---------------- STATE ---------------- */
-const SOURCES=[
-  "Emporio","Mezzo","Tetto (L)","Tetto (R)",
-  "Wine Cellar","Liquor Closet","Prep Cooler","Other"
-];
-let items=[],Source="Emporio",Sort="Standard";
+/* ---------- ACTIVE STATES ONLY ---------- */
+const archiveBtn=document.getElementById("archiveBtn");
+const smartSortBtn=document.getElementById("smartSortBtn");
 
-const list=document.getElementById("list");
-const sortSelect=document.getElementById("sortSelect");
-const tabsEl=document.getElementById("sourceTabs");
+archiveBtn.onclick=()=>archiveBtn.classList.toggle("active");
+smartSortBtn.onclick=()=>smartSortBtn.classList.toggle("active");
 
-/* ---------------- LOAD ---------------- */
-async function loadItems(){
-  const res=await fetch("./items.json",{cache:"no-store"});
-  items=await res.json();
-  buildSourceTabs();
-  updateSort(Source);
-  renderItems();
-}
-
-/* ---------------- TABS ---------------- */
-function buildSourceTabs(){
-  tabsEl.innerHTML="";
-  SOURCES.forEach(src=>{
-    const t=document.createElement("div");
-    t.className="tab"+(src===Source?" active":"");
-    t.textContent=src;
-    t.onclick=()=>{
-      Source=src;
-      document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
-      t.classList.add("active");
-      updateSort(Source);
-      renderItems();
-    };
-    tabsEl.appendChild(t);
-  });
-}
-
-/* ---------------- SORT ---------------- */
-function updateSort(){
-  sortSelect.innerHTML="";
-  ["Standard","Smart","Tier"].forEach(o=>{
-    const opt=document.createElement("option");
-    opt.value=o;opt.textContent=o;
-    sortSelect.appendChild(opt);
-  });
-  Sort=sortSelect.value;
-}
-
-/* ---------------- HELPERS ---------------- */
-const round=v=>Math.round(v*10)/10;
-
-/* ---------------- RENDER ---------------- */
-function renderItems(){
-  list.innerHTML="";
-  const key=`${Source}Complete`;
-  items.forEach(i=>{
-    i[Source]=Math.max(0,Number(i[Source])||0);
-    if(typeof i[key]!=="boolean") i[key]=false;
-  });
-
-  items.forEach(drawItem);
-}
-
-/* ---------------- DRAW ---------------- */
-function drawItem(item){
-  const key=`${Source}Complete`;
-  const iconHTML=item.base64
-    ? `<img src="data:image/png;base64,${item.icon}" width="40">`
-    : `<div class="wine" style="color:${item.icon}"></div>`;
-
-  const row=document.createElement("div");
-  row.className="item";
-  row.innerHTML=`
-    <div class="left">
-      <div class="icon">${iconHTML}</div>
-      <div class="text-stack">
-        <div class="title" style="color:${item.status?'#000':'#ccc'}">
-          ${[item.brand,item.identifier,item.varietal,item.year].filter(v=>v&&v!=="N/A").join(" ")}
-        </div>
-        <div class="sub-row">
-          <div class="subtitle">${item.tier||""}</div>
-          <div class="controls">
-            <button class="minus">−</button>
-            <div class="value">${item[Source]}</div>
-            <button class="plus">+</button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="toggle">
-      ${item[key]?`✔`:`<div class="toggle-circle"></div>`}
-    </div>
-  `;
-  row.querySelector(".minus").onclick=()=>{item[Source]=round(item[Source]-1);renderItems();}
-  row.querySelector(".plus").onclick=()=>{item[Source]=round(item[Source]+1);renderItems();}
-  row.querySelector(".toggle").onclick=()=>{item[key]=!item[key];renderItems();}
-  list.appendChild(row);
-}
-
-/* ---------------- DRAWER ---------------- */
+/* ---------- DRAWER ---------- */
 drawerTab.onclick=()=>{
   drawer.classList.add("open");
   overlay.classList.add("show");
@@ -344,8 +264,6 @@ overlay.onclick=()=>{
   drawer.classList.remove("open");
   overlay.classList.remove("show");
 };
-
-loadItems();
 </script>
 
 </body>
