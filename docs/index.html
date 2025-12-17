@@ -227,7 +227,7 @@ function baseSort(a, b, completeKey) {
 /* ---------------- LOAD ---------------- */
 async function loadItems() {
   try {
-    const res = await fetch("items.json", { cache: "no-store" });
+    const res = await fetch("/Bottles-Inventory/docs/items.json", { cache: "no-store" });
     if (!res.ok) throw new Error("Fetch failed");
 
     const data = await res.json();
