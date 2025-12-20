@@ -468,24 +468,39 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   </div>
 </div>
 
-/* ---------- FEATURED ---------- */
-let newBottleFeatured = [];
+<!-- FEATURED -->
+<div style="display:flex; flex-direction:column; gap:8px;">
+  <div style="font-family:'Copperplate',serif;">Featured</div> 
 
-const featuredButtons = document.querySelectorAll(".featured-btn");
 
-featuredButtons.forEach(btn => {
-  btn.onclick = () => {
-    const value = btn.dataset.value;
+  <div id="featuredButtons" style="
 
-    if (newBottleFeatured.includes(value)) {
-      newBottleFeatured = newBottleFeatured.filter(v => v !== value);
-      btn.classList.remove("active");
-    } else {
-      newBottleFeatured.push(value);
-      btn.classList.add("active");
-    }
-  };
-});
+.featured-btn{
+  padding:10px 14px;
+  border-radius:10px;
+  border:none;
+  background:rgba(0,0,0,.08);
+  font-size:14px;
+  cursor:pointer;
+}
+
+.featured-btn.active{
+  background:#1f5e3b;
+  color:white;
+}
+
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  ">
+    <button class="featured-btn" data-value="Reserve">Reserve</button>
+    <button class="featured-btn" data-value="Featured Import">Featured Import</button>
+    <button class="featured-btn" data-value="Varietal Showcase">Varietal Showcase</button>
+    <button class="featured-btn" data-value="Backup Bottle">Backup Bottle</button>
+    <button class="featured-btn" data-value="Event Wine">Event Wine</button>
+  </div>
+</div>
+
 
 </div>
 
