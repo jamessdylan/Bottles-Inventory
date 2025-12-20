@@ -1,5 +1,3 @@
-Before Distributor
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -278,6 +276,36 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
     <div style="font-family:'Copperplate',serif;">New Bottle</div>
     <button disabled>Done</button>
   </div>
+
+<!-- ICON SELECTOR -->
+<div style="
+  display:flex;
+  justify-content:center;
+  margin-bottom:18px;
+">
+  <div
+    id="newBottleIconPreview"
+    style="
+      width:72px;
+      height:72px;
+      border-radius:16px;
+      background:rgba(0,0,0,.05);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+    "
+  >
+    <div id="newBottleWineIcon" class="wine-icon"></div>
+  </div>
+
+  <input
+    id="iconFileInput"
+    type="file"
+    accept="image/*"
+    style="display:none;"
+  />
+</div>
 
   <!-- STATUS -->
   <div id="statusToggle" style="
@@ -807,6 +835,15 @@ const cancelNewBottle = document.getElementById("cancelNewBottle");
 const statusToggle = document.getElementById("statusToggle");
 const statusValue = document.getElementById("statusValue");
 
+
+/* ---------- ICON ---------- */
+let newBottleIcon = null;
+let newBottleBase64 = false;
+
+const iconPreview = document.getElementById("newBottleIconPreview");
+const wineIcon = document.getElementById("newBottleWineIcon");
+const iconFileInput = document.getElementById("iconFileInput");
+
 let newBottleStatus = true;
 let newBottleTier = "House"; // "House" | "Reserve"
 let newBottleColor = "White"; // White | Rose | Red
@@ -829,6 +866,36 @@ function closeNewBottle() {
 cancelNewBottle.onclick = closeNewBottle;
 newBottleOverlay.onclick = closeNewBottle;
 
+iconPreview.onclick = () => {
+  iconFileInput.click();
+};
+
+iconFileInput.onchange = () => {
+  const file = iconFileInput.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    const base64 = e.target.result
+      .replace(/^data:image\/[a-z]+;base64,/, "")
+      .replace(/\n/g, "");
+
+    newBottleIcon = base64;
+    newBottleBase64 = true;
+
+    // Show preview
+    wineIcon.innerHTML = `<img src="data:image/*;base64,${base64}" style="
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      border-radius:12px;
+    ">`;
+  };
+
+  reader.readAsDataURL(file);
+};
+
+
 statusToggle.onclick = () => {
   newBottleStatus = !newBottleStatus;
   statusValue.textContent = newBottleStatus ? "Active" : "Inactive";
@@ -838,6 +905,7 @@ statusToggle.onclick = () => {
 const tierToggle = document.getElementById("tierToggle");
 const tierValue = document.getElementById("tierValue");
 const tierIcon = document.getElementById("tierIcon");
+
 
 tierToggle.onclick = () => {
   if (newBottleTier === "House") {
@@ -879,6 +947,7 @@ colorToggle.onclick = () => {
   }
   updateColorUI();
 };
+
 
 const brandInput = document.getElementById("brandInput");
 const brandSuggestions = document.getElementById("brandSuggestions");
