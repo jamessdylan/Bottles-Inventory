@@ -206,6 +206,44 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   fill:none;
 }
 .action-bar img{filter:brightness(0) invert(1);}
+
+/* ===== NEW BOTTLE MODAL ===== */
+#newBottleOverlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.25);
+  display:none;
+  z-index:450;
+}
+#newBottleModal{
+  position:fixed;
+  left:0; right:0; bottom:0;
+  background:rgba(255,255,255,.92);
+  backdrop-filter:blur(18px);
+  padding:16px;
+  transform:translateY(100%);
+  transition:.25s ease;
+  z-index:451;
+  max-height:90vh;
+  overflow:auto;
+}
+#newBottleModal input,
+#newBottleModal textarea{
+  width:100%;
+  margin:6px 0;
+  padding:10px;
+  font-size:15px;
+  border-radius:8px;
+  border:1px solid #ddd;
+}
+.nb-field{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:10px 4px;
+  cursor:pointer;
+}
+
 </style>
 </head>
 
@@ -262,7 +300,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 <div class="list" id="list"></div>
 
 <nav class="action-bar">
-  <button title="New Bottle">
+<button id="newBottleBtn" title="New Bottle">
     <svg viewBox="0 0 24 24">
       <circle cx="9" cy="9" r="2"/>
       <circle cx="13" cy="9" r="2"/>
@@ -645,7 +683,128 @@ exportBtn.onclick = () => {
   win.document.close();
 };
 
+/* ===== NEW BOTTLE LOGIC ===== */
+const nbModal=document.getElementById("newBottleModal");
+const nbOverlay=document.getElementById("newBottleOverlay");
+
+newBottleBtn.onclick=()=>{
+  nbModal.style.transform="translateY(0)";
+  nbOverlay.style.display="block";
+};
+nbOverlay.onclick=()=>{
+  nbModal.style.transform="translateY(100%)";
+  nbOverlay.style.display="none";
+};
+
+/* Status toggle */
+nbStatus.onclick=()=>{
+  const a=nbStatus.dataset.value==="true";
+  nbStatus.dataset.value=(!a).toString();
+  nbStatus.lastElementChild.textContent=a?"Inactive":"Active";
+  nbStatus.lastElementChild.style.color=a?"red":"green";
+};
+
+/* Tier toggle */
+nbTier.onclick=()=>{
+  const v=nbTier.dataset.value==="House"?"Reserve":"House";
+  nbTier.dataset.value=v;
+  nbTier.lastElementChild.textContent=v==="House"?"🏠 House":"⭐ Reserve";
+};
+
+/* Color cycle */
+const NB_COLORS=[
+  {name:"White",hex:"#c9b458"},
+  {name:"Rose/Sparkling",hex:"#e4a4b4"},
+  {name:"Red",hex:"#7a1f2b"}
+];
+nbColor.onclick=()=>{
+  let i=(+nbColor.dataset.index+1)%NB_COLORS.length;
+  nbColor.dataset.index=i;
+  nbColor.lastElementChild.textContent=NB_COLORS[i].name;
+  nbColor.lastElementChild.style.color=NB_COLORS[i].hex;
+  nbIcon.style.color=NB_COLORS[i].hex;
+};
+
+/* Icon upload */
+let nbBase64=false, nbIconValue=NB_COLORS[0].hex;
+nbIcon.onclick=()=>nbIconUpload.click();
+nbIconUpload.onchange=()=>{
+  const f=nbIconUpload.files[0];
+  if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{
+    nbBase64=true;
+    nbIconValue=r.result.split(",")[1];
+    nbIcon.innerHTML=`<img src="${r.result}" width="36">`;
+  };
+  r.readAsDataURL(f);
+};
+
+/* Confirm */
+nbConfirm.onclick=()=>{
+  const item={
+    status:true,
+    tier:nbTier.dataset.value,
+    color:NB_COLORS[nbColor.dataset.index].name,
+    brand:nbBrand.value,
+    identifier:nbIdentifier.value||"N/A",
+    varietal:nbVarietal.value,
+    year:nbYear.value,
+    price:parseFloat(nbPrice.value)||0,
+    notes:nbNotes.value,
+    base64:nbBase64,
+    icon:nbBase64?nbIconValue:NB_COLORS[nbColor.dataset.index].hex
+  };
+  SOURCES.forEach(s=>{
+    item[s]=0;
+    item[`${s}Complete`]=false;
+  });
+  items.unshift(item);
+  nbOverlay.onclick();
+  renderItems();
+};
+
 </script>
+
+<!-- ===== NEW BOTTLE MODAL ===== -->
+<div id="newBottleOverlay"></div>
+
+<div id="newBottleModal">
+  <h3 style="text-align:center;font-family:Copperplate;">New Bottle</h3>
+
+  <div class="nb-field" id="nbStatus" data-value="true">
+    <span>Status</span><span style="color:green;">Active</span>
+  </div>
+
+  <div class="nb-field" id="nbTier" data-value="House">
+    <span>Tier</span><span>🏠 House</span>
+  </div>
+
+  <div class="nb-field" id="nbColor" data-index="0">
+    <span>Color</span><span style="color:#c9b458;">White</span>
+  </div>
+
+  <input id="nbBrand" placeholder="Brand">
+  <input id="nbIdentifier" placeholder="Identifier (optional)">
+  <input id="nbVarietal" placeholder="Varietal">
+  <input id="nbYear" placeholder="Year">
+  <input id="nbPrice" type="number" step="0.01" min="0" placeholder="Price">
+  <textarea id="nbNotes" placeholder="Notes"></textarea>
+
+  <div id="nbIcon" class="wine" style="color:#c9b458;margin:12px auto;"></div>
+  <input type="file" id="nbIconUpload" accept="image/*" hidden>
+
+  <button id="nbConfirm" style="
+    width:100%;
+    padding:14px;
+    background:#1f5e3b;
+    color:white;
+    border:none;
+    border-radius:12px;
+    font-size:16px;
+  ">Add Bottle</button>
+</div>
+
 
 </body>
 </html>
