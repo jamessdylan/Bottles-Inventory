@@ -209,41 +209,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 </style>
 </head>
 
-<!-- YEAR PICKER OVERLAY -->
-<div id="yearPickerOverlay" class="overlay"></div>
-
-<!-- YEAR PICKER SHEET -->
-<div
-  id="yearPickerSheet"
-  style="
-    position:fixed;
-    left:0; right:0; bottom:0;
-    background:rgba(255,255,255,.9);
-    backdrop-filter:blur(16px);
-    padding:16px;
-    transform:translateY(100%);
-    transition:.25s ease;
-    z-index:460;
-    border-radius:16px 16px 0 0;
-  "
->
-  <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
-    <button id="cancelYearPicker">Cancel</button>
-    <div style="font-family:'Copperplate',serif;">Select Year</div>
-    <button id="confirmYearPicker">Done</button>
-  </div>
-
-  <select
-    id="yearSelect"
-    style="
-      width:100%;
-      font-size:18px;
-      padding:12px;
-      border-radius:10px;
-    "
-  ></select>
-</div>
-
   <!-- MONTH / YEAR PICKER -->
 <div id="datePickerOverlay" class="overlay"></div>
 
@@ -279,6 +244,41 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
 <!-- NEW BOTTLE OVERLAY -->
 <div id="newBottleOverlay" class="overlay"></div>
+
+<!-- YEAR PICKER OVERLAY -->
+<div id="yearPickerOverlay" class="overlay"></div>
+
+<!-- YEAR PICKER SHEET -->
+<div
+  id="yearPickerSheet"
+  style="
+    position:fixed;
+    left:0; right:0; bottom:0;
+    background:rgba(255,255,255,.9);
+    backdrop-filter:blur(16px);
+    padding:16px;
+    transform:translateY(100%);
+    transition:.25s ease;
+    z-index:460;
+    border-radius:16px 16px 0 0;
+  "
+>
+  <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+    <button id="cancelYearPicker">Cancel</button>
+    <div style="font-family:'Copperplate',serif;">Select Year</div>
+    <button id="confirmYearPicker">Done</button>
+  </div>
+
+  <select
+    id="yearSelect"
+    style="
+      width:100%;
+      font-size:18px;
+      padding:12px;
+      border-radius:10px;
+    "
+  ></select>
+</div>
 
 <!-- NEW BOTTLE SHEET -->
 <div id="newBottleSheet" style="
@@ -448,7 +448,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   </div>
 </div>
 
-
 </div>
 
 <body>
@@ -567,8 +566,6 @@ let items=[];
 let Source="Emporio";
 let Sort="Standard";
 let newBottleVarietal = "";
-let newBottleYear = "";
-
 
 const list=document.getElementById("list");
 const sortSelect=document.getElementById("sortSelect");
@@ -723,6 +720,7 @@ let newBottleTier = "House"; // "House" | "Reserve"
 let newBottleColor = "White"; // White | Rose | Red
 let newBottleBrand = "";
 let newBottleIdentifier = "N/A";
+let newBottleYear = "";
 
 
 newBottleBtn.onclick = () => {
@@ -973,6 +971,7 @@ confirmYearPicker.onclick = () => {
 };
 
 yearPickerOverlay.onclick = closeYearPicker;
+
 
 /*---------EXPORT---------------*/
   
