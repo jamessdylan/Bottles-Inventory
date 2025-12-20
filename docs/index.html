@@ -344,6 +344,22 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   "></div>
 </div>
 
+<!-- IDENTIFIER -->
+<div style="display:flex; flex-direction:column; gap:6px;">
+  <div style="font-family:'Copperplate',serif;">Identifier</div>
+  <input
+    id="identifierInput"
+    type="text"
+    placeholder="Optional"
+    style="
+      padding:12px 14px;
+      border-radius:10px;
+      border:none;
+      background:rgba(0,0,0,.05);
+      font-size:16px;
+    "
+  >
+</div>
 
 </div>
 
@@ -615,6 +631,7 @@ let newBottleStatus = true;
 let newBottleTier = "House"; // "House" | "Reserve"
 let newBottleColor = "White"; // White | Rose | Red
 let newBottleBrand = "";
+let newBottleIdentifier = "N/A";
 
 
 newBottleBtn.onclick = () => {
@@ -683,8 +700,6 @@ colorToggle.onclick = () => {
 
 const brandInput = document.getElementById("brandInput");
 const brandSuggestions = document.getElementById("brandSuggestions");
-
-
 
 brandInput.oninput = () => {
   const value = brandInput.value.trim().toLowerCase();
@@ -772,6 +787,12 @@ brandInput.oninput = () => {
   brandSuggestions.style.display = "flex";
 };
 
+const identifierInput = document.getElementById("identifierInput");
+
+identifierInput.oninput = () => {
+  const v = identifierInput.value.trim();
+  newBottleIdentifier = v === "" ? "N/A" : v;
+};
 
 
 /*---------EXPORT---------------*/
