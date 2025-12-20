@@ -272,42 +272,38 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   border-radius:16px 16px 0 0;
 ">
   <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
-<!-- ICON PICKER -->
-<div style="
-  display:flex;
-  justify-content:center;
-  margin-bottom:16px;
-">
-  <div
-    id="iconPicker"
-    style="
-      width:72px;
-      height:72px;
-      border-radius:16px;
-      background:rgba(0,0,0,.05);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      cursor:pointer;
-    "
-  >
-    <!-- DEFAULT BLACK WINE ICON -->
-    <div id="newBottleIconPreview"></div>
-  </div>
-
-  <input
-    id="iconFileInput"
-    type="file"
-    accept="image/*"
-    style="display:none;"
-  />
-</div>
-
     <button id="cancelNewBottle">Cancel</button>
     <div style="font-family:'Copperplate',serif;">New Bottle</div>
     <button disabled>Done</button>
   </div>
 
+<!-- IMAGE INPUT -->
+<div
+  id="newBottleImageBox"
+  style="
+    width:100%;
+    height:140px;
+    border-radius:14px;
+    background:rgba(0,0,0,.06);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    margin-bottom:14px;
+    font-size:16px;
+    color:#666;
+    cursor:pointer;
+    overflow:hidden;
+  "
+>
+  Insert Image
+</div>
+
+<input
+  id="newBottleImageInput"
+  type="file"
+  accept="image/*"
+  style="display:none;"
+/>
 
 
   <!-- STATUS -->
@@ -841,45 +837,47 @@ const statusValue = document.getElementById("statusValue");
 let newBottleStatus = true;
 let newBottleTier = "House"; // "House" | "Reserve"
 let newBottleColor = "White"; // White | Rose | Red
-
-/* ---------- ICON STATE ---------- */
-let newBottleBase64 = false;
-let newBottleIcon = "#000000"; // default black
-
 let newBottleBrand = "";
 let newBottleVarietal = "";
 let newBottleIdentifier = "N/A";
 let newBottleYear = "N/A";
 let newBottlePrice = null;
+let newBottleBase64 = false;
+let newBottleIcon = null;
+
 
 newBottleBtn.onclick = () => {
   newBottleSheet.style.transform = "translateY(0)";
   newBottleOverlay.classList.add("show");
+newBottleBase64 = false;
+newBottleIcon = null;
+newBottleImageInput.value = "";
+newBottleImageBox.textContent = "Insert Image";
+
 };
 
 function closeNewBottle() {
   newBottleSheet.style.transform = "translateY(100%)";
   newBottleOverlay.classList.remove("show");
+newBottleBase64 = false;
+newBottleIcon = null;
+newBottleImageInput.value = "";
+newBottleImageBox.textContent = "Insert Image";
+
 }
 
 cancelNewBottle.onclick = closeNewBottle;
 newBottleOverlay.onclick = closeNewBottle;
 
+const newBottleImageBox = document.getElementById("newBottleImageBox");
+const newBottleImageInput = document.getElementById("newBottleImageInput");
 
-
-const tierToggle = document.getElementById("tierToggle");
-const tierValue = document.getElementById("tierValue");
-const tierIcon = document.getElementById("tierIcon");
-const iconPicker = document.getElementById("iconPicker");
-const iconFileInput = document.getElementById("iconFileInput");
-const iconPreview = document.getElementById("newBottleIconPreview");
-
-iconPicker.onclick = () => {
-  iconFileInput.click();
+newBottleImageBox.onclick = () => {
+  newBottleImageInput.click();
 };
 
-iconFileInput.onchange = () => {
-  const file = iconFileInput.files[0];
+newBottleImageInput.onchange = () => {
+  const file = newBottleImageInput.files[0];
   if (!file) return;
 
   const reader = new FileReader();
@@ -891,18 +889,27 @@ iconFileInput.onchange = () => {
     newBottleBase64 = true;
     newBottleIcon = base64;
 
-    // Replace wine icon with image preview
-   renderNewBottleIconPreview();
+    newBottleImageBox.innerHTML = `
+      <img
+        src="data:image/*;base64,${base64}"
+        style="width:100%;height:100%;object-fit:cover;"
+      >
+    `;
   };
 
   reader.readAsDataURL(file);
 };
+
 
 statusToggle.onclick = () => {
   newBottleStatus = !newBottleStatus;
   statusValue.textContent = newBottleStatus ? "Active" : "Inactive";
   statusValue.style.color = newBottleStatus ? "green" : "red";
 };
+
+const tierToggle = document.getElementById("tierToggle");
+const tierValue = document.getElementById("tierValue");
+const tierIcon = document.getElementById("tierIcon");
 
 tierToggle.onclick = () => {
   if (newBottleTier === "House") {
@@ -943,15 +950,6 @@ colorToggle.onclick = () => {
     newBottleColor = "White";
   }
   updateColorUI();
-if (!newBottleBase64) {
-  if (newBottleColor === "White") newBottleIcon = "#000000";
-  else if (newBottleColor === "Rose") newBottleIcon = "#d97c8a";
-  else newBottleIcon = "#7b1e1e";
-
-  iconPreview.style.color = newBottleIcon;
-}
-renderNewBottleIconPreview();
-
 };
 
 const brandInput = document.getElementById("brandInput");
@@ -1222,20 +1220,6 @@ distributorInput.onblur = () => {
   setTimeout(() => distributorSuggestions.style.display = "none", 150);
 };
 
-function renderNewBottleIconPreview() {
-  if (newBottleBase64) {
-    newBottleIconPreview.innerHTML = `
-      <img
-        src="data:image/*;base64,${newBottleIcon}"
-        style="width:100%;height:100%;object-fit:cover;border-radius:12px;"
-      >
-    `;
-  } else {
-    newBottleIconPreview.innerHTML = `
-      <div class="wine" style="color:${newBottleIcon};"></div>
-    `;
-  }
-}
 
 /*---------EXPORT---------------*/
   
