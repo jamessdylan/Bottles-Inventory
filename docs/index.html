@@ -252,9 +252,27 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
     <button id="confirmNewBottle" disabled>Done</button>
   </div>
 
-  <div style="padding:24px 0; text-align:center; color:#666;">
-    New bottle form goes here
+ <div id="newBottleForm" style="display:flex; flex-direction:column; gap:16px; padding:16px 0;">
+
+  <!-- STATUS -->
+  <div id="statusToggle" style="
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:14px 16px;
+    border-radius:12px;
+    background:rgba(0,0,0,.05);
+    cursor:pointer;
+  ">
+    <div style="font-family:'Copperplate',serif;">Status</div>
+    <div id="statusValue" style="
+      font-weight:bold;
+      color:green;
+    ">Active</div>
   </div>
+
+</div>
+
 
 </div>
 
@@ -515,6 +533,8 @@ loadItems();
 /* ---------- NEW BOTTLE (GRAPE ICON) ---------- */
 const newBottleBtn = document.getElementById("newBottleBtn");
 
+
+
 /* ---------- NEW BOTTLE (SLIDE-UP SHEET) ---------- */
 const newBottleOverlay = document.getElementById("newBottleOverlay");
 const newBottleSheet = document.getElementById("newBottleSheet");
@@ -531,6 +551,19 @@ function closeNewBottleSheet(){
 }
 
 cancelNewBottle.onclick = closeNewBottleSheet;
+
+/* ---------- NEW BOTTLE STATE ---------- */
+let newBottleStatus = true; // true = Active, false = Inactive
+
+const statusToggle = document.getElementById("statusToggle");
+const statusValue = document.getElementById("statusValue");
+
+statusToggle.onclick = () => {
+  newBottleStatus = !newBottleStatus;
+  statusValue.textContent = newBottleStatus ? "Active" : "Inactive";
+  statusValue.style.color = newBottleStatus ? "green" : "red";
+};
+
 newBottleOverlay.onclick = closeNewBottleSheet;
 
 /* ---------- ACTION STATES ---------- */
