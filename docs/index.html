@@ -230,6 +230,35 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
 ">
 
+<!-- NEW BOTTLE OVERLAY -->
+<div id="newBottleOverlay" class="overlay"></div>
+
+<!-- NEW BOTTLE SHEET -->
+<div id="newBottleSheet" style="
+  position:fixed;
+  left:0; right:0; bottom:0;
+  background:rgba(255,255,255,.9);
+  backdrop-filter:blur(16px);
+  padding:16px;
+  transform:translateY(100%);
+  transition:.25s ease;
+  z-index:450;
+  border-radius:16px 16px 0 0;
+">
+
+  <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+    <button id="cancelNewBottle">Cancel</button>
+    <div style="font-family:'Copperplate',serif;">New Bottle</div>
+    <button id="confirmNewBottle" disabled>Done</button>
+  </div>
+
+  <div style="padding:24px 0; text-align:center; color:#666;">
+    New bottle form goes here
+  </div>
+
+</div>
+
+
   <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
     <button id="cancelDate">Cancel</button>
     <button id="confirmDate">Done</button>
@@ -486,10 +515,23 @@ loadItems();
 /* ---------- NEW BOTTLE (GRAPE ICON) ---------- */
 const newBottleBtn = document.getElementById("newBottleBtn");
 
+/* ---------- NEW BOTTLE (SLIDE-UP SHEET) ---------- */
+const newBottleOverlay = document.getElementById("newBottleOverlay");
+const newBottleSheet = document.getElementById("newBottleSheet");
+const cancelNewBottle = document.getElementById("cancelNewBottle");
+
 newBottleBtn.onclick = () => {
-  alert("New Bottle button clicked");
-  // next step: open New Bottle modal
+  newBottleSheet.style.transform = "translateY(0)";
+  newBottleOverlay.classList.add("show");
 };
+
+function closeNewBottleSheet(){
+  newBottleSheet.style.transform = "translateY(100%)";
+  newBottleOverlay.classList.remove("show");
+}
+
+cancelNewBottle.onclick = closeNewBottleSheet;
+newBottleOverlay.onclick = closeNewBottleSheet;
 
 /* ---------- ACTION STATES ---------- */
 archiveBtn.onclick=()=>archiveBtn.classList.toggle("active");
