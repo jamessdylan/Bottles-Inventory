@@ -1,6 +1,3 @@
-NEWEST
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -181,6 +178,20 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 .overlay.show{display:block;}
 
 /* ---------- FIXED ACTION BAR ---------- */
+.featured-btn{
+  padding:10px 14px;
+  border-radius:10px;
+  border:none;
+  background:rgba(0,0,0,.08);
+  font-size:14px;
+  cursor:pointer;
+}
+
+.featured-btn.active{
+  background:#1f5e3b;
+  color:white;
+}
+
 .action-bar{
   position:fixed;
   left:0;right:0;bottom:0;
@@ -733,6 +744,7 @@ let newBottleVarietal = "";
 let newBottleIdentifier = "N/A";
 let newBottleYear = "N/A";
 let newBottlePrice = null;
+let newBottleFeatured = "";
 
 
 newBottleBtn.onclick = () => {
@@ -993,6 +1005,44 @@ priceInput.oninput = () => {
   newBottlePrice = numericValue;
 };
 
+<!-- FEATURED -->
+<div style="display:flex; flex-direction:column; gap:10px;">
+  <div style="font-family:'Copperplate',serif;">Featured</div>
+
+  <div
+    id="featuredGroup"
+    style="
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    "
+  >
+    <button class="featured-btn" data-value="Reserve">Reserve</button>
+    <button class="featured-btn" data-value="Featured Import">Featured Import</button>
+    <button class="featured-btn" data-value="Varietal Showcase">Varietal Showcase</button>
+    <button class="featured-btn" data-value="Backup Bottle">Backup Bottle</button>
+    <button class="featured-btn" data-value="Event Wine">Event Wine</button>
+  </div>
+</div>
+
+const featuredButtons = document.querySelectorAll(".featured-btn");
+let featuredSelections = [];
+
+featuredButtons.forEach(btn => {
+  btn.onclick = () => {
+    const value = btn.dataset.value;
+
+    if (featuredSelections.includes(value)) {
+      featuredSelections = featuredSelections.filter(v => v !== value);
+      btn.classList.remove("active");
+    } else {
+      featuredSelections.push(value);
+      btn.classList.add("active");
+    }
+
+    newBottleFeatured = featuredSelections.join(", ");
+  };
+});
 
 /*---------EXPORT---------------*/
   
@@ -1141,6 +1191,7 @@ exportBtn.onclick = () => {
   win.document.write(html);
   win.document.close();
 };
+
 
 </script>
 
