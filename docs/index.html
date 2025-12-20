@@ -361,6 +361,40 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   >
 </div>
 
+<!-- VARIETAL -->
+<div style="display:flex; flex-direction:column; gap:6px; position:relative;">
+  <div style="font-family:'Copperplate',serif;">Varietal</div>
+  <input
+    id="varietalInput"
+    type="text"
+    placeholder="e.g. Pinot Noir"
+    style="
+      padding:12px 14px;
+      border-radius:10px;
+      border:none;
+      background:rgba(0,0,0,.05);
+      font-size:16px;
+    "
+  >
+  <div
+    id="varietalSuggestions"
+    style="
+      display:none;
+      flex-direction:column;
+      position:absolute;
+      top:100%;
+      left:0;
+      right:0;
+      background:white;
+      border-radius:12px;
+      box-shadow:0 6px 20px rgba(0,0,0,.15);
+      overflow:hidden;
+      z-index:500;
+    "
+  ></div>
+</div>
+
+
 </div>
 
 <body>
@@ -478,6 +512,8 @@ const SOURCES=[
 let items=[];
 let Source="Emporio";
 let Sort="Standard";
+let newBottleVarietal = "";
+
 
 const list=document.getElementById("list");
 const sortSelect=document.getElementById("sortSelect");
@@ -792,6 +828,54 @@ const identifierInput = document.getElementById("identifierInput");
 identifierInput.oninput = () => {
   const v = identifierInput.value.trim();
   newBottleIdentifier = v === "" ? "N/A" : v;
+};
+
+const varietalInput = document.getElementById("varietalInput");
+const varietalSuggestions = document.getElementById("varietalSuggestions");
+
+varietalInput.oninput = () => {
+  const value = varietalInput.value.trim().toLowerCase();
+  varietalSuggestions.innerHTML = "";
+
+  if (!value) {
+    varietalSuggestions.style.display = "none";
+    newBottleVarietal = "";
+    return;
+  }
+
+  newBottleVarietal = varietalInput.value;
+
+  const existingVarietals = [...new Set(
+    items
+      .map(i => i.varietal)
+      .filter(v => v && v.trim() !== "" && v !== "N/A")
+  )];
+
+  const matches = existingVarietals.filter(v =>
+    v.toLowerCase().includes(value)
+  );
+
+  if (matches.length === 0) {
+    varietalSuggestions.style.display = "none";
+    return;
+  }
+
+  matches.forEach(match => {
+    const div = document.createElement("div");
+    div.textContent = match;
+    div.style.padding = "12px 16px";
+    div.style.cursor = "pointer";
+
+    div.onclick = () => {
+      varietalInput.value = match;
+      newBottleVarietal = match;
+      varietalSuggestions.style.display = "none";
+    };
+
+    varietalSuggestions.appendChild(div);
+  });
+
+  varietalSuggestions.style.display = "flex";
 };
 
 
