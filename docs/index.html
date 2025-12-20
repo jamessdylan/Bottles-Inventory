@@ -298,6 +298,25 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   </div>
 </div>
 
+<!-- COLOR -->
+<div id="colorToggle" style="
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:14px 16px;
+  border-radius:12px;
+  background:rgba(0,0,0,.05);
+  cursor:pointer;
+">
+  <div style="font-family:'Copperplate',serif;">Color</div>
+  <div id="colorValue" style="
+    font-weight:bold;
+    color:#c9b037;
+  ">White</div>
+</div>
+
+
+
 </div>
 
 <body>
@@ -566,6 +585,7 @@ const statusValue = document.getElementById("statusValue");
 
 let newBottleStatus = true;
 let newBottleTier = "House"; // "House" | "Reserve"
+let newBottleColor = "White"; // White | Rose | Red
 
 
 newBottleBtn.onclick = () => {
@@ -603,6 +623,33 @@ tierToggle.onclick = () => {
     tierValue.lastElementChild.textContent = "House";
     tierValue.style.color = "#1f5e3b";
   }
+};
+
+const colorToggle = document.getElementById("colorToggle");
+const colorValue = document.getElementById("colorValue");
+
+function updateColorUI() {
+  if (newBottleColor === "White") {
+    colorValue.textContent = "White";
+    colorValue.style.color = "#c9b037"; // gold
+  } else if (newBottleColor === "Rose") {
+    colorValue.textContent = "Rosé / Sparkling";
+    colorValue.style.color = "#d97c8a"; // rosé
+  } else {
+    colorValue.textContent = "Red";
+    colorValue.style.color = "#7b1e1e"; // red
+  }
+}
+
+colorToggle.onclick = () => {
+  if (newBottleColor === "White") {
+    newBottleColor = "Rose";
+  } else if (newBottleColor === "Rose") {
+    newBottleColor = "Red";
+  } else {
+    newBottleColor = "White";
+  }
+  updateColorUI();
 };
 
 
