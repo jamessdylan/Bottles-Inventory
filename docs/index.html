@@ -178,20 +178,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 .overlay.show{display:block;}
 
 /* ---------- FIXED ACTION BAR ---------- */
-.featured-btn{
-  padding:10px 14px;
-  border-radius:10px;
-  border:none;
-  background:rgba(0,0,0,.08);
-  font-size:14px;
-  cursor:pointer;
-}
-
-.featured-btn.active{
-  background:#1f5e3b;
-  color:white;
-}
-
 .action-bar{
   position:fixed;
   left:0;right:0;bottom:0;
@@ -468,6 +454,18 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   </div>
 </div>
 
+<!-- FEATURED -->
+<div style="display:flex; flex-direction:column; gap:10px;">
+  <div style="font-family:'Copperplate',serif;">Featured</div>
+
+  <div id="featuredGroup" style="display:flex; flex-wrap:wrap; gap:8px;">
+    <button class="featured-btn" data-value="Reserve">Reserve</button>
+    <button class="featured-btn" data-value="Featured Import">Featured Import</button>
+    <button class="featured-btn" data-value="Varietal Showcase">Varietal Showcase</button>
+    <button class="featured-btn" data-value="Backup Bottle">Backup Bottle</button>
+    <button class="featured-btn" data-value="Event Wine">Event Wine</button>
+  </div>
+</div>
 
 </div>
 
@@ -744,7 +742,6 @@ let newBottleVarietal = "";
 let newBottleIdentifier = "N/A";
 let newBottleYear = "N/A";
 let newBottlePrice = null;
-let newBottleFeatured = "";
 
 
 newBottleBtn.onclick = () => {
@@ -854,15 +851,7 @@ brandInput.oninput = () => {
 };
 
 /* Hide suggestions when leaving field */
-brandInput.oninput = () => {
-  const value = brandInput.value.trim().toLowerCase();
-  brandSuggestions.innerHTML = "";
 
-  if (!value) {
-    brandSuggestions.style.display = "none";
-    newBottleBrand = "";
-    return;
-  }
 
   newBottleBrand = brandInput.value;
 
@@ -1004,26 +993,6 @@ priceInput.oninput = () => {
   priceError.style.display = "none";
   newBottlePrice = numericValue;
 };
-
-<!-- FEATURED -->
-<div style="display:flex; flex-direction:column; gap:10px;">
-  <div style="font-family:'Copperplate',serif;">Featured</div>
-
-  <div
-    id="featuredGroup"
-    style="
-      display:flex;
-      flex-wrap:wrap;
-      gap:8px;
-    "
-  >
-    <button class="featured-btn" data-value="Reserve">Reserve</button>
-    <button class="featured-btn" data-value="Featured Import">Featured Import</button>
-    <button class="featured-btn" data-value="Varietal Showcase">Varietal Showcase</button>
-    <button class="featured-btn" data-value="Backup Bottle">Backup Bottle</button>
-    <button class="featured-btn" data-value="Event Wine">Event Wine</button>
-  </div>
-</div>
 
 const featuredButtons = document.querySelectorAll(".featured-btn");
 let featuredSelections = [];
@@ -1191,7 +1160,6 @@ exportBtn.onclick = () => {
   win.document.write(html);
   win.document.close();
 };
-
 
 </script>
 
