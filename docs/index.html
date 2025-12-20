@@ -684,12 +684,7 @@ colorToggle.onclick = () => {
 const brandInput = document.getElementById("brandInput");
 const brandSuggestions = document.getElementById("brandSuggestions");
 
-/* Collect unique brands from existing items */
-const existingBrands = [...new Set(
-  items
-    .map(i => i.brand)
-    .filter(b => b && b.trim() !== "")
-)];
+
 
 brandInput.oninput = () => {
   const value = brandInput.value.trim().toLowerCase();
@@ -731,9 +726,52 @@ brandInput.oninput = () => {
 };
 
 /* Hide suggestions when leaving field */
-brandInput.onblur = () => {
-  setTimeout(() => brandSuggestions.style.display = "none", 150);
+brandInput.oninput = () => {
+  const value = brandInput.value.trim().toLowerCase();
+  brandSuggestions.innerHTML = "";
+
+  if (!value) {
+    brandSuggestions.style.display = "none";
+    newBottleBrand = "";
+    return;
+  }
+
+  newBottleBrand = brandInput.value;
+
+  /* 🔑 Compute brands AFTER items have loaded */
+  const existingBrands = [...new Set(
+    items
+      .map(i => i.brand)
+      .filter(b => b && b.trim() !== "")
+  )];
+
+  const matches = existingBrands.filter(b =>
+    b.toLowerCase().includes(value)
+  );
+
+  if (matches.length === 0) {
+    brandSuggestions.style.display = "none";
+    return;
+  }
+
+  matches.forEach(match => {
+    const div = document.createElement("div");
+    div.textContent = match;
+    div.style.padding = "12px 16px";
+    div.style.cursor = "pointer";
+
+    div.onclick = () => {
+      brandInput.value = match;
+      newBottleBrand = match;
+      brandSuggestions.style.display = "none";
+    };
+
+    brandSuggestions.appendChild(div);
+  });
+
+  brandSuggestions.style.display = "flex";
 };
+
 
 
 /*---------EXPORT---------------*/
