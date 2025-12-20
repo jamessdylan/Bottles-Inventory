@@ -272,19 +272,14 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   border-radius:16px 16px 0 0;
 ">
   <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
-    <button id="cancelNewBottle">Cancel</button>
-    <div style="font-family:'Copperplate',serif;">New Bottle</div>
-    <button disabled>Done</button>
-  </div>
-
-<!-- ICON SELECTOR -->
+<!-- ICON PICKER -->
 <div style="
   display:flex;
   justify-content:center;
-  margin-bottom:18px;
+  margin-bottom:16px;
 ">
   <div
-    id="newBottleIconPreview"
+    id="iconPicker"
     style="
       width:72px;
       height:72px;
@@ -296,7 +291,8 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
       cursor:pointer;
     "
   >
-    <div id="newBottleWineIcon" class="wine-icon"></div>
+    <!-- DEFAULT BLACK WINE ICON -->
+    <div class="wine" id="newBottleIconPreview" style="color:#000;"></div>
   </div>
 
   <input
@@ -306,6 +302,13 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
     style="display:none;"
   />
 </div>
+
+    <button id="cancelNewBottle">Cancel</button>
+    <div style="font-family:'Copperplate',serif;">New Bottle</div>
+    <button disabled>Done</button>
+  </div>
+
+
 
   <!-- STATUS -->
   <div id="statusToggle" style="
@@ -835,28 +838,19 @@ const cancelNewBottle = document.getElementById("cancelNewBottle");
 const statusToggle = document.getElementById("statusToggle");
 const statusValue = document.getElementById("statusValue");
 
-/* Default icon state */
-newBottleIcon = "#000000";
-newBottleBase64 = false;
-
-
-/* ---------- ICON ---------- */
-let newBottleIcon = null;
-let newBottleBase64 = false;
-
-const iconPreview = document.getElementById("newBottleIconPreview");
-const wineIcon = document.getElementById("newBottleWineIcon");
-const iconFileInput = document.getElementById("iconFileInput");
-
 let newBottleStatus = true;
 let newBottleTier = "House"; // "House" | "Reserve"
 let newBottleColor = "White"; // White | Rose | Red
+
+/* ---------- ICON STATE ---------- */
+let newBottleBase64 = false;
+let newBottleIcon = "#000000"; // default black
+
 let newBottleBrand = "";
 let newBottleVarietal = "";
 let newBottleIdentifier = "N/A";
 let newBottleYear = "N/A";
 let newBottlePrice = null;
-
 
 newBottleBtn.onclick = () => {
   newBottleSheet.style.transform = "translateY(0)";
@@ -868,21 +862,19 @@ function closeNewBottle() {
   newBottleOverlay.classList.remove("show");
 }
 
-/* Default New Bottle wine icon is black */
-#newBottleWineIcon{
-  background:#000 !important;
-}
-
 cancelNewBottle.onclick = closeNewBottle;
 newBottleOverlay.onclick = closeNewBottle;
 
-/* Default New Bottle wine icon is black */
-#newBottleWineIcon{
-  background:#000 !important;
-}
 
 
-iconPreview.onclick = () => {
+const tierToggle = document.getElementById("tierToggle");
+const tierValue = document.getElementById("tierValue");
+const tierIcon = document.getElementById("tierIcon");
+const iconPicker = document.getElementById("iconPicker");
+const iconFileInput = document.getElementById("iconFileInput");
+const iconPreview = document.getElementById("newBottleIconPreview");
+
+iconPicker.onclick = () => {
   iconFileInput.click();
 };
 
@@ -894,34 +886,28 @@ iconFileInput.onchange = () => {
   reader.onload = e => {
     const base64 = e.target.result
       .replace(/^data:image\/[a-z]+;base64,/, "")
-      .replace(/\n/g, "");
+      .replace(/\s/g, "");
 
-    newBottleIcon = base64;
     newBottleBase64 = true;
+    newBottleIcon = base64;
 
-    // Show preview
-    wineIcon.innerHTML = `<img src="data:image/*;base64,${base64}" style="
-      width:100%;
-      height:100%;
-      object-fit:cover;
-      border-radius:12px;
-    ">`;
+    // Replace wine icon with image preview
+    iconPreview.innerHTML = `
+      <img
+        src="data:image/*;base64,${base64}"
+        style="width:100%;height:100%;object-fit:cover;border-radius:12px;"
+      >
+    `;
   };
 
   reader.readAsDataURL(file);
 };
-
 
 statusToggle.onclick = () => {
   newBottleStatus = !newBottleStatus;
   statusValue.textContent = newBottleStatus ? "Active" : "Inactive";
   statusValue.style.color = newBottleStatus ? "green" : "red";
 };
-
-const tierToggle = document.getElementById("tierToggle");
-const tierValue = document.getElementById("tierValue");
-const tierIcon = document.getElementById("tierIcon");
-
 
 tierToggle.onclick = () => {
   if (newBottleTier === "House") {
@@ -962,8 +948,15 @@ colorToggle.onclick = () => {
     newBottleColor = "White";
   }
   updateColorUI();
-};
+if (!newBottleBase64) {
+  if (newBottleColor === "White") newBottleIcon = "#000000";
+  else if (newBottleColor === "Rose") newBottleIcon = "#d97c8a";
+  else newBottleIcon = "#7b1e1e";
 
+  iconPreview.style.color = newBottleIcon;
+}
+
+};
 
 const brandInput = document.getElementById("brandInput");
 const brandSuggestions = document.getElementById("brandSuggestions");
