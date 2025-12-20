@@ -565,7 +565,7 @@ const SOURCES=[
 let items=[];
 let Source="Emporio";
 let Sort="Standard";
-let newBottleVarietal = "";
+
 
 const list=document.getElementById("list");
 const sortSelect=document.getElementById("sortSelect");
@@ -720,6 +720,7 @@ let newBottleTier = "House"; // "House" | "Reserve"
 let newBottleColor = "White"; // White | Rose | Red
 let newBottleBrand = "";
 let newBottleIdentifier = "N/A";
+let newBottleVarietal = "";
 let newBottleYear = "";
 
 
@@ -790,26 +791,6 @@ colorToggle.onclick = () => {
 const brandInput = document.getElementById("brandInput");
 const brandSuggestions = document.getElementById("brandSuggestions");
 
-brandInput.oninput = () => {
-  const value = brandInput.value.trim().toLowerCase();
-  brandSuggestions.innerHTML = "";
-
-  if (!value) {
-    brandSuggestions.style.display = "none";
-    newBottleBrand = "";
-    return;
-  }
-
-  newBottleBrand = brandInput.value;
-
-  const matches = existingBrands.filter(b =>
-    b.toLowerCase().includes(value)
-  );
-
-  if (matches.length === 0) {
-    brandSuggestions.style.display = "none";
-    return;
-  }
 
   matches.forEach(match => {
     const div = document.createElement("div");
@@ -942,13 +923,14 @@ const cancelYearPicker = document.getElementById("cancelYearPicker");
 const confirmYearPicker = document.getElementById("confirmYearPicker");
 
 /* Populate last 200 years */
-const currentYear = new Date().getFullYear();
-for (let y = currentYear; y >= currentYear - 200; y--) {
+const bottleCurrentYear = new Date().getFullYear();
+for (let y = bottleCurrentYear; y >= bottleCurrentYear - 200; y--) {
   const o = document.createElement("option");
   o.value = y;
   o.textContent = y;
   yearSelect.appendChild(o);
 }
+
 
 yearField.onclick = () => {
   if (newBottleYear) yearSelect.value = newBottleYear;
