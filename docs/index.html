@@ -209,6 +209,41 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 </style>
 </head>
 
+<!-- YEAR PICKER OVERLAY -->
+<div id="yearPickerOverlay" class="overlay"></div>
+
+<!-- YEAR PICKER SHEET -->
+<div
+  id="yearPickerSheet"
+  style="
+    position:fixed;
+    left:0; right:0; bottom:0;
+    background:rgba(255,255,255,.9);
+    backdrop-filter:blur(16px);
+    padding:16px;
+    transform:translateY(100%);
+    transition:.25s ease;
+    z-index:460;
+    border-radius:16px 16px 0 0;
+  "
+>
+  <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+    <button id="cancelYearPicker">Cancel</button>
+    <div style="font-family:'Copperplate',serif;">Select Year</div>
+    <button id="confirmYearPicker">Done</button>
+  </div>
+
+  <select
+    id="yearSelect"
+    style="
+      width:100%;
+      font-size:18px;
+      padding:12px;
+      border-radius:10px;
+    "
+  ></select>
+</div>
+
   <!-- MONTH / YEAR PICKER -->
 <div id="datePickerOverlay" class="overlay"></div>
 
@@ -394,6 +429,25 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   ></div>
 </div>
 
+<!-- YEAR -->
+<div
+  id="yearField"
+  style="
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:14px 16px;
+    border-radius:12px;
+    background:rgba(0,0,0,.05);
+    cursor:pointer;
+  "
+>
+  <div style="font-family:'Copperplate',serif;">Year</div>
+  <div id="yearValue" style="font-weight:bold;color:#666;">
+    Select
+  </div>
+</div>
+
 
 </div>
 
@@ -513,6 +567,7 @@ let items=[];
 let Source="Emporio";
 let Sort="Standard";
 let newBottleVarietal = "";
+let newBottleYear = "";
 
 
 const list=document.getElementById("list");
@@ -878,6 +933,46 @@ varietalInput.oninput = () => {
   varietalSuggestions.style.display = "flex";
 };
 
+const yearField = document.getElementById("yearField");
+const yearValue = document.getElementById("yearValue");
+
+const yearPickerSheet = document.getElementById("yearPickerSheet");
+const yearPickerOverlay = document.getElementById("yearPickerOverlay");
+const yearSelect = document.getElementById("yearSelect");
+
+const cancelYearPicker = document.getElementById("cancelYearPicker");
+const confirmYearPicker = document.getElementById("confirmYearPicker");
+
+/* Populate last 200 years */
+const currentYear = new Date().getFullYear();
+for (let y = currentYear; y >= currentYear - 200; y--) {
+  const o = document.createElement("option");
+  o.value = y;
+  o.textContent = y;
+  yearSelect.appendChild(o);
+}
+
+yearField.onclick = () => {
+  if (newBottleYear) yearSelect.value = newBottleYear;
+  yearPickerSheet.style.transform = "translateY(0)";
+  yearPickerOverlay.classList.add("show");
+};
+
+function closeYearPicker() {
+  yearPickerSheet.style.transform = "translateY(100%)";
+  yearPickerOverlay.classList.remove("show");
+}
+
+cancelYearPicker.onclick = closeYearPicker;
+
+confirmYearPicker.onclick = () => {
+  newBottleYear = yearSelect.value;
+  yearValue.textContent = newBottleYear;
+  yearValue.style.color = "#000";
+  closeYearPicker();
+};
+
+yearPickerOverlay.onclick = closeYearPicker;
 
 /*---------EXPORT---------------*/
   
