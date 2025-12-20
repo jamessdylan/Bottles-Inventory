@@ -1,3 +1,6 @@
+NEWEST
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -424,6 +427,37 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   </div>
 </div>
 
+<!-- PRICE -->
+<div style="display:flex; flex-direction:column; gap:6px;">
+  <div style="font-family:'Copperplate',serif;">Price</div>
+  <input
+    id="priceInput"
+    type="text"
+    placeholder="e.g. 42.50"
+    inputmode="decimal"
+    style="
+      padding:12px 14px;
+      border-radius:10px;
+      border:none;
+      background:rgba(0,0,0,.05);
+      font-size:16px;
+      outline:none;
+    "
+  >
+  <div
+    id="priceError"
+    style="
+      display:none;
+      font-size:12px;
+      color:#b00020;
+      padding-left:4px;
+    "
+  >
+    Enter a valid price greater than 0 (up to 2 decimals)
+  </div>
+</div>
+
+
 </div>
 
 <body>
@@ -698,6 +732,7 @@ let newBottleBrand = "";
 let newBottleVarietal = "";
 let newBottleIdentifier = "N/A";
 let newBottleYear = "N/A";
+let newBottlePrice = null;
 
 
 newBottleBtn.onclick = () => {
@@ -930,6 +965,34 @@ yearInput.oninput = () => {
     newBottleYear = year;
   }
 };
+
+const priceInput = document.getElementById("priceInput");
+const priceError = document.getElementById("priceError");
+
+priceInput.oninput = () => {
+  const value = priceInput.value.trim();
+
+  // Allow empty while typing
+  if (value === "") {
+    priceError.style.display = "none";
+    newBottlePrice = null;
+    return;
+  }
+
+  // Regex: digits, optional decimal, max 2 decimals
+  const validFormat = /^\d+(\.\d{1,2})?$/.test(value);
+  const numericValue = Number(value);
+
+  if (!validFormat || isNaN(numericValue) || numericValue <= 0) {
+    priceError.style.display = "block";
+    newBottlePrice = null;
+    return;
+  }
+
+  priceError.style.display = "none";
+  newBottlePrice = numericValue;
+};
+
 
 /*---------EXPORT---------------*/
   
