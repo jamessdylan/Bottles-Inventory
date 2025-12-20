@@ -567,26 +567,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   ></div>
 </div>
 
-
-<!-- NOTES -->
-<div style="display:flex; flex-direction:column; gap:6px; margin-top:12px;">
-  <div style="font-family:'Copperplate',serif;">Notes</div>
-  <textarea
-    id="notesInput"
-    placeholder="Enter notes"
-    style="
-      padding:12px 14px;
-      border-radius:12px;
-      border:none;
-      background:rgba(0,0,0,.05);
-      font-size:16px;
-      min-height:90px;
-      resize:none;
-      outline:none;
-    "
-  ></textarea>
-</div>
-
 </div>
 
 <body>
@@ -864,7 +844,6 @@ let newBottleYear = "N/A";
 let newBottlePrice = null;
 let newBottleBase64 = false;
 let newBottleIcon = null;
-let newBottleNote = "";
 
 
 newBottleBtn.onclick = () => {
@@ -874,8 +853,6 @@ newBottleBase64 = false;
 newBottleIcon = null;
 newBottleImageInput.value = "";
 newBottleImageBox.textContent = "Insert Image";
-notesInput.value = "";
-newBottleNote = "";
 
 };
 
@@ -886,9 +863,6 @@ newBottleBase64 = false;
 newBottleIcon = null;
 newBottleImageInput.value = "";
 newBottleImageBox.textContent = "Insert Image";
-notesInput.value = "";
-newBottleNote = "";
-
 
 }
 
@@ -1246,12 +1220,6 @@ distributorInput.onblur = () => {
   setTimeout(() => distributorSuggestions.style.display = "none", 150);
 };
 
-const notesInput = document.getElementById("notesInput");
-
-notesInput.oninput = () => {
-  newBottleNote = notesInput.value;
-};
-
 
 /*---------EXPORT---------------*/
   
@@ -1309,7 +1277,6 @@ function sortAlphabetically(a, b) {
   Object.values(tiers).forEach(colors =>
     Object.values(colors).forEach(arr => arr.sort(sortAlphabetically))
   );
-
 
   let html = `
 <!DOCTYPE html>
