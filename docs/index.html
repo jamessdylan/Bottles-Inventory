@@ -835,6 +835,10 @@ const cancelNewBottle = document.getElementById("cancelNewBottle");
 const statusToggle = document.getElementById("statusToggle");
 const statusValue = document.getElementById("statusValue");
 
+/* Default icon state */
+newBottleIcon = "#000000";
+newBottleBase64 = false;
+
 
 /* ---------- ICON ---------- */
 let newBottleIcon = null;
@@ -853,6 +857,7 @@ let newBottleIdentifier = "N/A";
 let newBottleYear = "N/A";
 let newBottlePrice = null;
 
+
 newBottleBtn.onclick = () => {
   newBottleSheet.style.transform = "translateY(0)";
   newBottleOverlay.classList.add("show");
@@ -863,8 +868,19 @@ function closeNewBottle() {
   newBottleOverlay.classList.remove("show");
 }
 
+/* Default New Bottle wine icon is black */
+#newBottleWineIcon{
+  background:#000 !important;
+}
+
 cancelNewBottle.onclick = closeNewBottle;
 newBottleOverlay.onclick = closeNewBottle;
+
+/* Default New Bottle wine icon is black */
+#newBottleWineIcon{
+  background:#000 !important;
+}
+
 
 iconPreview.onclick = () => {
   iconFileInput.click();
