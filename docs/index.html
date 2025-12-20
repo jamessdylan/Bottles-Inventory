@@ -1,3 +1,6 @@
+Current Edit
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -315,6 +318,34 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   ">White</div>
 </div>
 
+<!-- BRAND -->
+<div style="display:flex; flex-direction:column; gap:8px;">
+  <div style="font-family:'Copperplate',serif; padding-left:4px;">Brand</div>
+
+  <input
+    id="brandInput"
+    type="text"
+    placeholder="Enter brand"
+    autocomplete="off"
+    style="
+      padding:14px 16px;
+      border-radius:12px;
+      border:none;
+      background:rgba(0,0,0,.05);
+      font-size:16px;
+      outline:none;
+    "
+  />
+
+  <div id="brandSuggestions" style="
+    display:none;
+    flex-direction:column;
+    background:white;
+    border-radius:12px;
+    overflow:hidden;
+    box-shadow:0 6px 18px rgba(0,0,0,.15);
+  "></div>
+</div>
 
 
 </div>
@@ -586,6 +617,7 @@ const statusValue = document.getElementById("statusValue");
 let newBottleStatus = true;
 let newBottleTier = "House"; // "House" | "Reserve"
 let newBottleColor = "White"; // White | Rose | Red
+let newBottleBrand = "";
 
 
 newBottleBtn.onclick = () => {
@@ -652,6 +684,59 @@ colorToggle.onclick = () => {
   updateColorUI();
 };
 
+const brandInput = document.getElementById("brandInput");
+const brandSuggestions = document.getElementById("brandSuggestions");
+
+/* Collect unique brands from existing items */
+const existingBrands = [...new Set(
+  items
+    .map(i => i.brand)
+    .filter(b => b && b.trim() !== "")
+)];
+
+brandInput.oninput = () => {
+  const value = brandInput.value.trim().toLowerCase();
+  brandSuggestions.innerHTML = "";
+
+  if (!value) {
+    brandSuggestions.style.display = "none";
+    newBottleBrand = "";
+    return;
+  }
+
+  newBottleBrand = brandInput.value;
+
+  const matches = existingBrands.filter(b =>
+    b.toLowerCase().includes(value)
+  );
+
+  if (matches.length === 0) {
+    brandSuggestions.style.display = "none";
+    return;
+  }
+
+  matches.forEach(match => {
+    const div = document.createElement("div");
+    div.textContent = match;
+    div.style.padding = "12px 16px";
+    div.style.cursor = "pointer";
+
+    div.onclick = () => {
+      brandInput.value = match;
+      newBottleBrand = match;
+      brandSuggestions.style.display = "none";
+    };
+
+    brandSuggestions.appendChild(div);
+  });
+
+  brandSuggestions.style.display = "flex";
+};
+
+/* Hide suggestions when leaving field */
+brandInput.onblur = () => {
+  setTimeout(() => brandSuggestions.style.display = "none", 150);
+};
 
 
 /*---------EXPORT---------------*/
