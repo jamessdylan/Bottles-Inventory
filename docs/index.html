@@ -11,6 +11,20 @@
 <style>
 :root { --green:#1f5e3b; --green-light:rgba(255,255,255,.25); }
 
+.featured-btn{
+  padding:10px 14px;
+  border-radius:10px;
+  border:none;
+  background:rgba(0,0,0,.08);
+  font-size:14px;
+  cursor:pointer;
+}
+
+.featured-btn.active{
+  background:#1f5e3b;
+  color:white;
+}
+
 body {
   margin:0;
   padding:
@@ -454,18 +468,24 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   </div>
 </div>
 
-<!-- FEATURED -->
-<div style="display:flex; flex-direction:column; gap:10px;">
-  <div style="font-family:'Copperplate',serif;">Featured</div>
+/* ---------- FEATURED ---------- */
+let newBottleFeatured = [];
 
-  <div id="featuredGroup" style="display:flex; flex-wrap:wrap; gap:8px;">
-    <button class="featured-btn" data-value="Reserve">Reserve</button>
-    <button class="featured-btn" data-value="Featured Import">Featured Import</button>
-    <button class="featured-btn" data-value="Varietal Showcase">Varietal Showcase</button>
-    <button class="featured-btn" data-value="Backup Bottle">Backup Bottle</button>
-    <button class="featured-btn" data-value="Event Wine">Event Wine</button>
-  </div>
-</div>
+const featuredButtons = document.querySelectorAll(".featured-btn");
+
+featuredButtons.forEach(btn => {
+  btn.onclick = () => {
+    const value = btn.dataset.value;
+
+    if (newBottleFeatured.includes(value)) {
+      newBottleFeatured = newBottleFeatured.filter(v => v !== value);
+      btn.classList.remove("active");
+    } else {
+      newBottleFeatured.push(value);
+      btn.classList.add("active");
+    }
+  };
+});
 
 </div>
 
@@ -742,7 +762,7 @@ let newBottleVarietal = "";
 let newBottleIdentifier = "N/A";
 let newBottleYear = "N/A";
 let newBottlePrice = null;
-
+let newBottleFeatured = [];
 
 newBottleBtn.onclick = () => {
   newBottleSheet.style.transform = "translateY(0)";
@@ -851,7 +871,15 @@ brandInput.oninput = () => {
 };
 
 /* Hide suggestions when leaving field */
+brandInput.oninput = () => {
+  const value = brandInput.value.trim().toLowerCase();
+  brandSuggestions.innerHTML = "";
 
+  if (!value) {
+    brandSuggestions.style.display = "none";
+    newBottleBrand = "";
+    return;
+  }
 
   newBottleBrand = brandInput.value;
 
@@ -994,22 +1022,21 @@ priceInput.oninput = () => {
   newBottlePrice = numericValue;
 };
 
+/* ---------- FEATURED ---------- */
+
 const featuredButtons = document.querySelectorAll(".featured-btn");
-let featuredSelections = [];
 
 featuredButtons.forEach(btn => {
   btn.onclick = () => {
     const value = btn.dataset.value;
 
-    if (featuredSelections.includes(value)) {
-      featuredSelections = featuredSelections.filter(v => v !== value);
+    if (newBottleFeatured.includes(value)) {
+      newBottleFeatured = newBottleFeatured.filter(v => v !== value);
       btn.classList.remove("active");
     } else {
-      featuredSelections.push(value);
+      newBottleFeatured.push(value);
       btn.classList.add("active");
     }
-
-    newBottleFeatured = featuredSelections.join(", ");
   };
 });
 
