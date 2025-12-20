@@ -777,7 +777,6 @@ let newBottleVarietal = "";
 let newBottleIdentifier = "N/A";
 let newBottleYear = "N/A";
 let newBottlePrice = null;
-let newBottleFeatured = [];
 
 newBottleBtn.onclick = () => {
   newBottleSheet.style.transform = "translateY(0)";
@@ -1038,7 +1037,7 @@ priceInput.oninput = () => {
 };
 
 /* ---------- FEATURED ---------- */
-
+let newBottleFeatured = [];
 const featuredButtons = document.querySelectorAll(".featured-btn");
 
 featuredButtons.forEach(btn => {
