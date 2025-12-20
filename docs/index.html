@@ -1,3 +1,5 @@
+Before Distributor
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -501,6 +503,42 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   </div>
 </div>
 
+<!-- DISTRIBUTOR -->
+<div style="display:flex; flex-direction:column; gap:8px; position:relative;">
+  <div style="font-family:'Copperplate',serif; padding-left:4px;">Distributor</div>
+
+  <input
+    id="distributorInput"
+    type="text"
+    placeholder="Enter distributor"
+    autocomplete="off"
+    style="
+      padding:14px 16px;
+      border-radius:12px;
+      border:none;
+      background:rgba(0,0,0,.05);
+      font-size:16px;
+      outline:none;
+    "
+  />
+
+  <div
+    id="distributorSuggestions"
+    style="
+      display:none;
+      flex-direction:column;
+      position:absolute;
+      top:100%;
+      left:0;
+      right:0;
+      background:white;
+      border-radius:12px;
+      box-shadow:0 6px 18px rgba(0,0,0,.15);
+      overflow:hidden;
+      z-index:500;
+    "
+  ></div>
+</div>
 
 </div>
 
@@ -1053,6 +1091,63 @@ featuredButtons.forEach(btn => {
     }
   };
 });
+
+/* ---------- DISTRIBUTOR ---------- */
+let newBottleDistributor = "";
+
+const distributorInput = document.getElementById("distributorInput");
+const distributorSuggestions = document.getElementById("distributorSuggestions");
+
+distributorInput.oninput = () => {
+  const value = distributorInput.value.trim().toLowerCase();
+  distributorSuggestions.innerHTML = "";
+
+  if (!value) {
+    distributorSuggestions.style.display = "none";
+    newBottleDistributor = "";
+    return;
+  }
+
+  newBottleDistributor = distributorInput.value;
+
+  const existingDistributors = [...new Set(
+    items
+      .map(i => i.distributor)
+      .filter(d => d && d.trim() !== "" && d !== "N/A")
+  )];
+
+  const matches = existingDistributors.filter(d =>
+    d.toLowerCase().includes(value)
+  );
+
+  if (matches.length === 0) {
+    distributorSuggestions.style.display = "none";
+    return;
+  }
+
+  matches.forEach(match => {
+    const div = document.createElement("div");
+    div.textContent = match;
+    div.style.padding = "12px 16px";
+    div.style.cursor = "pointer";
+
+    div.onclick = () => {
+      distributorInput.value = match;
+      newBottleDistributor = match;
+      distributorSuggestions.style.display = "none";
+    };
+
+    distributorSuggestions.appendChild(div);
+  });
+
+  distributorSuggestions.style.display = "flex";
+};
+
+/* Hide suggestions when leaving */
+distributorInput.onblur = () => {
+  setTimeout(() => distributorSuggestions.style.display = "none", 150);
+};
+
 
 /*---------EXPORT---------------*/
   
