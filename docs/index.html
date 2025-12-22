@@ -675,7 +675,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
     </svg>
   </button>
 
-  <button title="Undo">
+<button id="undoBtn" title="Undo">
     <svg viewBox="0 0 24 24">
       <path d="M9 14l-4-4 4-4"/>
       <path d="M5 10h7a6 6 0 1 1 0 12"/>
@@ -766,6 +766,24 @@ const SOURCE_ICONS = {
 };
 
 let items=[];
+
+/* ---------- UNDO ---------- */
+let undoStack = [];
+const MAX_UNDO = 10;
+
+function pushUndoState() {
+  undoStack.push(JSON.parse(JSON.stringify(items)));
+  if (undoStack.length > MAX_UNDO) {
+    undoStack.shift();
+  }
+}
+
+function undoLastAction() {
+  if (undoStack.length === 0) return;
+  items = undoStack.pop();
+  renderItems();
+}
+
 let Source="Emporio";
 let Sort="Standard";
 
@@ -958,6 +976,13 @@ function drawItem(item){
   let pressTimer;
   const valueEl=row.querySelector(".value");
 
+pushUndoState();
+item[Source] = Math.max(0, round(item[Source] - Number(v)));
+
+pushUndoState();
+item[Source] = round(item[Source] + Number(v));
+
+
   valueEl.onpointerdown=()=>{
     pressTimer=setTimeout(()=>{
       const v=prompt("Enter value:",item[Source]);
@@ -1017,7 +1042,12 @@ function drawItem(item){
   plusBtn.onpointerleave = () => clearTimeout(holdTimerBtn);
 
 
-  row.querySelector(".toggle").onclick=()=>{item[key]=!item[key];renderItems();}
+row.querySelector(".toggle").onclick = () => {
+  pushUndoState();
+  item[key] = !item[key];
+  renderItems();
+};
+
 
 let rowHoldTimer;
 
@@ -1477,6 +1507,10 @@ noteInput.oninput = () => {
 };
 
 deleteBottleBtn.onclick = () => {
+
+pushUndoState();
+items = items.filter(i => i !== editingItem);
+
   if (!editingItem) return;
 
   const confirmed = confirm("Delete this bottle permanently?");
@@ -1493,7 +1527,14 @@ const confirmNewBottle = document.getElementById("confirmNewBottle");
 
 confirmNewBottle.onclick = () => {
 
+
+confirmNewBottle.onclick = () => {
+  pushUndoState();
+
+
   const target = editingItem || {};
+
+
 
   Object.assign(target, {
     status: newBottleStatus,
@@ -1529,6 +1570,11 @@ confirmNewBottle.onclick = () => {
 };
 
 
+const undoBtn = document.getElementById("undoBtn");
+
+undoBtn.onclick = () => {
+  undoLastAction();
+};
 
 
 /*---------EXPORT---------------*/
@@ -1682,4 +1728,4 @@ exportBtn.onclick = () => {
 </script>
 
 </body>
-</html>
+</html>    
