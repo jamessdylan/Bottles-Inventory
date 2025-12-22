@@ -833,15 +833,26 @@ function baseSort(a,b,key){
 
 /* ---------------- RENDER ---------------- */
 function renderItems(){
-  list.innerHTML="";
-  const key=`${Source}Complete`;
-  items.forEach(i=>{
-    i[Source]=Math.max(0,Number(i[Source])||0);
-    if(typeof i[key]!=="boolean") i[key]=false;
+  list.innerHTML = "";
+
+  const key = `${Source}Complete`;
+
+  // normalize values
+  items.forEach(i => {
+    i[Source] = Math.max(0, Number(i[Source]) || 0);
+    if (typeof i[key] !== "boolean") i[key] = false;
+    if (typeof i.status !== "boolean") i.status = true;
   });
-  items.sort((a,b)=>baseSort(a,b,key));
-  items.forEach(drawItem);
+
+  // 🔑 FILTER RULE
+  const visibleItems = items.filter(item =>
+    showArchived || item.status === true
+  );
+
+  visibleItems.sort((a, b) => baseSort(a, b, key));
+  visibleItems.forEach(drawItem);
 }
+
 
 /* ---------------- DRAW ITEM ---------------- */
 function openEditBottle(item) {
@@ -1040,9 +1051,16 @@ updateSort(Source);
 loadItems();
 
 /* ---------- ACTION STATES ---------- */
-archiveBtn.onclick=()=>archiveBtn.classList.toggle("active");
+let showArchived = false;
+
+archiveBtn.onclick = () => {
+  showArchived = !showArchived;
+  archiveBtn.classList.toggle("active", showArchived);
+  renderItems();
+};
+
 smartSortBtn.onclick=()=>smartSortBtn.classList.toggle("active");
-groupBtn.onclick=()=>archiveBtn.classList.toggle("active");
+groupBtn.onclick=()=>groupBtn.classList.toggle("active");
 
 
 /* ---------- DRAWER ---------- */
