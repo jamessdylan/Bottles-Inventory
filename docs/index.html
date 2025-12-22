@@ -948,7 +948,6 @@ function drawItem(item){
   plusBtn.onpointerup = () => clearTimeout(holdTimerBtn);
   plusBtn.onpointerleave = () => clearTimeout(holdTimerBtn);
 
-  row.querySelector(".toggle").onclick=()=>{item[key]=!item[key];renderItems();}
 
   row.querySelector(".toggle").onclick=()=>{item[key]=!item[key];renderItems();}
 
@@ -1406,7 +1405,7 @@ noteInput.oninput = () => {
 
 const confirmNewBottle = document.getElementById("confirmNewBottle");
 
-cconfirmNewBottle.onclick = () => {
+confirmNewBottle.onclick = () => {
 
   const target = editingItem || {};
 
@@ -1443,19 +1442,7 @@ cconfirmNewBottle.onclick = () => {
   closeNewBottle();
 };
 
-  // 🔹 Initialize all source quantities + complete flags
-  SOURCES.forEach(src => {
-    item[src] = 0;
-    item[`${src}Complete`] = false;
-  });
 
-  // 🔹 Insert + refresh
-  items.push(item);
-  renderItems();
-
-  // 🔹 Close + reset
-  closeNewBottle();
-};
 
 
 /*---------EXPORT---------------*/
