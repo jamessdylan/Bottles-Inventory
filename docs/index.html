@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -233,8 +234,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 }
 .action-bar button.active{background:var(--green-light);}
 
-
-
 .action-bar svg,
 .action-bar img{
   width:26px;height:26px;
@@ -242,11 +241,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   fill:none;
 }
 .action-bar img{filter:brightness(0) invert(1);}
-
-.action-bar button.active {
-  background: rgba(31, 94, 59, 0.25); /* light green */
-}
-
 </style>
 </head>
 
@@ -686,8 +680,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
     <img src="ArchiveTransparent.png" alt="Archive">
   </button>
 
-groupBtn.onclick = () => groupBtn.classList.toggle("active");
-
   <!-- 4️⃣ GROUP -->
   <button id="groupBtn" title="Group">
     <img src="GroupTransparent.png" alt="Group">
@@ -1053,17 +1045,8 @@ updateSort(Source);
 loadItems();
 
 /* ---------- ACTION STATES ---------- */
-
-const groupBtn = document.getElementById("groupBtn");
-
-groupBtn.onclick = () => {
-  groupBtn.classList.toggle("active");
-};
-
 archiveBtn.onclick=()=>archiveBtn.classList.toggle("active");
 smartSortBtn.onclick=()=>smartSortBtn.classList.toggle("active");
-groupBtn.onclick = () => groupBtn.classList.toggle("active");
-
 
 /* ---------- DRAWER ---------- */
 drawerTab.onclick=()=>{
