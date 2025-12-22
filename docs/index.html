@@ -60,15 +60,35 @@ header img{max-width:100%;}
   padding:10px 12px;
   overflow-x:auto;
 }
+
 .tab{
-  padding:8px 14px;
+  padding:8px;
   border-radius:14px;
-  background:#eee;
-  font-family:"Copperplate",serif;
-  font-size:14px;
+  background:rgba(255,255,255,.65);
+  display:flex;
+  align-items:center;
+  justify-content:center;
   cursor:pointer;
+  min-width:56px;
 }
-.tab.active{background:#000;color:#fff;}
+
+.tab img{
+  width:34px;
+  height:34px;
+  object-fit:contain;
+  transition:.15s ease;
+}
+
+/* Rosé highlight when active */
+.tab.active{
+  background:rgba(217,124,138,.25);
+  box-shadow:0 0 0 2px rgba(217,124,138,.6);
+}
+
+.tab.active img{
+  filter:saturate(1.1);
+}
+
 
 /* ---------- SORT ---------- */
 .section{
@@ -715,6 +735,17 @@ const SOURCES=[
   "Wine Cellar","Liquor Closet","Prep Cooler","Other"
 ];
 
+const SOURCE_ICONS = {
+  "Emporio": "EmporioTransparent.png",
+  "Mezzo": "MezzoTransparent.png",
+  "Tetto (L)": "TettoLeftTransparent.png",
+  "Tetto (R)": "TettoRightTransparent.png",
+  "Liquor Closet": "LiquorClosetTransparent.png",
+  "Wine Cellar": "WineCellarTransparent.png",
+  "Prep Cooler": "PrepCoolerTransparent.png",
+  "Other": "OtherTransparent.png"
+};
+
 let items=[];
 let Source="Emporio";
 let Sort="Standard";
@@ -733,21 +764,33 @@ async function loadItems(){
 
 /* ---------------- TABS ---------------- */
 function buildSourceTabs(){
-  tabsEl.innerHTML="";
-  SOURCES.forEach(src=>{
-    const tab=document.createElement("div");
-    tab.className="tab"+(src===Source?" active":"");
-    tab.textContent=src;
-    tab.onclick=()=>{
-      Source=src;
-      document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  tabsEl.innerHTML = "";
+
+  SOURCES.forEach(src => {
+    const tab = document.createElement("div");
+    tab.className = "tab" + (src === Source ? " active" : "");
+
+    const img = document.createElement("img");
+    img.src = SOURCE_ICONS[src];
+    img.alt = src;
+    img.title = src;
+
+    tab.appendChild(img);
+
+    tab.onclick = () => {
+      Source = src;
+      document.querySelectorAll(".tab").forEach(t =>
+        t.classList.remove("active")
+      );
       tab.classList.add("active");
       updateSort(Source);
       renderItems();
     };
+
     tabsEl.appendChild(tab);
   });
 }
+
 
 /* ---------------- SORT ---------------- */
 function getSortOptions(src){
