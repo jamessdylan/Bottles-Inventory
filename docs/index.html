@@ -648,11 +648,17 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
 <div class="drawer" id="drawer">
   <div class="drawer-title" id="pageTitle"></div>
+
   <button>New Project</button>
+
+  <button id="specialtyListBtn">Specialty List</button>
+  <button id="reserveListBtn">Reserve List</button>
+
   <button>Sales Report</button>
   <button>Dictionary File</button>
   <button id="exportBtn">Export</button>
 </div>
+
 
 <div class="overlay" id="overlay"></div>
 
@@ -832,66 +838,25 @@ function baseSort(a,b,key){
 }
 
 /* ---------------- RENDER ---------------- */
-function allowsTierGrouping(src) {
-  return [
-    "Emporio",
-    "Mezzo",
-    "Tetto (L)",
-    "Tetto (R)",
-    "Prep Cooler"
-  ].includes(src);
-}
-
-
 function renderItems(){
   list.innerHTML = "";
 
   const key = `${Source}Complete`;
 
-  // normalize
+  // normalize values
   items.forEach(i => {
     i[Source] = Math.max(0, Number(i[Source]) || 0);
     if (typeof i[key] !== "boolean") i[key] = false;
     if (typeof i.status !== "boolean") i.status = true;
   });
 
-  // archive filter
+  // 🔑 FILTER RULE
   const visibleItems = items.filter(item =>
     showArchived || item.status === true
   );
 
   visibleItems.sort((a, b) => baseSort(a, b, key));
-
-  // 🔑 GROUPING LOGIC
-  if (
-    groupEnabled &&
-    allowsTierGrouping(Source) &&
-    !["Other", "Liquor Closet"].includes(Source)
-  ) {
-
-    const house = visibleItems.filter(i => (i.tier || "House") === "House");
-    const reserve   = visibleItems.filter(i => i.tier === "Reserve");
-
-    if (house.length) {
-      insertGroupDivider("House");
-      house.forEach(drawItem);
-    }
-
-    if (red.length) {
-      insertGroupDivider("Reserve”);
-      red.forEach(drawItem);
-    }
-
-  } else {
-    visibleItems.forEach(drawItem);
-  }
-}
-
-function insertGroupDivider(label) {
-  const div = document.createElement("div");
-  div.className = "group-divider";
-  div.textContent = label;
-  list.appendChild(div);
+  visibleItems.forEach(drawItem);
 }
 
 
@@ -1101,14 +1066,9 @@ archiveBtn.onclick = () => {
   renderItems();
 };
 
-
-groupBtn.onclick = () => {
-  groupEnabled = !groupEnabled;
-  groupBtn.classList.toggle("active", groupEnabled);
-  renderItems();
-};
-
 smartSortBtn.onclick=()=>smartSortBtn.classList.toggle("active");
+groupBtn.onclick=()=>groupBtn.classList.toggle("active");
+
 
 /* ---------- DRAWER ---------- */
 drawerTab.onclick=()=>{
