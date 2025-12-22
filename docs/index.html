@@ -10,7 +10,15 @@
  
 <style>
 :root { --green:#1f5e3b; --green-light:rgba(255,255,255,.25); }
- 
+
+#datePicker button{
+  background:none;
+  border:none;
+  font-size:16px;
+  color:var(--green);
+}
+
+  
 .featured-btn{
   padding:10px 14px;
   border-radius:10px;
@@ -262,15 +270,13 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   padding:16px;
   transform:translateY(100%);
   transition:.25s ease;
-  z-index:400;
-  #datePicker button{
-  background:none;
-  border:none;
-  font-size:16px;
-  color:var(--green);
+#datePicker button{
+  background:none;
+  border:none;
+  font-size:16px;
+  color:var(--green);
 }
- 
-">
+
  
   <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
     <button id="cancelDate">Cancel</button>
@@ -671,8 +677,18 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 <div class="list" id="list"></div>
  
 <nav class="action-bar">
-<button id="newBottleBtn" title="New Bottle">
+<button id="newBottleBtn" title="New Bottle" 
+  class="new-bottle-icon"></button>
   <img src="NewBottleTransparent.png" alt="New Bottle">
+  
+  .new-bottle-icon{
+  width:46px;
+  height:46px;
+  background:white;
+  -webkit-mask:url("NewBottleTransparent.png") center / 26px no-repeat;
+          mask:url("NewBottleTransparent.png") center / 26px no-repeat;
+}
+
 </button>
 
  
