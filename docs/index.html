@@ -212,6 +212,8 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 .overlay.show{display:block;}
  
 /* ---------- FIXED ACTION BAR ---------- */
+
+
 .action-bar{
   position:fixed;
   left:0;right:0;bottom:0;
@@ -232,7 +234,15 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   border-radius:10px;
 }
 .action-bar button.active{background:var(--green-light);}
- 
+
+ #newBottleBtn{
+  width:46px;
+  height:46px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
 .action-bar svg{
   width:26px;
   height:26px;
@@ -247,10 +257,19 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   filter:brightness(0) invert(1);
 }
 
+#newBottleBtn{
+  width:46px;
+  height:46px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
 .action-bar img{filter:brightness(0) invert(1);}
 </style>
 </head>
  
+
   <!-- MONTH / YEAR PICKER -->
 <div id="datePickerOverlay" class="overlay"></div>
  
