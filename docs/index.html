@@ -766,26 +766,22 @@ const SOURCE_ICONS = {
 };
 
 let items=[];
-
-/* ---------- UNDO ---------- */
-let undoStack = [];
-const MAX_UNDO = 10;
-
-function pushUndoState() {
-  undoStack.push(JSON.parse(JSON.stringify(items)));
-  if (undoStack.length > MAX_UNDO) {
-    undoStack.shift();
-  }
-}
-
-function undoLastAction() {
-  if (undoStack.length === 0) return;
-  items = undoStack.pop();
-  renderItems();
-}
-
 let Source="Emporio";
 let Sort="Standard";
+
+/* ---------- UNDO (ABSOLUTE ONLY) ---------- */
+let undoSnapshot = null;
+
+function captureUndo() {
+  undoSnapshot = JSON.parse(JSON.stringify(items));
+}
+
+function undoAbsoluteEdit() {
+  if (!undoSnapshot) return;
+  items = JSON.parse(JSON.stringify(undoSnapshot));
+  undoSnapshot = null;
+  renderItems();
+}
 
 
 const list=document.getElementById("list");
@@ -976,22 +972,17 @@ function drawItem(item){
   let pressTimer;
   const valueEl=row.querySelector(".value");
 
-pushUndoState();
-item[Source] = Math.max(0, round(item[Source] - Number(v)));
+valueEl.onpointerdown=()=>{
+  pressTimer=setTimeout(()=>{
+    const v=prompt("Enter value:",item[Source]);
+    if(v!==null&&!isNaN(v)){
+      captureUndo(); // ✅ ADD
+      item[Source]=Math.max(0,round(Number(v)));
+      renderItems();
+    }
+  },450);
+};
 
-pushUndoState();
-item[Source] = round(item[Source] + Number(v));
-
-
-  valueEl.onpointerdown=()=>{
-    pressTimer=setTimeout(()=>{
-      const v=prompt("Enter value:",item[Source]);
-      if(v!==null&&!isNaN(v)){
-        item[Source]=Math.max(0,round(Number(v)));
-        renderItems();
-      }
-    },450);
-  };
   valueEl.onpointerup=()=>clearTimeout(pressTimer);
   valueEl.onpointerleave=()=>clearTimeout(pressTimer);
 
@@ -1007,17 +998,19 @@ item[Source] = round(item[Source] + Number(v));
   };
 
   minusBtn.onpointerdown = () => {
-    holdTimerBtn = setTimeout(() => {
-      const v = prompt("Subtract how many?", 0);
-      if (v !== null && !isNaN(v)) {
-        item[Source] = Math.max(
-          0,
-          round(item[Source] - Number(v))
-        );
-        renderItems();
-      }
-    }, 450);
-  };
+  holdTimerBtn = setTimeout(() => {
+    const v = prompt("Subtract how many?", 0);
+    if (v !== null && !isNaN(v)) {
+      captureUndo(); // ✅ ADD
+      item[Source] = Math.max(
+        0,
+        round(item[Source] - Number(v))
+      );
+      renderItems();
+    }
+  }, 450);
+};
+
 
   minusBtn.onpointerup = () => clearTimeout(holdTimerBtn);
   minusBtn.onpointerleave = () => clearTimeout(holdTimerBtn);
@@ -1029,25 +1022,22 @@ item[Source] = round(item[Source] + Number(v));
   };
 
   plusBtn.onpointerdown = () => {
-    holdTimerBtn = setTimeout(() => {
-      const v = prompt("Add how many?", 0);
-      if (v !== null && !isNaN(v)) {
-        item[Source] = round(item[Source] + Number(v));
-        renderItems();
-      }
-    }, 450);
-  };
+  holdTimerBtn = setTimeout(() => {
+    const v = prompt("Add how many?", 0);
+    if (v !== null && !isNaN(v)) {
+      captureUndo(); // ✅ ADD
+      item[Source] = round(item[Source] + Number(v));
+      renderItems();
+    }
+  }, 450);
+};
+
 
   plusBtn.onpointerup = () => clearTimeout(holdTimerBtn);
   plusBtn.onpointerleave = () => clearTimeout(holdTimerBtn);
 
 
-row.querySelector(".toggle").onclick = () => {
-  pushUndoState();
-  item[key] = !item[key];
-  renderItems();
-};
-
+  row.querySelector(".toggle").onclick=()=>{item[key]=!item[key];renderItems();}
 
 let rowHoldTimer;
 
@@ -1088,6 +1078,15 @@ overlay.onclick=()=>{
   drawer.classList.remove("open");
   overlay.classList.remove("show");
 };
+
+/* ---------- UNDO ---------- */
+
+const undoBtn = document.getElementById("undoBtn");
+
+undoBtn.onclick = () => {
+  undoAbsoluteEdit();
+};
+
   
 /* ---------- NEW BOTTLE ---------- */
 const newBottleBtn = document.getElementById("newBottleBtn");
@@ -1507,10 +1506,6 @@ noteInput.oninput = () => {
 };
 
 deleteBottleBtn.onclick = () => {
-
-pushUndoState();
-items = items.filter(i => i !== editingItem);
-
   if (!editingItem) return;
 
   const confirmed = confirm("Delete this bottle permanently?");
@@ -1527,14 +1522,7 @@ const confirmNewBottle = document.getElementById("confirmNewBottle");
 
 confirmNewBottle.onclick = () => {
 
-
-confirmNewBottle.onclick = () => {
-  pushUndoState();
-
-
   const target = editingItem || {};
-
-
 
   Object.assign(target, {
     status: newBottleStatus,
@@ -1570,11 +1558,6 @@ confirmNewBottle.onclick = () => {
 };
 
 
-const undoBtn = document.getElementById("undoBtn");
-
-undoBtn.onclick = () => {
-  undoLastAction();
-};
 
 
 /*---------EXPORT---------------*/
@@ -1728,4 +1711,4 @@ exportBtn.onclick = () => {
 </script>
 
 </body>
-</html>    
+</html>
