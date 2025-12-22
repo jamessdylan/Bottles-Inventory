@@ -89,21 +89,7 @@ background:rgba(240,233,233,.65);
   filter:saturate(1.1);
 }
  
- 
-/* ---------- SORT ---------- */
-.section{
-  display:flex;
-  justify-content:center;
-  padding:12px;
-}
-select{
-  font-family:"Copperplate",serif;
-  font-size:18px;
-  background:rgba(0,0,0,.1);
-  border:none;
-  border-radius:6px;
-  padding:8px 16px;
-}
+
  
 /* ---------- LIST ---------- */
 .list{padding:8px 16px 140px;}
@@ -767,7 +753,6 @@ const SOURCE_ICONS = {
  
 let items=[];
 let Source="Emporio";
-let Sort="Standard";
  
 /* ---------- QUANTITY UNDO (SESSION-BASED) ---------- */
 let qtyUndoSnapshot = null;
@@ -830,20 +815,7 @@ function buildSourceTabs(){
 }
  
  
-/* ---------------- SORT ---------------- */
-function getSortOptions(src){
-  if(src==="Prep Cooler") return["Standard","Tier"];
-  return["Standard","Smart","Tier"];
-}
-function updateSort(src){
-  sortSelect.innerHTML="";
-  getSortOptions(src).forEach(o=>{
-    const opt=document.createElement("option");
-    opt.value=o;opt.textContent=o;
-    sortSelect.appendChild(opt);
-  });
-  Sort=sortSelect.value="Standard";
-}
+
  
 /* ---------------- HELPERS ---------------- */
 const round=v=>Math.round(v*10)/10;
@@ -1077,12 +1049,9 @@ row.onpointerleave = () => clearTimeout(rowHoldTimer);
  
 /* ---------- INIT ---------- */
 buildSourceTabs();
-updateSort(Source);
 loadItems();
  
-/* ---------- ACTION STATES ---------- */
-archiveBtn.onclick=()=>archiveBtn.classList.toggle("active");
-smartSortBtn.onclick=()=>smartSortBtn.classList.toggle("active");
+
  
 /* ---------- DRAWER ---------- */
 drawerTab.onclick=()=>{
