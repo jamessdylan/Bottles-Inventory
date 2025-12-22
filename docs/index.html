@@ -244,7 +244,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 .action-bar img{filter:brightness(0) invert(1);}
 
 .action-bar button.active {
-  background: rgba(31, 94, 59, 0.25); /* light green */
+  background: rgba(31, 94, 59, 0.25) !important;
 }
 
 </style>
@@ -671,6 +671,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
 <nav class="action-bar">
 
+
   <!-- 1️⃣ UNDO FIRST -->
   <button id="undoBtn" title="Undo">
     <img src="UndoTransparent.png" alt="Undo">
@@ -686,7 +687,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
     <img src="ArchiveTransparent.png" alt="Archive">
   </button>
 
-groupBtn.onclick = () => groupBtn.classList.toggle("active");
 
   <!-- 4️⃣ GROUP -->
   <button id="groupBtn" title="Group">
@@ -1053,6 +1053,9 @@ updateSort(Source);
 loadItems();
 
 /* ---------- ACTION STATES ---------- */
+archiveBtn.onclick=()=>archiveBtn.classList.toggle("active");
+smartSortBtn.onclick=()=>smartSortBtn.classList.toggle("active");
+groupBtn.onclick = () => groupBtn.classList.toggle("active");
 
 const groupBtn = document.getElementById("groupBtn");
 
@@ -1060,9 +1063,6 @@ groupBtn.onclick = () => {
   groupBtn.classList.toggle("active");
 };
 
-archiveBtn.onclick=()=>archiveBtn.classList.toggle("active");
-smartSortBtn.onclick=()=>smartSortBtn.classList.toggle("active");
-groupBtn.onclick = () => groupBtn.classList.toggle("active");
 
 
 /* ---------- DRAWER ---------- */
