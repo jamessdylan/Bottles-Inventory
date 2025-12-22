@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM - Wine Inventory</title>
+<title>Mercato</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -769,20 +769,24 @@ let items=[];
 let Source="Emporio";
 let Sort="Standard";
 
-/* ---------- UNDO (ABSOLUTE ONLY) ---------- */
-let undoSnapshot = null;
+/* ---------- QUANTITY UNDO (SESSION-BASED) ---------- */
+let qtyUndoSnapshot = null;
+let qtyUndoItem = null;
+let qtyUndoSource = null;
 
-function captureUndo() {
-  undoSnapshot = JSON.parse(JSON.stringify(items));
+function beginQtyUndoSession(item) {
+  // Only capture once per item+source session
+  if (qtyUndoItem === item && qtyUndoSource === Source) return;
+
+  qtyUndoSnapshot = JSON.parse(JSON.stringify(items));
+  qtyUndoItem = item;
+  qtyUndoSource = Source;
 }
 
-function undoAbsoluteEdit() {
-  if (!undoSnapshot) return;
-  items = JSON.parse(JSON.stringify(undoSnapshot));
-  undoSnapshot = null;
-  renderItems();
+function commitQtyUndoSession() {
+  qtyUndoItem = null;
+  qtyUndoSource = null;
 }
-
 
 const list=document.getElementById("list");
 const sortSelect=document.getElementById("sortSelect");
@@ -811,7 +815,10 @@ function buildSourceTabs(){
     tab.appendChild(img);
 
     tab.onclick = () => {
+
+commitQtyUndoSession();
       Source = src;
+
       document.querySelectorAll(".tab").forEach(t =>
         t.classList.remove("active")
       );
@@ -851,6 +858,7 @@ function baseSort(a,b,key){
     ||naLast(b.year,a.year);
 }
 
+
 /* ---------------- RENDER ---------------- */
 function renderItems(){
   list.innerHTML="";
@@ -862,6 +870,16 @@ function renderItems(){
   items.sort((a,b)=>baseSort(a,b,key));
   items.forEach(drawItem);
 }
+
+const undoBtn = document.getElementById("undoBtn");
+
+undoBtn.onclick = () => {
+  if (!qtyUndoSnapshot) return;
+  items = JSON.parse(JSON.stringify(qtyUndoSnapshot));
+  qtyUndoSnapshot = null;
+  commitQtyUndoSession();
+  renderItems();
+};
 
 /* ---------------- DRAW ITEM ---------------- */
 function openEditBottle(item) {
@@ -972,17 +990,16 @@ function drawItem(item){
   let pressTimer;
   const valueEl=row.querySelector(".value");
 
-valueEl.onpointerdown=()=>{
-  pressTimer=setTimeout(()=>{
-    const v=prompt("Enter value:",item[Source]);
-    if(v!==null&&!isNaN(v)){
-      captureUndo(); // ✅ ADD
-      item[Source]=Math.max(0,round(Number(v)));
-      renderItems();
-    }
-  },450);
-};
-
+  valueEl.onpointerdown=()=>{
+    pressTimer=setTimeout(()=>{
+      const v=prompt("Enter value:",item[Source]);
+      if(v!==null&&!isNaN(v)){
+beginQtyUndoSession(item);
+        item[Source]=Math.max(0,round(Number(v)));
+        renderItems();
+      }
+    },450);
+  };
   valueEl.onpointerup=()=>clearTimeout(pressTimer);
   valueEl.onpointerleave=()=>clearTimeout(pressTimer);
 
@@ -993,45 +1010,45 @@ valueEl.onpointerdown=()=>{
 
   /* ----- MINUS ----- */
   minusBtn.onclick = () => {
-    item[Source] = Math.max(0, round(item[Source] - 1));
-    renderItems();
-  };
-
-  minusBtn.onpointerdown = () => {
-  holdTimerBtn = setTimeout(() => {
-    const v = prompt("Subtract how many?", 0);
-    if (v !== null && !isNaN(v)) {
-      captureUndo(); // ✅ ADD
-      item[Source] = Math.max(
-        0,
-        round(item[Source] - Number(v))
-      );
-      renderItems();
-    }
-  }, 450);
+  beginQtyUndoSession(item);
+  item[Source] = Math.max(0, round(item[Source] - 1));
+  renderItems();
 };
 
+  minusBtn.onpointerdown = () => {
+    holdTimerBtn = setTimeout(() => {
+      const v = prompt("Subtract how many?", 0);
+      if (v !== null && !isNaN(v)) {
+beginQtyUndoSession(item);
+        item[Source] = Math.max(
+          0,
+          round(item[Source] - Number(v))
+        );
+        renderItems();
+      }
+    }, 450);
+  };
 
   minusBtn.onpointerup = () => clearTimeout(holdTimerBtn);
   minusBtn.onpointerleave = () => clearTimeout(holdTimerBtn);
 
   /* ----- PLUS ----- */
-  plusBtn.onclick = () => {
-    item[Source] = round(item[Source] + 1);
-    renderItems();
-  };
-
-  plusBtn.onpointerdown = () => {
-  holdTimerBtn = setTimeout(() => {
-    const v = prompt("Add how many?", 0);
-    if (v !== null && !isNaN(v)) {
-      captureUndo(); // ✅ ADD
-      item[Source] = round(item[Source] + Number(v));
-      renderItems();
-    }
-  }, 450);
+plusBtn.onclick = () => {
+  beginQtyUndoSession(item);
+  item[Source] = round(item[Source] + 1);
+  renderItems();
 };
-
+ 
+  plusBtn.onpointerdown = () => {
+    holdTimerBtn = setTimeout(() => {
+      const v = prompt("Add how many?", 0);
+      if (v !== null && !isNaN(v)) {
+beginQtyUndoSession(item);
+        item[Source] = round(item[Source] + Number(v));
+        renderItems();
+      }
+    }, 450);
+  };
 
   plusBtn.onpointerup = () => clearTimeout(holdTimerBtn);
   plusBtn.onpointerleave = () => clearTimeout(holdTimerBtn);
@@ -1078,15 +1095,6 @@ overlay.onclick=()=>{
   drawer.classList.remove("open");
   overlay.classList.remove("show");
 };
-
-/* ---------- UNDO ---------- */
-
-const undoBtn = document.getElementById("undoBtn");
-
-undoBtn.onclick = () => {
-  undoAbsoluteEdit();
-};
-
   
 /* ---------- NEW BOTTLE ---------- */
 const newBottleBtn = document.getElementById("newBottleBtn");
