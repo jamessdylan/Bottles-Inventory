@@ -240,46 +240,8 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   fill:none;
 }
 .action-bar img{filter:brightness(0) invert(1);}
-
-/* ---------- GROUP DIVIDER ---------- */
-.group-divider {
-  margin: 26px 0 14px;
-  text-align: center;
-  font-family: Gotham, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: .08em;
-  color: #444;
-  text-transform: uppercase;
-  position: relative;
-}
-
-.group-divider::before,
-.group-divider::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  width: 38%;
-  height: 1px;
-  background: rgba(0,0,0,.25);
-}
-
-.group-divider::before { left: 0; }
-.group-divider::after  { right: 0; }
-
 </style>
 </head>
-
-/*————GROUP———————*/
-function sourceAllowsGrouping(src) {
-  return [
-    "Emporio",
-    "Mezzo",
-    "Tetto (L)",
-    "Tetto (R)",
-    "Prep Cooler"
-  ].includes(src);
-}
 
   <!-- MONTH / YEAR PICKER -->
 <div id="datePickerOverlay" class="overlay"></div>
@@ -726,7 +688,6 @@ function sourceAllowsGrouping(src) {
 </nav>
 
 
-
 <script>
 /* ---------- PAGE TITLE ---------- */
 const pageTitleEl=document.getElementById("pageTitle");
@@ -872,53 +833,15 @@ function baseSort(a,b,key){
 
 /* ---------------- RENDER ---------------- */
 function renderItems(){
-  list.innerHTML = "";
-
-  const key = `${Source}Complete`;
-
-  // normalize
-  items.forEach(i => {
-    i[Source] = Math.max(0, Number(i[Source]) || 0);
-    if (typeof i[key] !== "boolean") i[key] = false;
-    if (typeof i.status !== "boolean") i.status = true;
+  list.innerHTML="";
+  const key=`${Source}Complete`;
+  items.forEach(i=>{
+    i[Source]=Math.max(0,Number(i[Source])||0);
+    if(typeof i[key]!=="boolean") i[key]=false;
   });
-
-  // archive filter
-  const visibleItems = items.filter(item =>
-    showArchived || item.status === true
-  );
-
-  visibleItems.sort((a, b) => baseSort(a, b, key));
-
-  // 🔑 GROUPING LOGIC
-  if (groupEnabled && sourceAllowsGrouping(Source)) {
-
-    const house = visibleItems.filter(i => (i.tier || "House") === "House");
-    const reserve = visibleItems.filter(i => i.tier === "Reserve");
-
-    if (house.length) {
-      insertGroupDivider("Tier House");
-      house.forEach(drawItem);
-    }
-
-    if (reserve.length) {
-      insertGroupDivider("Tier Reserve");
-      reserve.forEach(drawItem);
-    }
-
-  } else {
-    // flat list
-    visibleItems.forEach(drawItem);
-  }
+  items.sort((a,b)=>baseSort(a,b,key));
+  items.forEach(drawItem);
 }
-
-function insertGroupDivider(label) {
-  const div = document.createElement("div");
-  div.className = "group-divider";
-  div.textContent = label;
-  list.appendChild(div);
-}
-
 
 /* ---------------- DRAW ITEM ---------------- */
 function openEditBottle(item) {
@@ -1119,12 +1042,7 @@ loadItems();
 /* ---------- ACTION STATES ---------- */
 archiveBtn.onclick=()=>archiveBtn.classList.toggle("active");
 smartSortBtn.onclick=()=>smartSortBtn.classList.toggle("active");
-groupBtn.onclick = () => {
-  groupEnabled = !groupEnabled;
-  groupBtn.classList.toggle("active", groupEnabled);
-  renderItems();
-};
-let groupEnabled = false;
+groupBtn.onclick=()=>archiveBtn.classList.toggle("active");
 
 
 /* ---------- DRAWER ---------- */
@@ -1605,6 +1523,7 @@ confirmNewBottle.onclick = () => {
   renderItems();
   closeNewBottle();
 };
+
 
 
 
