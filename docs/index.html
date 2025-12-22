@@ -233,12 +233,20 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 }
 .action-bar button.active{background:var(--green-light);}
  
-.action-bar svg,
-.action-bar img{
-  width:26px;height:26px;
-  stroke:white;
-  fill:none;
+.action-bar svg{
+  width:26px;
+  height:26px;
+  stroke:white;
+  fill:none;
 }
+
+.action-bar img{
+  width:26px;
+  height:26px;
+  display:block;
+  filter:brightness(0) invert(1);
+}
+
 .action-bar img{filter:brightness(0) invert(1);}
 </style>
 </head>
