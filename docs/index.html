@@ -770,24 +770,34 @@ let Source="Emporio";
 let Sort="Standard";
 
 /* ---------- QUANTITY UNDO (SESSION-BASED) ---------- */
-let qtyUndoSnapshot = null;
+/* ---------- QUANTITY UNDO (SESSION-BASED, STACK) ---------- */
+let qtyUndoStack = [];
+const MAX_QTY_UNDO = 5;
+
 let qtyUndoItem = null;
 let qtyUndoSource = null;
+let qtyUndoSessionSnapshot = null;
 
 function beginQtyUndoSession(item) {
-  // Only capture once per item+source session
   if (qtyUndoItem === item && qtyUndoSource === Source) return;
 
-  qtyUndoSnapshot = JSON.parse(JSON.stringify(items));
+  qtyUndoSessionSnapshot = JSON.parse(JSON.stringify(items));
   qtyUndoItem = item;
   qtyUndoSource = Source;
 }
 
 function commitQtyUndoSession() {
+  if (qtyUndoSessionSnapshot) {
+    qtyUndoStack.push(qtyUndoSessionSnapshot);
+    if (qtyUndoStack.length > MAX_QTY_UNDO) {
+      qtyUndoStack.shift();
+    }
+  }
+
+  qtyUndoSessionSnapshot = null;
   qtyUndoItem = null;
   qtyUndoSource = null;
 }
-
 const list=document.getElementById("list");
 const sortSelect=document.getElementById("sortSelect");
 const tabsEl=document.getElementById("sourceTabs");
@@ -874,13 +884,17 @@ function renderItems(){
 const undoBtn = document.getElementById("undoBtn");
 
 undoBtn.onclick = () => {
-  if (!qtyUndoSnapshot) return;
-  items = JSON.parse(JSON.stringify(qtyUndoSnapshot));
-  qtyUndoSnapshot = null;
-  commitQtyUndoSession();
+  if (qtyUndoStack.length === 0) return;
+
+  const snapshot = qtyUndoStack.pop();
+  items = JSON.parse(JSON.stringify(snapshot));
+
+  qtyUndoSessionSnapshot = null;
+  qtyUndoItem = null;
+  qtyUndoSource = null;
+
   renderItems();
 };
-
 /* ---------------- DRAW ITEM ---------------- */
 function openEditBottle(item) {
   editingItem = item;
