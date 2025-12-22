@@ -819,27 +819,68 @@ function drawItem(item){
   `;
 
   /* 🔹 RESTORED LONG-PRESS EDIT 🔹 */
-  let pressTimer;
-  const valueEl=row.querySelector(".value");
+ /* ---------- QUANTITY CONTROLS ---------- */
 
-  valueEl.onpointerdown=()=>{
-    pressTimer=setTimeout(()=>{
-      const v=prompt("Enter value:",item[Source]);
-      if(v!==null&&!isNaN(v)){
-        item[Source]=Math.max(0,round(Number(v)));
-        renderItems();
-      }
-    },450);
-  };
-  valueEl.onpointerup=()=>clearTimeout(pressTimer);
-  valueEl.onpointerleave=()=>clearTimeout(pressTimer);
+const valueEl = row.querySelector(".value");
+const minusBtn = row.querySelector(".minus");
+const plusBtn  = row.querySelector(".plus");
 
-  row.querySelector(".minus").onclick=()=>{item[Source]=Math.max(0,round(item[Source]-1));renderItems();}
-  row.querySelector(".plus").onclick=()=>{item[Source]=round(item[Source]+1);renderItems();}
-  row.querySelector(".toggle").onclick=()=>{item[key]=!item[key];renderItems();}
+let holdTimer;
 
-  list.appendChild(row);
-}
+/* ----- ABSOLUTE EDIT (VALUE) ----- */
+valueEl.onpointerdown = () => {
+  holdTimer = setTimeout(() => {
+    const v = prompt("Set quantity to:", item[Source]);
+    if (v !== null && !isNaN(v)) {
+      item[Source] = Math.max(0, round(Number(v)));
+      renderItems();
+    }
+  }, 450);
+};
+
+valueEl.onpointerup = () => clearTimeout(holdTimer);
+valueEl.onpointerleave = () => clearTimeout(holdTimer);
+
+/* ----- MINUS BUTTON ----- */
+minusBtn.onpointerdown = () => {
+  holdTimer = setTimeout(() => {
+    const v = prompt("Subtract how many?", 0);
+    if (v !== null && !isNaN(v)) {
+      item[Source] = Math.max(
+        0,
+        round(item[Source] - Number(v))
+      );
+      renderItems();
+    }
+  }, 450);
+};
+
+minusBtn.onpointerup = () => clearTimeout(holdTimer);
+minusBtn.onpointerleave = () => clearTimeout(holdTimer);
+
+minusBtn.onclick = () => {
+  item[Source] = Math.max(0, round(item[Source] - 1));
+  renderItems();
+};
+
+/* ----- PLUS BUTTON ----- */
+plusBtn.onpointerdown = () => {
+  holdTimer = setTimeout(() => {
+    const v = prompt("Add how many?", 0);
+    if (v !== null && !isNaN(v)) {
+      item[Source] = round(item[Source] + Number(v));
+      renderItems();
+    }
+  }, 450);
+};
+
+plusBtn.onpointerup = () => clearTimeout(holdTimer);
+plusBtn.onpointerleave = () => clearTimeout(holdTimer);
+
+plusBtn.onclick = () => {
+  item[Source] = round(item[Source] + 1);
+  renderItems();
+};
 
 /* ---------- INIT ---------- */
 buildSourceTabs();
