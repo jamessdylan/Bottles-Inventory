@@ -262,15 +262,25 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 <!-- NEW BOTTLE SHEET -->
 <div id="newBottleSheet" style="
   position:fixed;
-  left:0; right:0; bottom:0;
-  background:rgba(255,255,255,.9);
-  backdrop-filter:blur(16px);
-  padding:16px;
-  transform:translateY(100%);
-  transition:.25s ease;
+  top:50%;
+  left:50%;
+  transform:translate(-50%, -50%) scale(.95);
+  width:calc(100vw - 32px);
+  max-width:520px;
+  max-height:calc(100vh - 80px);
+  overflow-y:auto;
+
+  background:rgba(255,255,255,.92);
+  backdrop-filter:blur(18px);
+  padding:18px;
+  border-radius:20px;
+
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .25s ease, transform .25s ease;
   z-index:450;
-  border-radius:16px 16px 0 0;
 ">
+
   <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
     <button id="cancelNewBottle">Cancel</button>
     <div style="font-family:'Copperplate',serif;">New Bottle</div>
@@ -847,8 +857,11 @@ let newBottleIcon = null;
 
 
 newBottleBtn.onclick = () => {
-  newBottleSheet.style.transform = "translateY(0)";
-  newBottleOverlay.classList.add("show");
+document.body.style.overflow = "hidden";
+newBottleSheet.style.opacity = "1";
+newBottleSheet.style.pointerEvents = "auto";
+newBottleSheet.style.transform = "translate(-50%, -50%) scale(1)";
+newBottleOverlay.classList.add("show");
 newBottleBase64 = false;
 newBottleIcon = null;
 newBottleImageInput.value = "";
@@ -857,8 +870,11 @@ newBottleImageBox.textContent = "Insert Image";
 };
 
 function closeNewBottle() {
-  newBottleSheet.style.transform = "translateY(100%)";
-  newBottleOverlay.classList.remove("show");
+document.body.style.overflow = "";
+newBottleSheet.style.opacity = "0";
+newBottleSheet.style.pointerEvents = "none";
+newBottleSheet.style.transform = "translate(-50%, -50%) scale(.95)";
+newBottleOverlay.classList.remove("show");
 newBottleBase64 = false;
 newBottleIcon = null;
 newBottleImageInput.value = "";
