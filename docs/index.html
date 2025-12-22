@@ -675,7 +675,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
     </svg>
   </button>
 
-  <button title="Undo">
+<button id="undoBtn" title="Undo">
     <svg viewBox="0 0 24 24">
       <path d="M9 14l-4-4 4-4"/>
       <path d="M5 10h7a6 6 0 1 1 0 12"/>
@@ -769,6 +769,24 @@ let items=[];
 let Source="Emporio";
 let Sort="Standard";
 
+/* ---------- QUANTITY UNDO (SESSION-BASED) ---------- */
+let qtyUndoSnapshot = null;
+let qtyUndoItem = null;
+let qtyUndoSource = null;
+
+function beginQtyUndoSession(item) {
+  // Only capture once per item+source session
+  if (qtyUndoItem === item && qtyUndoSource === Source) return;
+
+  qtyUndoSnapshot = JSON.parse(JSON.stringify(items));
+  qtyUndoItem = item;
+  qtyUndoSource = Source;
+}
+
+function commitQtyUndoSession() {
+  qtyUndoItem = null;
+  qtyUndoSource = null;
+}
 
 const list=document.getElementById("list");
 const sortSelect=document.getElementById("sortSelect");
@@ -797,6 +815,7 @@ function buildSourceTabs(){
     tab.appendChild(img);
 
     tab.onclick = () => {
+
       Source = src;
       document.querySelectorAll(".tab").forEach(t =>
         t.classList.remove("active")
@@ -837,6 +856,7 @@ function baseSort(a,b,key){
     ||naLast(b.year,a.year);
 }
 
+
 /* ---------------- RENDER ---------------- */
 function renderItems(){
   list.innerHTML="";
@@ -848,6 +868,16 @@ function renderItems(){
   items.sort((a,b)=>baseSort(a,b,key));
   items.forEach(drawItem);
 }
+
+const undoBtn = document.getElementById("undoBtn");
+
+undoBtn.onclick = () => {
+  if (!qtyUndoSnapshot) return;
+  items = JSON.parse(JSON.stringify(qtyUndoSnapshot));
+  qtyUndoSnapshot = null;
+  commitQtyUndoSession();
+  renderItems();
+};
 
 /* ---------------- DRAW ITEM ---------------- */
 function openEditBottle(item) {
@@ -962,6 +992,7 @@ function drawItem(item){
     pressTimer=setTimeout(()=>{
       const v=prompt("Enter value:",item[Source]);
       if(v!==null&&!isNaN(v)){
+beginQtyUndoSession(item);
         item[Source]=Math.max(0,round(Number(v)));
         renderItems();
       }
@@ -977,14 +1008,16 @@ function drawItem(item){
 
   /* ----- MINUS ----- */
   minusBtn.onclick = () => {
-    item[Source] = Math.max(0, round(item[Source] - 1));
-    renderItems();
-  };
+  beginQtyUndoSession(item);
+  item[Source] = Math.max(0, round(item[Source] - 1));
+  renderItems();
+};
 
   minusBtn.onpointerdown = () => {
     holdTimerBtn = setTimeout(() => {
       const v = prompt("Subtract how many?", 0);
       if (v !== null && !isNaN(v)) {
+beginQtyUndoSession(item);
         item[Source] = Math.max(
           0,
           round(item[Source] - Number(v))
@@ -998,15 +1031,17 @@ function drawItem(item){
   minusBtn.onpointerleave = () => clearTimeout(holdTimerBtn);
 
   /* ----- PLUS ----- */
-  plusBtn.onclick = () => {
-    item[Source] = round(item[Source] + 1);
-    renderItems();
-  };
-
+plusBtn.onclick = () => {
+  beginQtyUndoSession(item);
+  item[Source] = round(item[Source] + 1);
+  renderItems();
+};
+ 
   plusBtn.onpointerdown = () => {
     holdTimerBtn = setTimeout(() => {
       const v = prompt("Add how many?", 0);
       if (v !== null && !isNaN(v)) {
+beginQtyUndoSession(item);
         item[Source] = round(item[Source] + Number(v));
         renderItems();
       }
@@ -1683,3 +1718,4 @@ exportBtn.onclick = () => {
 
 </body>
 </html>
+
