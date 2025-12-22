@@ -270,6 +270,17 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 </style>
 </head>
 
+/*————GROUP———————*/
+function sourceAllowsGrouping(src) {
+  return [
+    "Emporio",
+    "Mezzo",
+    "Tetto (L)",
+    "Tetto (R)",
+    "Prep Cooler"
+  ].includes(src);
+}
+
   <!-- MONTH / YEAR PICKER -->
 <div id="datePickerOverlay" class="overlay"></div>
 
@@ -713,6 +724,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   </button>
 
 </nav>
+
 
 
 <script>
@@ -1594,16 +1606,6 @@ confirmNewBottle.onclick = () => {
   closeNewBottle();
 };
 
-/*————GROUP———————*/
-function sourceAllowsGrouping(src) {
-  return [
-    "Emporio",
-    "Mezzo",
-    "Tetto (L)",
-    "Tetto (R)",
-    "Prep Cooler"
-  ].includes(src);
-}
 
 
 /*---------EXPORT---------------*/
