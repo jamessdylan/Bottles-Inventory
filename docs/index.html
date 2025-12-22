@@ -577,6 +577,30 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   ></div>
 </div>
 
+<!-- NOTES -->
+<div style="
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  margin-top:14px;
+">
+  <div style="font-family:'Copperplate',serif;">Notes</div>
+  <textarea
+    id="noteInput"
+    placeholder="Add notes…"
+    style="
+      padding:12px 14px;
+      border-radius:12px;
+      border:none;
+      background:rgba(0,0,0,.05);
+      font-size:16px;
+      min-height:90px;
+      resize:vertical;
+      outline:none;
+    "
+  ></textarea>
+</div>
+
 </div>
 
 <body>
@@ -854,6 +878,7 @@ let newBottleYear = "N/A";
 let newBottlePrice = null;
 let newBottleBase64 = false;
 let newBottleIcon = null;
+let newBottleNote = "";
 
 
 newBottleBtn.onclick = () => {
@@ -866,6 +891,8 @@ newBottleBase64 = false;
 newBottleIcon = null;
 newBottleImageInput.value = "";
 newBottleImageBox.textContent = "Insert Image";
+noteInput.value = "";
+newBottleNote = "";
 
 };
 
@@ -879,6 +906,8 @@ newBottleBase64 = false;
 newBottleIcon = null;
 newBottleImageInput.value = "";
 newBottleImageBox.textContent = "Insert Image";
+noteInput.value = "";
+newBottleNote = "";
 
 }
 
@@ -1236,6 +1265,11 @@ distributorInput.onblur = () => {
   setTimeout(() => distributorSuggestions.style.display = "none", 150);
 };
 
+const noteInput = document.getElementById("noteInput");
+
+noteInput.oninput = () => {
+  newBottleNote = noteInput.value;
+};
 
 /*---------EXPORT---------------*/
   
