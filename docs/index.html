@@ -788,6 +788,74 @@ function renderItems(){
 }
 
 /* ---------------- DRAW ITEM ---------------- */
+function openEditBottle(item) {
+  editingItem = item;
+
+  // --- populate values ---
+  newBottleStatus = item.status;
+  statusValue.textContent = item.status ? "Active" : "Inactive";
+  statusValue.style.color = item.status ? "green" : "red";
+
+  newBottleTier = item.tier || "House";
+  tierToggle.onclick(); // force UI sync
+  tierToggle.onclick(); // toggle back to correct state
+
+  newBottleColor = item.color || "White";
+  updateColorUI();
+
+  brandInput.value = item.brand !== "N/A" ? item.brand : "";
+  newBottleBrand = brandInput.value;
+
+  identifierInput.value = item.identifier !== "N/A" ? item.identifier : "";
+  newBottleIdentifier = identifierInput.value || "N/A";
+
+  varietalInput.value = item.varietal !== "N/A" ? item.varietal : "";
+  newBottleVarietal = varietalInput.value;
+
+  yearInput.value = item.year !== "N/A" ? item.year : "";
+  newBottleYear = item.year;
+
+  priceInput.value = item.price || "";
+  newBottlePrice = item.price || null;
+
+  noteInput.value = item.note || "";
+  newBottleNote = item.note || "";
+
+  // featured
+  newBottleFeatured = [];
+  document.querySelectorAll(".featured-btn").forEach(btn => {
+    const v = btn.dataset.value;
+    if ((item.featured || "").includes(v)) {
+      btn.classList.add("active");
+      newBottleFeatured.push(v);
+    } else {
+      btn.classList.remove("active");
+    }
+  });
+
+  // icon
+  if (item.base64) {
+    newBottleBase64 = true;
+    newBottleIcon = item.icon;
+    newBottleImageBox.innerHTML = `
+      <img src="data:image/*;base64,${item.icon}"
+           style="width:100%;height:100%;object-fit:cover;">
+    `;
+  } else {
+    newBottleBase64 = false;
+    newBottleIcon = null;
+    newBottleImageBox.textContent = "Insert Image";
+  }
+
+  // open sheet
+  document.body.style.overflow = "hidden";
+  newBottleSheet.style.opacity = "1";
+  newBottleSheet.style.pointerEvents = "auto";
+  newBottleSheet.style.transform = "translate(-50%, -50%) scale(1)";
+  newBottleOverlay.classList.add("show");
+}
+
+
 function drawItem(item){
   const key=`${Source}Complete`;
   const iconHTML=item.base64
@@ -884,6 +952,24 @@ function drawItem(item){
 
   row.querySelector(".toggle").onclick=()=>{item[key]=!item[key];renderItems();}
 
+let rowHoldTimer;
+
+row.onpointerdown = e => {
+  // ignore controls
+  if (
+    e.target.closest(".controls") ||
+    e.target.closest(".toggle") ||
+    e.target.closest(".value")
+  ) return;
+
+  rowHoldTimer = setTimeout(() => {
+    openEditBottle(item);
+  }, 500);
+};
+
+row.onpointerup = () => clearTimeout(rowHoldTimer);
+row.onpointerleave = () => clearTimeout(rowHoldTimer);
+
   list.appendChild(row);
 }
 
@@ -915,6 +1001,7 @@ const statusToggle = document.getElementById("statusToggle");
 const statusValue = document.getElementById("statusValue");
 
 let newBottleStatus = true;
+let editingItem = null; // null = new bottle, object = editing existing
 let newBottleTier = "House"; // "House" | "Reserve"
 let newBottleColor = "White"; // White | Rose | Red
 let newBottleBrand = "";
@@ -1319,10 +1406,11 @@ noteInput.oninput = () => {
 
 const confirmNewBottle = document.getElementById("confirmNewBottle");
 
-confirmNewBottle.onclick = () => {
+cconfirmNewBottle.onclick = () => {
 
-  // 🔹 Build new item
-  const item = {
+  const target = editingItem || {};
+
+  Object.assign(target, {
     status: newBottleStatus,
     tier: newBottleTier,
     color: newBottleColor,
@@ -1334,14 +1422,26 @@ confirmNewBottle.onclick = () => {
     featured: newBottleFeatured.join(", "),
     distributor: newBottleDistributor || "N/A",
     note: newBottleNote || "",
-
     base64: newBottleBase64,
     icon: newBottleBase64
       ? newBottleIcon
       : (newBottleColor === "White" ? "#c9b037"
          : newBottleColor === "Rose" ? "#d97c8a"
          : "#7b1e1e")
-  };
+  });
+
+  if (!editingItem) {
+    SOURCES.forEach(src => {
+      target[src] = 0;
+      target[`${src}Complete`] = false;
+    });
+    items.push(target);
+  }
+
+  editingItem = null;
+  renderItems();
+  closeNewBottle();
+};
 
   // 🔹 Initialize all source quantities + complete flags
   SOURCES.forEach(src => {
