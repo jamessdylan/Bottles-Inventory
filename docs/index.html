@@ -621,6 +621,25 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   ></textarea>
 </div>
 
+<!-- DELETE (EDIT ONLY) -->
+<button
+  id="deleteBottleBtn"
+  style="
+    margin-top:18px;
+    width:100%;
+    padding:14px;
+    border-radius:14px;
+    border:none;
+    background:#b00020;
+    color:white;
+    font-size:16px;
+    display:none;
+  "
+>
+  Delete Bottle
+</button>
+
+
 </div>
 
 <body>
@@ -834,6 +853,7 @@ function renderItems(){
 function openEditBottle(item) {
   editingItem = item;
 
+
   // --- populate values ---
   newBottleStatus = item.status;
   statusValue.textContent = item.status ? "Active" : "Inactive";
@@ -863,6 +883,9 @@ function openEditBottle(item) {
 
   noteInput.value = item.note || "";
   newBottleNote = item.note || "";
+deleteBottleBtn.style.display = "block";
+
+
 
   // featured
   newBottleFeatured = [];
@@ -875,6 +898,7 @@ function openEditBottle(item) {
       btn.classList.remove("active");
     }
   });
+
 
   // icon
   if (item.base64) {
@@ -889,6 +913,7 @@ function openEditBottle(item) {
     newBottleIcon = null;
     newBottleImageBox.textContent = "Insert Image";
   }
+
 
   // open sheet
   document.body.style.overflow = "hidden";
@@ -1041,6 +1066,9 @@ const newBottleOverlay = document.getElementById("newBottleOverlay");
 const cancelNewBottle = document.getElementById("cancelNewBottle");
 const statusToggle = document.getElementById("statusToggle");
 const statusValue = document.getElementById("statusValue");
+const deleteBottleBtn = document.getElementById("deleteBottleBtn");
+
+
 
 let newBottleStatus = true;
 let editingItem = null; // null = new bottle, object = editing existing
@@ -1068,6 +1096,7 @@ newBottleImageInput.value = "";
 newBottleImageBox.textContent = "Insert Image";
 noteInput.value = "";
 newBottleNote = "";
+deleteBottleBtn.style.display = "none";
 
 };
 
@@ -1083,6 +1112,7 @@ newBottleImageInput.value = "";
 newBottleImageBox.textContent = "Insert Image";
 noteInput.value = "";
 newBottleNote = "";
+deleteBottleBtn.style.display = "none";
 
 }
 
@@ -1444,6 +1474,19 @@ const noteInput = document.getElementById("noteInput");
 
 noteInput.oninput = () => {
   newBottleNote = noteInput.value;
+};
+
+deleteBottleBtn.onclick = () => {
+  if (!editingItem) return;
+
+  const confirmed = confirm("Delete this bottle permanently?");
+  if (!confirmed) return;
+
+  items = items.filter(i => i !== editingItem);
+  editingItem = null;
+
+  renderItems();
+  closeNewBottle();
 };
 
 const confirmNewBottle = document.getElementById("confirmNewBottle");
