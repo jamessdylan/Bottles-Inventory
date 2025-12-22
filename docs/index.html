@@ -284,7 +284,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
     <button id="cancelNewBottle">Cancel</button>
     <div style="font-family:'Copperplate',serif;">New Bottle</div>
-    <button disabled>Done</button>
+<button id="confirmNewBottle">Done</button>
   </div>
 
 <!-- IMAGE INPUT -->
@@ -1270,6 +1270,47 @@ const noteInput = document.getElementById("noteInput");
 noteInput.oninput = () => {
   newBottleNote = noteInput.value;
 };
+
+const confirmNewBottle = document.getElementById("confirmNewBottle");
+
+confirmNewBottle.onclick = () => {
+
+  // 🔹 Build new item
+  const item = {
+    status: newBottleStatus,
+    tier: newBottleTier,
+    color: newBottleColor,
+    brand: newBottleBrand || "N/A",
+    identifier: newBottleIdentifier || "N/A",
+    varietal: newBottleVarietal || "N/A",
+    year: newBottleYear || "N/A",
+    price: newBottlePrice || 0,
+    featured: newBottleFeatured.join(", "),
+    distributor: newBottleDistributor || "N/A",
+    note: newBottleNote || "",
+
+    base64: newBottleBase64,
+    icon: newBottleBase64
+      ? newBottleIcon
+      : (newBottleColor === "White" ? "#c9b037"
+         : newBottleColor === "Rose" ? "#d97c8a"
+         : "#7b1e1e")
+  };
+
+  // 🔹 Initialize all source quantities + complete flags
+  SOURCES.forEach(src => {
+    item[src] = 0;
+    item[`${src}Complete`] = false;
+  });
+
+  // 🔹 Insert + refresh
+  items.push(item);
+  renderItems();
+
+  // 🔹 Close + reset
+  closeNewBottle();
+};
+
 
 /*---------EXPORT---------------*/
   
