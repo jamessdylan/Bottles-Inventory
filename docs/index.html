@@ -12,7 +12,6 @@
 :root { --green:#1f5e3b; --green-light:rgba(255,255,255,.25); }
 
 
-
 body {
   margin:0;
   padding:
@@ -860,6 +859,7 @@ let Source="Emporio";
 let Sort="Standard";
 let specialtyLists = [];
 let selectedSpecialtyList = null;
+let expandedSpecialtyList = null;
 
 
 const list=document.getElementById("list");
@@ -944,13 +944,26 @@ function renderSpecialtyLists(){
     row.style.fontSize = "16px";
 
     // select list
-    row.onclick = () => {
-      selectedSpecialtyList = listName;
-      console.log("Selected Specialty List:", listName);
+row.onclick = () => {
+if (didSwipe) return;
+  expandedSpecialtyList =
+    expandedSpecialtyList === listName ? null : listName;
 
-      specialtySheet.style.transform = "translateX(100%)";
-      specialtyOverlay.classList.remove("show");
-    };
+
+  renderSpecialtyLists();
+};
+
+
+const expandContainer = document.createElement("div");
+expandContainer.style.marginTop = "10px";
+expandContainer.style.paddingLeft = "12px";
+expandContainer.style.display =
+  expandedSpecialtyList === listName ? "block" : "none";
+expandContainer.style.fontSize = "14px";
+expandContainer.style.color = "#333";
+expandContainer.textContent = "Items for this specialty list will appear here.";
+row.appendChild(expandContainer);
+
 
 const lockedNames = ["Wine Cellar", "Prep Cooler"];
 
@@ -964,12 +977,14 @@ if (lockedNames.includes(listName)) {
 }
 
 row.addEventListener("pointerdown", e => {
+let didSwipe = false;
   startX = e.clientX;
   dragging = true;
   row.setPointerCapture(e.pointerId);
 });
 
 row.addEventListener("pointermove", e => {
+if (currentX < -10) didSwipe = true;
   if (!dragging) return;
 
   currentX = e.clientX - startX;
@@ -1336,6 +1351,7 @@ let newBottlePrice = null;
 let newBottleBase64 = false;
 let newBottleIcon = null;
 let newBottleNote = "";
+let expandedSpecialtyList = null;
 
 
 newBottleBtn.onclick = () => {
