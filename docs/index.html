@@ -309,6 +309,8 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
 </style>
 </head>
+<body>
+
 
   <!-- MONTH / YEAR PICKER -->
 <div id="datePickerOverlay" class="overlay"></div>
@@ -691,8 +693,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
 </div>
 
-<body>
-
 <div class="drawer-tab" id="drawerTab"><span>•••</span></div>
 
 <div class="drawer" id="drawer">
@@ -933,6 +933,7 @@ function renderSpecialtyLists(){
   const container = document.getElementById("specialtyListContainer");
   container.innerHTML = "";
 
+
   // --- Existing Lists ---
   specialtyLists.forEach((listName, index) => {
     const row = document.createElement("div");
@@ -942,6 +943,10 @@ function renderSpecialtyLists(){
     row.style.fontSize = "16px";
 
     // select list
+let startX = 0;
+let currentX = 0;
+let dragging = false;
+let didSwipe = false;
 row.onclick = () => {
 if (didSwipe) return;
   expandedSpecialtyList =
@@ -965,10 +970,7 @@ row.appendChild(expandContainer);
 
 const lockedNames = ["Wine Cellar", "Prep Cooler"];
 
-let startX = 0;
-let currentX = 0;
-let dragging = false;
-let didSwipe = false;
+
 
 row.addEventListener("pointerdown", e => {
   didSwipe = false;
