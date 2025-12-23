@@ -1210,7 +1210,6 @@ function drawItem(item){
 
   const row=document.createElement("div");
   row.className="item";
-row.style.background = getItemBackgroundRGBA(item.color);
   row.innerHTML=`
     <div class="left">
       <div class="icon">${iconHTML}</div>
@@ -1231,7 +1230,8 @@ row.style.background = getItemBackgroundRGBA(item.color);
     <div class="toggle">
       ${item[key]?`<span class="toggle-check">✔</span>`:`<div class="toggle-circle"></div>`}
     </div>
-  `;
+  `row.style.background = getItemBackgroundRGBA(item.color);
+
 
   /* 🔹 RESTORED LONG-PRESS EDIT 🔹 */
   let pressTimer;
@@ -1246,6 +1246,7 @@ row.style.background = getItemBackgroundRGBA(item.color);
       }
     },450);
   };
+
   valueEl.onpointerup=()=>clearTimeout(pressTimer);
   valueEl.onpointerleave=()=>clearTimeout(pressTimer);
 
