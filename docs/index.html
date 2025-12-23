@@ -860,13 +860,9 @@ let Source="Emporio";
 let Sort="Standard";
 let specialtyData = {};
 
-async function loadSpecialtyLists(){
-  const res = await fetch("./SpecialtyList.json", { cache:"no-store" });
-  specialtyData = await res.json();
-
-  specialtyLists = Object.keys(specialtyData)
-    .sort((a,b)=>a.localeCompare(b));
-
+async function loadSpecialtyLists() {
+  const res = await fetch("./SpecialtyList.json", { cache: "no-store" });
+  specialtyLists = await res.json();
   renderSpecialtyLists();
 }
 
@@ -945,33 +941,60 @@ async function loadSpecialtyLists(){
   renderSpecialtyLists();
 }
 
-function renderSpecialtyLists(){
+function renderSpecialtyLists() {
   const container = document.getElementById("specialtyListContainer");
   container.innerHTML = "";
 
+  const listNames = Object.keys(specialtyLists)
+    .sort((a, b) => a.localeCompare(b));
 
-  // --- Existing Lists ---
-  specialtyLists.forEach((listName, index) => {
+  listNames.forEach(listName => {
     const row = document.createElement("div");
     row.className = "specialty-row";
     row.textContent = listName;
     row.style.cursor = "pointer";
-    row.style.fontSize = "16px";
 
-    // select list
-let startX = 0;
-let currentX = 0;
-let dragging = false;
-let didSwipe = false;
-row.onclick = () => {
-if (didSwipe) return;
-  expandedSpecialtyList =
-    expandedSpecialtyList === listName ? null : listName;
+    row.onclick = () => {
+      expandedSpecialtyList =
+        expandedSpecialtyList === listName ? null : listName;
+      renderSpecialtyLists();
+    };
 
+    // ---------- EXPANDED CONTENT ----------
+    if (expandedSpecialtyList === listName) {
+      const values = specialtyLists[listName] || [];
 
-  renderSpecialtyLists();
-};
+      const expand = document.createElement("div");
+      expand.style.marginTop = "10px";
+      expand.style.paddingLeft = "12px";
 
+      if (values.length === 0) {
+        expand.textContent = "No items in this list.";
+      } else {
+        values.forEach(uuid => {
+          const item = items.find(i => i.UUID === uuid);
+
+          if (!item) return;
+
+          const div = document.createElement("div");
+          div.style.padding = "6px 0";
+          div.textContent = [
+            item.brand,
+            item.identifier,
+            item.varietal,
+            item.year
+          ].filter(v => v && v !== "N/A").join(" ");
+
+          expand.appendChild(div);
+        });
+      }
+
+      row.appendChild(expand);
+    }
+
+    container.appendChild(row);
+  });
+}
 
 const expandContainer = document.createElement("div");
 expandContainer.style.marginTop = "10px";
