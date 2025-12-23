@@ -858,16 +858,9 @@ const SOURCE_ICONS = {
 let items=[];
 let Source="Emporio";
 let Sort="Standard";
-
-async function loadSpecialtyLists() {
-  const res = await fetch("./SpecialtyList.json", { cache: "no-store" });
-  specialtyLists = await res.json();
-  renderSpecialtyLists();
-}
-
+let specialtyLists = [];
 let selectedSpecialtyList = null;
 let expandedSpecialtyList = null;
-let specialtyLists = {}; // dictionary: { listName: [UUID, UUID] }
 
 
 const list=document.getElementById("list");
@@ -941,57 +934,48 @@ async function loadSpecialtyLists(){
   renderSpecialtyLists();
 }
 
-    // ---------- EXPANDED CONTENT ----------
-if (specialtyLists[name]) {
-      const values = specialtyLists[listName] || [];
-
-      const expand = document.createElement("div");
-      expand.style.marginTop = "10px";
-      expand.style.paddingLeft = "12px";
-
-      if (values.length === 0) {
-        expand.textContent = "No items in this list.";
-      } else {
-        values.forEach(uuid => {
-          const item = items.find(i => i.UUID === uuid);
-
-          if (!item) return;
-
-          const div = document.createElement("div");
-          div.style.padding = "6px 0";
-          div.textContent = [
-            item.brand,
-            item.identifier,
-            item.varietal,
-            item.year
-          ].filter(v => v && v !== "N/A").join(" ");
-
-          expand.appendChild(div);
-        });
-      }
-
-      row.appendChild(expand);
-    }
-
-    container.appendChild(row);
-  });
-}
-
-
-function renderSpecialtyLists() {
+function renderSpecialtyLists(){
   const container = document.getElementById("specialtyListContainer");
   container.innerHTML = "";
 
-  const listNames = Object.keys(specialtyLists)
-    .sort((a, b) => a.localeCompare(b));
 
-  listNames.forEach(listName => {
+  // --- Existing Lists ---
+  specialtyLists.forEach((listName, index) => {
     const row = document.createElement("div");
     row.className = "specialty-row";
     row.textContent = listName;
     row.style.cursor = "pointer";
+    row.style.fontSize = "16px";
+
+    // select list
+let startX = 0;
+let currentX = 0;
+let dragging = false;
+let didSwipe = false;
+row.onclick = () => {
+if (didSwipe) return;
+  expandedSpecialtyList =
+    expandedSpecialtyList === listName ? null : listName;
+
+
+  renderSpecialtyLists();
+};
+
+
+const expandContainer = document.createElement("div");
+expandContainer.style.marginTop = "10px";
+expandContainer.style.paddingLeft = "12px";
+expandContainer.style.display =
+  expandedSpecialtyList === listName ? "block" : "none";
+expandContainer.style.fontSize = "14px";
+expandContainer.style.color = "#333";
+expandContainer.textContent = "Items for this specialty list will appear here.";
+row.appendChild(expandContainer);
+
 
 const lockedNames = ["Wine Cellar", "Prep Cooler"];
+
+
 
 row.addEventListener("pointerdown", e => {
   didSwipe = false;
@@ -1050,46 +1034,6 @@ row.addEventListener("pointerup", () => {
 }
 
 
-    row.onclick = () => {
-      expandedSpecialtyList =
-        expandedSpecialtyList === listName ? null : listName;
-      renderSpecialtyLists();
-    };
-
-    if (expandedSpecialtyList === listName) {
-      const values = specialtyLists[listName] || [];
-
-      const expand = document.createElement("div");
-      expand.style.marginTop = "10px";
-      expand.style.paddingLeft = "12px";
-
-      if (values.length === 0) {
-        expand.textContent = "No items in this list.";
-      } else {
-        values.forEach(uuid => {
-          const item = items.find(i => i.UUID === uuid);
-          if (!item) return;
-
-          const div = document.createElement("div");
-          div.style.padding = "6px 0";
-          div.textContent = [
-            item.brand,
-            item.identifier,
-            item.varietal,
-            item.year
-          ].filter(v => v && v !== "N/A").join(" ");
-
-          expand.appendChild(div);
-        });
-      }
-
-      row.appendChild(expand);
-    }
-
-    container.appendChild(row);
-  });
-}
-
 
 const specialtyBtn = document.getElementById("specialtyListBtn");
 const specialtySheet = document.getElementById("specialtySheet");
@@ -1120,12 +1064,12 @@ document.getElementById("addSpecialtyList").onclick = () => {
   const name = prompt("New list name:");
   if (!name) return;
 
-if (specialtyLists[name]) {
+  if (specialtyLists.includes(name)) {
     alert("List already exists");
     return;
   }
 
- specialtyLists[name] = [];x
+  specialtyLists.push(name);
   specialtyLists.sort((a,b)=>a.localeCompare(b));
   renderSpecialtyLists();
 };
