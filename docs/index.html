@@ -10,6 +10,19 @@
 
 <style>
 :root { --green:#1f5e3b; --green-light:rgba(255,255,255,.25); }
+.featured-btn{
+  padding:10px 14px;
+  border-radius:10px;
+  border:none;
+  background:rgba(0,0,0,.08);
+  font-size:14px;
+  cursor:pointer;
+}
+
+.featured-btn.active{
+  background:#1f5e3b;
+  color:white;
+}
 
 
 body {
@@ -584,25 +597,10 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
 
   <div id="featuredButtons" style="
-
-.featured-btn{
-  padding:10px 14px;
-  border-radius:10px;
-  border:none;
-  background:rgba(0,0,0,.08);
-  font-size:14px;
-  cursor:pointer;
-}
-
-.featured-btn.active{
-  background:#1f5e3b;
-  color:white;
-}
-
-    display:flex;
-    flex-wrap:wrap;
-    gap:8px;
-  ">
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+">
     <button class="featured-btn" data-value="Reserve">Reserve</button>
     <button class="featured-btn" data-value="Featured Import">Featured Import</button>
     <button class="featured-btn" data-value="Varietal Showcase">Varietal Showcase</button>
@@ -970,14 +968,10 @@ const lockedNames = ["Wine Cellar", "Prep Cooler"];
 let startX = 0;
 let currentX = 0;
 let dragging = false;
-
-// visually mark locked rows
-if (lockedNames.includes(listName)) {
-  row.classList.add("locked");
-}
+let didSwipe = false;
 
 row.addEventListener("pointerdown", e => {
-let didSwipe = false;
+  didSwipe = false;
   startX = e.clientX;
   dragging = true;
   row.setPointerCapture(e.pointerId);
