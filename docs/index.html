@@ -954,11 +954,123 @@ let currentX = 0;
 let dragging = false;
 let didSwipe = false;
 row.onclick = () => {
-if (didSwipe) return;
-  expandedSpecialtyList =
-    expandedSpecialtyList === listName ? null : listName;
+if (expandedSpecialtyList === listName) {
+  expandContainer.innerHTML = "";
 
+  /* ---------- ADD ITEMS BUTTON ---------- */
+  const addBtn = document.createElement("button");
+  addBtn.textContent = "+ Add Items";
+  addBtn.style.marginBottom = "10px";
+  addBtn.style.padding = "8px 12px";
+  addBtn.style.borderRadius = "8px";
+  addBtn.style.border = "none";
+  addBtn.style.background = "#1f5e3b";
+  addBtn.style.color = "white";
+  addBtn.style.fontSize = "14px";
+  addBtn.style.cursor = "pointer";
 
+  expandContainer.appendChild(addBtn);
+
+  /* ---------- DROPDOWN ---------- */
+  const dropdown = document.createElement("div");
+  dropdown.style.display = "none";
+  dropdown.style.marginBottom = "12px";
+  dropdown.style.padding = "10px";
+  dropdown.style.borderRadius = "10px";
+  dropdown.style.background = "rgba(0,0,0,.05)";
+  dropdown.style.maxHeight = "220px";
+  dropdown.style.overflowY = "auto";
+
+  expandContainer.appendChild(dropdown);
+
+  addBtn.onclick = () => {
+    dropdown.style.display =
+      dropdown.style.display === "none" ? "block" : "none";
+  };
+
+  const availableItems = getAvailableItemsForSpecialtyList(listName);
+  const selectedUUIDs = new Set();
+
+  availableItems.forEach(item => {
+    const label = document.createElement("label");
+    label.style.display = "flex";
+    label.style.alignItems = "center";
+    label.style.gap = "8px";
+    label.style.padding = "6px 0";
+    label.style.cursor = "pointer";
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+
+    checkbox.onchange = () => {
+      const uuid = String(item.UUID).toUpperCase();
+      checkbox.checked
+        ? selectedUUIDs.add(uuid)
+        : selectedUUIDs.delete(uuid);
+    };
+
+    const text = document.createElement("span");
+    text.textContent = [
+      item.brand,
+      item.identifier,
+      item.varietal,
+      item.year
+    ].filter(v => v && v !== "N/A").join(" ");
+
+    label.appendChild(checkbox);
+    label.appendChild(text);
+    dropdown.appendChild(label);
+  });
+
+  /* ---------- CONFIRM ---------- */
+  if (availableItems.length > 0) {
+    const confirmBtn = document.createElement("button");
+    confirmBtn.textContent = "Add Selected";
+    confirmBtn.style.marginTop = "8px";
+    confirmBtn.style.padding = "8px 12px";
+    confirmBtn.style.borderRadius = "8px";
+    confirmBtn.style.border = "none";
+    confirmBtn.style.background = "#113320";
+    confirmBtn.style.color = "white";
+    confirmBtn.style.fontSize = "14px";
+
+    confirmBtn.onclick = () => {
+      specialtyListData[listName] ??= [];
+      specialtyListData[listName].push(...selectedUUIDs);
+
+      expandedSpecialtyList = listName;
+      renderSpecialtyLists();
+    };
+
+    dropdown.appendChild(confirmBtn);
+  }
+
+  /* ---------- EXISTING ITEMS ---------- */
+  const matchedItems = getItemsForSpecialtyList(listName);
+
+  if (matchedItems.length === 0) {
+    const empty = document.createElement("div");
+    empty.textContent = "No matching items.";
+    empty.style.marginTop = "8px";
+    expandContainer.appendChild(empty);
+  } else {
+    matchedItems.forEach(item => {
+      const div = document.createElement("div");
+      div.style.padding = "6px 0";
+      div.style.borderBottom = "1px solid rgba(0,0,0,.08)";
+      div.style.fontSize = "14px";
+
+      div.textContent = [
+        item.brand,
+        item.identifier,
+        item.varietal,
+        item.year
+      ].filter(v => v && v !== "N/A").join(" ");
+
+      expandContainer.appendChild(div);
+    });
+  }
+}
   renderSpecialtyLists();
 };
 
@@ -1120,6 +1232,16 @@ function getItemsForSpecialtyList(listName) {
   return items.filter(item =>
     item.UUID &&
     uuidList.includes(String(item.UUID).toUpperCase())
+  );
+}
+
+function getAvailableItemsForSpecialtyList(listName) {
+  const currentUUIDs = (specialtyListData[listName] || [])
+    .map(u => String(u).toUpperCase());
+
+  return items.filter(item =>
+    item.UUID &&
+    !currentUUIDs.includes(String(item.UUID).toUpperCase())
   );
 }
 
