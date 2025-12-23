@@ -252,6 +252,12 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   overflow:hidden;
 }
 
+.specialty-row select{
+  width:100%;
+  font-size:16px;
+  padding:10px;
+  border-radius:10px;
+}
 
 /* swipe delete */
 .specialty-delete{
@@ -293,32 +299,19 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   transform: translateY(-50%);
 }
 
-/* ---------- ADD NEW BOTTLE (LIST ROW STYLE) ---------- */
+/* ---------- ADD NEW BOTTLE (SPECIALTY) ---------- */
 .add-specialty-bottle {
-  all: unset;
-  display: block;
-  padding: 6px 0;
-  font-size: 14px;
+  margin-top: 14px;
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  border: none;
+  background: #1f5e3b;
+  color: white;
+  font-size: 15px;
   cursor: pointer;
-  color: #1f5e3b;
 }
 
-.add-specialty-bottle:hover {
-  text-decoration: underline;
-}
-
-.add-to-list-row{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  padding:10px 4px;
-  border-bottom:1px solid rgba(0,0,0,.08);
-  font-size:14px;
-}
-
-.add-to-list-row input{
-  transform:scale(1.2);
-}
 
 #datePicker button{
   background:none;
@@ -798,50 +791,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
     <img src="SortTransparent.png" alt="Sort">
   </button>
 
-
-  
-<!-- ADD TO SPECIALTY LIST OVERLAY -->
-<div id="addToListOverlay" class="overlay"></div>
-
-<div id="addToListSheet" style="
-  position:fixed;
-  left:0; right:0; bottom:0;
-  max-height:75vh;
-  background:rgba(255,255,255,.95);
-  backdrop-filter:blur(16px);
-  padding:16px;
-  border-radius:20px 20px 0 0;
-  transform:translateY(100%);
-  transition:.25s ease;
-  z-index:600;
-  overflow-y:auto;
-">
-
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-    <button id="cancelAddToList">Cancel</button>
-    <div style="font-family:'Copperplate',serif;">Add to List</div>
-    <button id="confirmAddToList">Add</button>
-  </div>
-
-<input
-  id="addToListSearch"
-  type="text"
-  placeholder="Search bottles…"
-  style="
-    width:100%;
-    padding:12px;
-    font-size:15px;
-    border-radius:12px;
-    border:1px solid rgba(0,0,0,.15);
-    margin-bottom:12px;
-  "
-/>
-
-
-  <div id="addToListContainer"></div>
-</div>
-
-
 </nav>
 
 
@@ -925,7 +874,6 @@ let Sort="Standard";
 let specialtyLists = [];
 let selectedSpecialtyList = null;
 let expandedSpecialtyList = null;
-let addToListAvailableItems = [];
 
 
 const list=document.getElementById("list");
@@ -934,7 +882,6 @@ const tabsEl=document.getElementById("sourceTabs");
 
 const drawer = document.getElementById("drawer");
 const overlay = document.getElementById("overlay");
-
 
 
 /* ---------------- LOAD ---------------- */
@@ -1064,21 +1011,90 @@ if (expandedSpecialtyList === listName) {
     });
   }
 
-  // ➕ Add New Bottle button
-const addBtn = document.createElement("div");
-addBtn.className = "add-specialty-bottle";
-addBtn.textContent = "+ Add New Bottle";
+// --- Inline Add-to-List Search Row ---
+const addRow = document.createElement("div");
+addRow.style.padding = "6px 0";
+addRow.style.borderBottom = "1px solid rgba(0,0,0,.08)";
+addRow.style.position = "relative";
 
+const input = document.createElement("input");
+input.type = "text";
+input.placeholder = "+ Add bottle…";
+input.style.width = "100%";
+input.style.border = "none";
+input.style.outline = "none";
+input.style.background = "transparent";
+input.style.fontSize = "14px";
+input.style.fontFamily = "inherit";
 
-  addBtn.onclick = () => {
-  openAddToList(listName);
+const suggestionBox = document.createElement("div");
+suggestionBox.style.position = "absolute";
+suggestionBox.style.top = "100%";
+suggestionBox.style.left = "0";
+suggestionBox.style.right = "0";
+suggestionBox.style.background = "white";
+suggestionBox.style.borderRadius = "10px";
+suggestionBox.style.boxShadow = "0 6px 18px rgba(0,0,0,.15)";
+suggestionBox.style.zIndex = "600";
+suggestionBox.style.display = "none";
+suggestionBox.style.maxHeight = "220px";
+suggestionBox.style.overflowY = "auto";
+
+addRow.appendChild(input);
+addRow.appendChild(suggestionBox);
+expandContainer.appendChild(addRow);
+
+input.oninput = () => {
+  const query = input.value.trim().toLowerCase();
+  suggestionBox.innerHTML = "";
+
+  if (!query) {
+    suggestionBox.style.display = "none";
+    return;
+  }
+
+  const matches = items.filter(item => {
+    const title = [
+      item.brand,
+      item.identifier,
+      item.varietal,
+      item.year
+    ].filter(v => v && v !== "N/A").join(" ").toLowerCase();
+
+    return title.includes(query);
+  });
+
+  if (matches.length === 0) {
+    suggestionBox.style.display = "none";
+    return;
+  }
+
+  matches.slice(0, 12).forEach(item => {
+    const row = document.createElement("div");
+    row.textContent = [
+      item.brand,
+      item.identifier,
+      item.varietal,
+      item.year
+    ].filter(v => v && v !== "N/A").join(" ");
+
+    row.style.padding = "10px 14px";
+    row.style.cursor = "pointer";
+    row.style.fontSize = "14px";
+
+    row.onclick = () => {
+      addItemToSpecialtyList(listName, item);
+      input.value = "";
+      suggestionBox.style.display = "none";
+      renderSpecialtyLists();
+    };
+
+    suggestionBox.appendChild(row);
+  });
+
+  suggestionBox.style.display = "block";
 };
 
-  expandContainer.appendChild(addBtn);
-}
-
-
-row.appendChild(expandContainer);
 
 
 const lockedNames = ["Wine Cellar", "Prep Cooler"];
@@ -1183,66 +1199,6 @@ document.getElementById("addSpecialtyList").onclick = () => {
 };
 
 
-let addTargetList = null;
-
-const addToListSheet = document.getElementById("addToListSheet");
-const addToListOverlay = document.getElementById("addToListOverlay");
-const addToListContainer = document.getElementById("addToListContainer");
-
-function openAddToList(listName){
-  addTargetList = listName;
-
-  addToListContainer.innerHTML = "";
-  document.getElementById("addToListSearch").value = "";
-
-  addToListAvailableItems = getAvailableItemsForList(listName);
-
-  renderAddToListItems(addToListAvailableItems);
-
-  addToListSheet.style.transform = "translateY(0)";
-  addToListOverlay.classList.add("show");
-}
-
-function renderAddToListItems(list){
-  addToListContainer.innerHTML = "";
-
-  if (list.length === 0) {
-    const empty = document.createElement("div");
-    empty.textContent = "No matching bottles.";
-    empty.style.padding = "16px";
-    empty.style.color = "#666";
-    addToListContainer.appendChild(empty);
-    return;
-  }
-
-  list.forEach(item => {
-    const row = document.createElement("label");
-    row.className = "add-to-list-row";
-
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.value = item.UUID;
-
-    const text = document.createElement("div");
-    text.textContent = standardWineTitle(item);
-
-    row.appendChild(checkbox);
-    row.appendChild(text);
-    addToListContainer.appendChild(row);
-  });
-}
-
-document.getElementById("addToListSearch").oninput = e => {
-  const q = e.target.value.toLowerCase();
-
-  const filtered = addToListAvailableItems.filter(item =>
-    standardWineTitle(item).toLowerCase().includes(q)
-  );
-
-  renderAddToListItems(filtered);
-};
-
-
 
 /* ---------------- HELPERS ---------------- */
 const round=v=>Math.round(v*10)/10;
@@ -1273,30 +1229,21 @@ function getItemsForSpecialtyList(listName) {
     .filter(Boolean);
 }
 
-function standardWineTitle(item){
-  return [
-    item.brand,
-    item.identifier,
-    item.varietal,
-    item.year
-  ].filter(v => v && v !== "N/A").join(" ");
+function addItemToSpecialtyList(listName, item) {
+  if (!item.UUID) return;
+
+  specialtyListData[listName] ??= [];
+
+  const uuid = String(item.UUID);
+
+  if (!specialtyListData[listName].includes(uuid)) {
+    specialtyListData[listName].push(uuid);
+  }
 }
 
-function getAvailableItemsForList(listName){
-  const existing = new Set(
-    (specialtyListData[listName] || []).map(u => String(u).toUpperCase())
-  );
-
-  return items
-    .filter(i => i.UUID && !existing.has(String(i.UUID).toUpperCase()))
-    .sort((a,b) =>
-      naLast(a.brand,b.brand) ||
-      naLast(a.identifier,b.identifier) ||
-      naLast(a.varietal,b.varietal) ||
-      naLast(b.year,a.year)
-    );
-}
-
+ input.onblur = () => {
+  setTimeout(() => suggestionBox.style.display = "none", 150);
+};
 
 
 /* ---------------- RENDER ---------------- */
@@ -1541,33 +1488,7 @@ overlay.onclick=()=>{
   drawer.classList.remove("open");
   overlay.classList.remove("show");
 };
-
-function closeAddToList(){
-  addTargetList = null;
-  addToListSheet.style.transform = "translateY(100%)";
-  addToListOverlay.classList.remove("show");
-}
-
-document.getElementById("cancelAddToList").onclick = closeAddToList;
-addToListOverlay.onclick = closeAddToList;
-
-document.getElementById("confirmAddToList").onclick = () => {
-  if (!addTargetList) return;
-
-  const selected = [...addToListContainer.querySelectorAll("input:checked")]
-    .map(cb => cb.value);
-
-  if (!specialtyListData[addTargetList]) {
-    specialtyListData[addTargetList] = [];
-  }
-
-  specialtyListData[addTargetList].push(...selected);
-
-  closeAddToList();
-  renderSpecialtyLists();
-};
-
-
+  
 /* ---------- NEW BOTTLE ---------- */
 const newBottleBtn = document.getElementById("newBottleBtn");
 const newBottleSheet = document.getElementById("newBottleSheet");
