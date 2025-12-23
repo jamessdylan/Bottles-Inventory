@@ -923,12 +923,13 @@ function updateSort(src){
   Sort=sortSelect.value="Standard";
 }
 
+let specialtyListData = {};
+
 async function loadSpecialtyLists(){
   const res = await fetch("./SpecialtyList.json", { cache:"no-store" });
-  const data = await res.json();
+  specialtyListData = await res.json();
 
-  // Extract keys from dictionary
-  specialtyLists = Object.keys(data)
+  specialtyLists = Object.keys(specialtyListData)
     .sort((a, b) => a.localeCompare(b));
 
   renderSpecialtyLists();
@@ -969,7 +970,32 @@ expandContainer.style.display =
   expandedSpecialtyList === listName ? "block" : "none";
 expandContainer.style.fontSize = "14px";
 expandContainer.style.color = "#333";
-expandContainer.textContent = "Items for this specialty list will appear here.";
+if (expandedSpecialtyList === listName) {
+  const matchedItems = getItemsForSpecialtyList(listName);
+
+  expandContainer.innerHTML = "";
+
+  if (matchedItems.length === 0) {
+    expandContainer.textContent = "No matching items.";
+  } else {
+    matchedItems.forEach(item => {
+      const div = document.createElement("div");
+      div.style.padding = "6px 0";
+      div.style.borderBottom = "1px solid rgba(0,0,0,.08)";
+      div.style.fontSize = "14px";
+
+      div.textContent = [
+        item.brand,
+        item.identifier,
+        item.varietal,
+        item.year
+      ].filter(v => v && v !== "N/A").join(" ");
+
+      expandContainer.appendChild(div);
+    });
+  }
+}
+
 row.appendChild(expandContainer);
 
 
@@ -1086,6 +1112,17 @@ function baseSort(a,b,key){
     ||naLast(a.varietal,b.varietal)
     ||naLast(b.year,a.year);
 }
+
+function getItemsForSpecialtyList(listName) {
+  const uuidList = (specialtyListData[listName] || [])
+    .map(u => String(u).toUpperCase());
+
+  return items.filter(item =>
+    item.UUID &&
+    uuidList.includes(String(item.UUID).toUpperCase())
+  );
+}
+
 
 /* ---------------- RENDER ---------------- */
 function renderItems(){
