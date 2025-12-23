@@ -858,7 +858,7 @@ const SOURCE_ICONS = {
 let items=[];
 let Source="Emporio";
 let Sort="Standard";
-let specialtyLists = [];
+let specialtyLists = {}; // { listName: [UUID, UUID] }
 let selectedSpecialtyList = null;
 let expandedSpecialtyList = null;
 
@@ -925,41 +925,111 @@ function updateSort(src){
 
 async function loadSpecialtyLists(){
   const res = await fetch("./SpecialtyList.json", { cache:"no-store" });
-  const data = await res.json();
-
-  // Extract keys from dictionary
-  specialtyLists = Object.keys(data)
-    .sort((a, b) => a.localeCompare(b));
-
+  specialtyLists = await res.json(); // keep key → UUID[] mapping
   renderSpecialtyLists();
 }
+
 
 function renderSpecialtyLists(){
   const container = document.getElementById("specialtyListContainer");
   container.innerHTML = "";
 
+  const lockedNames = ["Wine Cellar", "Prep Cooler"];
 
-  // --- Existing Lists ---
-  specialtyLists.forEach((listName, index) => {
-    const row = document.createElement("div");
-    row.className = "specialty-row";
-    row.textContent = listName;
-    row.style.cursor = "pointer";
-    row.style.fontSize = "16px";
+  Object.keys(specialtyLists)
+    .sort((a, b) => a.localeCompare(b))
+    .forEach(listName => {
 
-    // select list
-let startX = 0;
-let currentX = 0;
-let dragging = false;
-let didSwipe = false;
-row.onclick = () => {
-if (didSwipe) return;
-  expandedSpecialtyList =
-    expandedSpecialtyList === listName ? null : listName;
+      const row = document.createElement("div");
+      row.className = "specialty-row";
+      row.textContent = listName;
+      row.style.cursor = "pointer";
 
+      let startX = 0;
+      let currentX = 0;
+      let dragging = false;
+      let didSwipe = false;
 
-  renderSpecialtyLists();
-};
+      row.onclick = () => {
+        if (didSwipe) return;
+        expandedSpecialtyList =
+          expandedSpecialtyList === listName ? null : listName;
+        renderSpecialtyLists();
+      };
+
+      /* ---------- EXPANDED CONTENT ---------- */
+      if (expandedSpecialtyList === listName) {
+        const expand = document.createElement("div");
+        expand.style.marginTop = "10px";
+        expand.style.paddingLeft = "12px";
+        expand.style.fontSize = "14px";
+
+        const uuids = specialtyLists[listName] || [];
+
+        if (uuids.length === 0) {
+          expand.textContent = "No items in this list.";
+        } else {
+          uuids.forEach(uuid => {
+            const item = items.find(i => i.UUID === uuid);
+            if (!item) return;
+
+            const div = document.createElement("div");
+            div.style.padding = "6px 0";
+            div.textContent = [
+              item.brand,
+              item.identifier,
+              item.varietal,
+              item.year
+            ].filter(v => v && v !== "N/A").join(" ");
+
+            expand.appendChild(div);
+          });
+        }
+
+        row.appendChild(expand);
+      }
+
+      /* ---------- SWIPE TO DELETE ---------- */
+      row.addEventListener("pointerdown", e => {
+        didSwipe = false;
+        startX = e.clientX;
+        dragging = true;
+        row.setPointerCapture(e.pointerId);
+      });
+
+      row.addEventListener("pointermove", e => {
+        if (!dragging) return;
+        currentX = e.clientX - startX;
+        if (currentX < -10) didSwipe = true;
+        if (currentX < 0) {
+          row.style.transform = `translateX(${currentX}px)`;
+        }
+      });
+
+      row.addEventListener("pointerup", () => {
+        dragging = false;
+
+        if (currentX < -80) {
+          if (lockedNames.includes(listName)) {
+            row.style.transform = "translateX(0)";
+            return;
+          }
+
+          row.classList.add("deleting");
+          setTimeout(() => {
+            delete specialtyLists[listName];
+            renderSpecialtyLists();
+          }, 250);
+        } else {
+          row.style.transform = "translateX(0)";
+        }
+
+        currentX = 0;
+      });
+
+      container.appendChild(row);
+    });
+}
 
 
 const expandContainer = document.createElement("div");
@@ -1069,7 +1139,8 @@ document.getElementById("addSpecialtyList").onclick = () => {
     return;
   }
 
-  specialtyLists.push(name);
+  specialtyLists[name] = [];
+renderSpecialtyLists();
   specialtyLists.sort((a,b)=>a.localeCompare(b));
   renderSpecialtyLists();
 };
