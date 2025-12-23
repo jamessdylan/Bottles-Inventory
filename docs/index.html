@@ -733,6 +733,28 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   </button>
 
   <div id="specialtyListContainer"></div>
+
+<!-- SPECIALTY LIST CONTENT -->
+<div id="specialtyItemEditor" style="display:none;margin-top:20px;">
+  <div style="font-weight:600;margin-bottom:10px;">
+    Items in List
+  </div>
+
+  <div id="specialtyItems"></div>
+
+  <button id="addSpecialtyItem" style="
+    width:100%;
+    margin-top:18px;
+    padding:14px;
+    border-radius:14px;
+    border:none;
+    background:#eee;
+    font-size:16px;
+  ">
+    + Add New Item
+  </button>
+</div>
+
 </div>
 
 <header><img src="SiennaTransparent.png"></header>
@@ -929,11 +951,11 @@ function renderSpecialtyLists(){
     opt.value = entry.list;
     select.appendChild(opt);
 
-    select.onchange = () => {
-      selectedSpecialtyList = entry;
-      alert(`Editing "${entry.list}"`);
-      // next step: open editor view
-    };
+  select.onchange = () => {
+  selectedSpecialtyList = entry;
+  renderSpecialtyItems();
+};
+
 
     row.appendChild(select);
 
@@ -952,6 +974,99 @@ function renderSpecialtyLists(){
     container.appendChild(row);
   });
 }
+
+function openAddSpecialtyItemPicker(){
+  const available = items.filter(i =>
+    !selectedSpecialtyList.value.includes(i.uuid)
+  );
+
+  if (!available.length) {
+    alert("All items are already in this list.");
+    return;
+  }
+
+  const overlay = document.createElement("div");
+  overlay.style.cssText = `
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.3);
+    z-index:600;
+  `;
+
+  const sheet = document.createElement("div");
+  sheet.style.cssText = `
+    position:fixed;
+    bottom:0;
+    left:0;
+    right:0;
+    max-height:70%;
+    background:white;
+    border-radius:20px 20px 0 0;
+    padding:16px;
+    overflow-y:auto;
+    z-index:601;
+  `;
+
+  const title = document.createElement("div");
+  title.textContent = "Select Items to Add";
+  title.style.fontWeight = "600";
+  title.style.marginBottom = "12px";
+  sheet.appendChild(title);
+
+  const selections = new Set();
+
+  available.forEach(item => {
+    const row = document.createElement("div");
+    row.style.cssText = `
+      padding:12px;
+      border-radius:10px;
+      margin-bottom:8px;
+      background:#f2f2f2;
+    `;
+
+    row.textContent = itemDisplayTitle(item);
+    row.onclick = () => {
+      row.classList.toggle("selected");
+      selections.has(item.uuid)
+        ? selections.delete(item.uuid)
+        : selections.add(item.uuid);
+    };
+
+    sheet.appendChild(row);
+  });
+
+  const done = document.createElement("button");
+  done.textContent = "Add Selected Items";
+  done.style.cssText = `
+    width:100%;
+    padding:14px;
+    margin-top:12px;
+    border-radius:14px;
+    border:none;
+    background:#1f5e3b;
+    color:white;
+    font-size:16px;
+  `;
+
+  done.onclick = () => {
+    selectedSpecialtyList.value.push(...selections);
+    document.body.removeChild(overlay);
+    document.body.removeChild(sheet);
+    renderSpecialtyItems();
+  };
+
+  sheet.appendChild(done);
+
+  overlay.onclick = () => {
+    document.body.removeChild(overlay);
+    document.body.removeChild(sheet);
+  };
+
+  document.body.appendChild(overlay);
+  document.body.appendChild(sheet);
+}
+
+document.getElementById("addSpecialtyItem").onclick = openAddSpecialtyItemPicker;
 
 const specialtyBtn = document.getElementById("specialtyListBtn");
 const specialtySheet = document.getElementById("specialtySheet");
@@ -991,6 +1106,46 @@ document.getElementById("addSpecialtyList").onclick = () => {
   specialtyLists.sort((a,b)=>a.list.localeCompare(b.list));
   renderSpecialtyLists();
 };
+
+function renderSpecialtyItems(){
+  const editor = document.getElementById("specialtyItemEditor");
+  const container = document.getElementById("specialtyItems");
+
+  editor.style.display = "block";
+  container.innerHTML = "";
+
+  const matchedItems = selectedSpecialtyList.value
+    .map(uuid => items.find(i => i.uuid === uuid))
+    .filter(Boolean);
+
+  matchedItems.forEach(item => {
+    const row = document.createElement("div");
+    row.style.cssText = `
+      padding:14px;
+      background:rgba(255,255,255,.6);
+      border-radius:12px;
+      margin-bottom:10px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+    `;
+
+    const title = document.createElement("div");
+    title.textContent = itemDisplayTitle(item);
+
+    const del = document.createElement("button");
+    del.textContent = "Delete";
+    del.onclick = () => {
+      selectedSpecialtyList.value =
+        selectedSpecialtyList.value.filter(id => id !== item.uuid);
+      renderSpecialtyItems();
+    };
+
+    row.appendChild(title);
+    row.appendChild(del);
+    container.appendChild(row);
+  });
+}
 
 /* ---------------- HELPERS ---------------- */
 const round=v=>Math.round(v*10)/10;
