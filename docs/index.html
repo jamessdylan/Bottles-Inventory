@@ -34,6 +34,11 @@ body {
     env(safe-area-inset-left);
   font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
 }
+.featured-buttons{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
 
 /* ---------- BACKGROUND ---------- */
 body::before{
@@ -334,6 +339,52 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   opacity: 0.55;
 }
 
+/* ---------- EXPANDED SPECIALTY LIST ---------- */
+.specialty-expanded {
+  margin-top: 20px;
+}
+
+.specialty-expanded h2 {
+  font-family: "Copperplate", serif;
+  font-size: 18px;
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+/* item row wrapper */
+.specialty-item-wrapper {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  margin-bottom: 12px;
+}
+
+/* red delete background */
+.specialty-item-delete-bg {
+  position: absolute;
+  inset: 0;
+  background: #b00020;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 20px;
+  color: white;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+/* foreground row */
+.specialty-item-row {
+  background: rgba(255,255,255,.75);
+  padding: 14px 16px;
+  transition: transform .25s ease, opacity .25s ease;
+  touch-action: pan-y;
+}
+
+.specialty-item-row.deleting {
+  transform: translateX(-120%);
+  opacity: 0;
+}
 
 #datePicker button{
   background:none;
@@ -631,7 +682,8 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 <div style="font-family:'Copperplate',serif;">Featured</div>
 
 
-  <div id="featuredButtons" style="
+  <div id="featuredButtons" class="featured-buttons">
+
 
 .featured-btn{
   padding:10px 14px;
@@ -1111,25 +1163,6 @@ document.getElementById("addSpecialtyList").onclick = () => {
   renderSpecialtyLists();
 };
 
-/* ---------- EXPANDED SPECIALTY LIST ---------- */
-.specialty-expanded {
-  margin-top: 20px;
-}
-
-.specialty-expanded h2 {
-  font-family: "Copperplate", serif;
-  font-size: 18px;
-  text-align: center;
-  margin-bottom: 14px;
-}
-
-/* item row wrapper */
-.specialty-item-wrapper {
-  position: relative;
-  overflow: hidden;
-  border-radius: 14px;
-  margin-bottom: 12px;
-}
 
 /* red delete background */
 .specialty-item-delete-bg {
