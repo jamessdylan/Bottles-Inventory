@@ -1087,6 +1087,23 @@ function baseSort(a,b,key){
     ||naLast(b.year,a.year);
 }
 
+/* ---------- COLOR RGBA CONSTANTS ---------- */
+const RGBA_COLORS = {
+  WHITE: "rgba(201,176,55,0.22)",      // #C9B037
+  ROSE:  "rgba(217,124,138,0.22)",     // #D97C8A
+  RED:   "rgba(123,30,30,0.22)"        // #7B1E1E
+};
+
+function getItemBackgroundRGBA(color) {
+  if (!color) return RGBA_COLORS.WHITE;
+
+  if (color === "White") return RGBA_COLORS.WHITE;
+  if (color === "Rose/Sparkling” || color === “Rose”) return RGBA_COLORS.ROSE;
+  if (color === "Red") return RGBA_COLORS.RED;
+
+  return RGBA_COLORS.WHITE;
+}
+
 /* ---------------- RENDER ---------------- */
 function renderItems(){
   list.innerHTML = "";
@@ -1193,6 +1210,7 @@ function drawItem(item){
 
   const row=document.createElement("div");
   row.className="item";
+row.style.background = getItemBackgroundRGBA(item.color);
   row.innerHTML=`
     <div class="left">
       <div class="icon">${iconHTML}</div>
