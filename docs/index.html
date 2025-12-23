@@ -833,39 +833,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 </div>
 
 
-
-let addTargetList = null;
-
-const addToListSheet = document.getElementById("addToListSheet");
-const addToListOverlay = document.getElementById("addToListOverlay");
-const addToListContainer = document.getElementById("addToListContainer");
-
-function openAddToList(listName){
-  addTargetList = listName;
-  addToListContainer.innerHTML = "";
-
-  const available = getAvailableItemsForList(listName);
-
-  available.forEach(item=>{
-    const row = document.createElement("label");
-    row.className = "add-to-list-row";
-
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.value = item.UUID;
-
-    const text = document.createElement("div");
-    text.textContent = standardWineTitle(item);
-
-    row.appendChild(checkbox);
-    row.appendChild(text);
-    addToListContainer.appendChild(row);
-  });
-
-  addToListSheet.style.transform = "translateY(0)";
-  addToListOverlay.classList.add("show");
-}
-
 </nav>
 
 
@@ -957,6 +924,7 @@ const tabsEl=document.getElementById("sourceTabs");
 
 const drawer = document.getElementById("drawer");
 const overlay = document.getElementById("overlay");
+
 
 
 /* ---------------- LOAD ---------------- */
@@ -1204,6 +1172,38 @@ document.getElementById("addSpecialtyList").onclick = () => {
   renderSpecialtyLists();
 };
 
+
+let addTargetList = null;
+
+const addToListSheet = document.getElementById("addToListSheet");
+const addToListOverlay = document.getElementById("addToListOverlay");
+const addToListContainer = document.getElementById("addToListContainer");
+
+function openAddToList(listName){
+  addTargetList = listName;
+  addToListContainer.innerHTML = "";
+
+  const available = getAvailableItemsForList(listName);
+
+  available.forEach(item=>{
+    const row = document.createElement("label");
+    row.className = "add-to-list-row";
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.value = item.UUID;
+
+    const text = document.createElement("div");
+    text.textContent = standardWineTitle(item);
+
+    row.appendChild(checkbox);
+    row.appendChild(text);
+    addToListContainer.appendChild(row);
+  });
+
+  addToListSheet.style.transform = "translateY(0)";
+  addToListOverlay.classList.add("show");
+}
 
 
 /* ---------------- HELPERS ---------------- */
