@@ -1076,11 +1076,17 @@ specialtyBtn.onclick = async () => {
   drawer.classList.remove("open");
   overlay.classList.remove("show");
 
+  // ensure inventory is loaded
+  if (!items.length) {
+    await loadItems();
+  }
+
   await loadSpecialtyLists();
 
   specialtySheet.style.transform = "translateX(0)";
   specialtyOverlay.classList.add("show");
 };
+
 
 document.getElementById("closeSpecialty").onclick = () => {
   specialtySheet.style.transform = "translateX(100%)";
@@ -1106,6 +1112,17 @@ document.getElementById("addSpecialtyList").onclick = () => {
   specialtyLists.sort((a,b)=>a.list.localeCompare(b.list));
   renderSpecialtyLists();
 };
+
+function itemDisplayTitle(item) {
+  if (!item) return "";
+  return [
+    item.brand,
+    item.identifier,
+    item.varietal,
+    item.year
+  ].filter(v => v && v !== "N/A").join(" ");
+}
+
 
 function renderSpecialtyItems(){
   const editor = document.getElementById("specialtyItemEditor");
@@ -1134,7 +1151,15 @@ function renderSpecialtyItems(){
     title.textContent = itemDisplayTitle(item);
 
     const del = document.createElement("button");
-    del.textContent = "Delete";
+del.textContent = "Remove";
+del.style.cssText = `
+  background:#b00020;
+  color:white;
+  border:none;
+  border-radius:8px;
+  padding:6px 10px;
+`;
+
     del.onclick = () => {
       selectedSpecialtyList.value =
         selectedSpecialtyList.value.filter(id => id !== item.uuid);
