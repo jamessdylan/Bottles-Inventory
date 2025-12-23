@@ -921,29 +921,6 @@ function renderSpecialtyLists(){
   const container = document.getElementById("specialtyListContainer");
   container.innerHTML = "";
 
-  // --- Create New List (always first) ---
-  const createRow = document.createElement("div");
-  createRow.className = "specialty-row";
-  createRow.textContent = "＋ Create New List";
-  createRow.style.fontWeight = "600";
-  createRow.style.cursor = "pointer";
-
-  createRow.onclick = () => {
-    const name = prompt("New list name:");
-    if (!name) return;
-
-    if (specialtyLists.includes(name)) {
-      alert("List already exists");
-      return;
-    }
-
-    specialtyLists.push(name);
-    specialtyLists.sort((a,b)=>a.localeCompare(b));
-    renderSpecialtyLists();
-  };
-
-  container.appendChild(createRow);
-
   // --- Existing Lists ---
   specialtyLists.forEach((listName, index) => {
     const row = document.createElement("div");
