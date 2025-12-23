@@ -105,8 +105,6 @@ select{
   padding:8px 16px;
 }
 
-
-
 /* ---------- LIST ---------- */
 .list{padding:8px 16px 140px;}
 
@@ -668,12 +666,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
 <div class="tabs" id="sourceTabs"></div>
 <section class="section"><select id="sortSelect"></select></section>
-<section class="section" id="specialtySection" style="display:none;">
-  <select id="specialtySelect">
-    <option disabled selected>Select List to Edit</option>
-  </select>
-</section>
-
 <div class="list" id="list"></div>
 <nav class="action-bar">
 
@@ -776,28 +768,11 @@ const SOURCE_ICONS = {
 let items=[];
 let Source="Emporio";
 let Sort="Standard";
-let specialtyLists = {};
-let selectedSpecialtyListKey = null;
-let viewMode = "inventory"; 
-// "inventory" | "specialty"
 
 
 const list=document.getElementById("list");
 const sortSelect=document.getElementById("sortSelect");
 const tabsEl=document.getElementById("sourceTabs");
-
-
-specialtyListBtn.onclick = async () => {
-  drawer.classList.remove("open");
-  overlay.classList.remove("show");
-
-  viewMode = "specialty";
-  document.getElementById("specialtySection").style.display = "flex";
-
-  await loadSpecialtyLists();
-
-  list.innerHTML = ""; // clear main list until a list is selected
-};
 
 /* ---------------- LOAD ---------------- */
 async function loadItems(){
@@ -826,14 +801,8 @@ function buildSourceTabs(){
       document.querySelectorAll(".tab").forEach(t =>
         t.classList.remove("active")
       );
-
-viewMode = "inventory";
-document.getElementById("specialtySection").style.display = "none";
-renderItems();
-
       tab.classList.add("active");
       updateSort(Source);
-
       renderItems();
     };
 
@@ -856,8 +825,6 @@ function updateSort(src){
   });
   Sort=sortSelect.value="Standard";
 }
-
-
 
 /* ---------------- HELPERS ---------------- */
 const round=v=>Math.round(v*10)/10;
@@ -890,45 +857,6 @@ function renderItems(){
 
   visibleItems.sort((a, b) => baseSort(a, b, key));
   visibleItems.forEach(drawItem);
-}
-
-function renderSpecialtyList() {
-  list.innerHTML = "";
-
-  if (!selectedSpecialtyListKey) return;
-
-  // find the selected list object
-  const listObj = specialtyLists.find(
-    l => l.list === selectedSpecialtyListKey
-  );
-
-  if (!listObj || !Array.isArray(listObj.value)) return;
-
-  // match UUIDs to items
-  const matchedItems = items.filter(item =>
-    listObj.value.includes(item.uuid)
-  );
-
-  matchedItems
-    .sort((a, b) =>
-      wineTitle(a).toLowerCase().localeCompare(
-        wineTitle(b).toLowerCase()
-      )
-    )
-    .forEach(item => {
-      const row = document.createElement("div");
-      row.className = "item";
-      row.innerHTML = `
-        <div class="left">
-          <div class="text-stack">
-            <div class="title">
-              ${wineTitle(item)}
-            </div>
-          </div>
-        </div>
-      `;
-      list.appendChild(row);
-    });
 }
 
 
@@ -1122,28 +1050,6 @@ row.onpointerleave = () => clearTimeout(rowHoldTimer);
 
   list.appendChild(row);
 }
-
-async function loadSpecialtyLists() {
-  const res = await fetch("./SpecialtyList.json", { cache: "no-store" });
-  specialtyLists = await res.json(); // ARRAY
-
-  const select = document.getElementById("specialtySelect");
-  select.innerHTML = `<option disabled selected>Select List to Edit</option>`;
-
-  specialtyLists
-    .map(e => e.list)
-    .sort((a, b) => a.localeCompare(b))
-    .forEach(name => {
-      const opt = document.createElement("option");
-      opt.value = name;
-      opt.textContent = name;
-      select.appendChild(opt);
-    });
-
-  document.getElementById("specialtySection").style.display = "flex";
-}
-
-
 
 /* ---------- INIT ---------- */
 buildSourceTabs();
@@ -1643,21 +1549,6 @@ confirmNewBottle.onclick = () => {
   closeNewBottle();
 };
 
-
-const specialtyListBtn = document.getElementById("specialtyListBtn");
-const specialtySelect = document.getElementById("specialtySelect");
-
-specialtyListBtn.onclick = async () => {
-  drawer.classList.remove("open");
-  overlay.classList.remove("show");
-
-  await loadSpecialtyLists();
-};
-
-specialtySelect.onchange = () => {
-  selectedSpecialtyListKey = specialtySelect.value;
-  renderSpecialtyList();
-};
 
 
 
