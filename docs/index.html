@@ -211,7 +211,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 }
 .overlay.show{display:block;}
 
-
 /* ---------- FIXED ACTION BAR ---------- */
 .action-bar{
   position:fixed;
@@ -241,40 +240,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   fill:none;
 }
 .action-bar img{filter:brightness(0) invert(1);}
-
-/* ---------- SPECIALTY LIST ROW ---------- */
-.specialty-row{
-  position:relative;
-  background:rgba(255,255,255,.6);
-  padding:16px;
-  border-radius:14px;
-  margin-bottom:12px;
-  overflow:hidden;
-}
-
-.specialty-row select{
-  width:100%;
-  font-size:16px;
-  padding:10px;
-  border-radius:10px;
-}
-
-/* swipe delete */
-.specialty-delete{
-  position:absolute;
-  right:0;
-  top:0;
-  bottom:0;
-  width:80px;
-  background:#b00020;
-  color:white;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-weight:bold;
-}
-
-
 </style>
 </head>
 
@@ -697,44 +662,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
 <div class="overlay" id="overlay"></div>
 
-<!-- SPECIALTY LIST OVERLAY -->
-<div id="specialtyOverlay" class="overlay"></div>
-
-<div id="specialtySheet" style="
-  position:fixed;
-  inset:0;
-  background:rgba(255,255,255,.92);
-  backdrop-filter:blur(16px);
-  padding:calc(20px + env(safe-area-inset-top)) 16px 20px;
-  transform:translateX(100%);
-  transition:.25s ease;
-  z-index:500;
-  overflow-y:auto;
-">
-
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-    <div style="font-family:'Copperplate',serif;font-size:18px;">
-      Select List to Edit
-    </div>
-    <button id="closeSpecialty">Done</button>
-  </div>
-
-  <button id="addSpecialtyList" style="
-    width:100%;
-    padding:14px;
-    border-radius:14px;
-    border:none;
-    background:#1f5e3b;
-    color:white;
-    font-size:16px;
-    margin-bottom:16px;
-  ">
-    + Create New List
-  </button>
-
-  <div id="specialtyListContainer"></div>
-</div>
-
 <header><img src="SiennaTransparent.png"></header>
 
 <div class="tabs" id="sourceTabs"></div>
@@ -841,15 +768,11 @@ const SOURCE_ICONS = {
 let items=[];
 let Source="Emporio";
 let Sort="Standard";
-let specialtyLists = [];
-let selectedSpecialtyList = null;
 
 
 const list=document.getElementById("list");
 const sortSelect=document.getElementById("sortSelect");
 const tabsEl=document.getElementById("sourceTabs");
-
-const drawer = document.getElementById("drawer");
 
 /* ---------------- LOAD ---------------- */
 async function loadItems(){
@@ -902,116 +825,6 @@ function updateSort(src){
   });
   Sort=sortSelect.value="Standard";
 }
-
-async function loadSpecialtyLists(){
-  const res = await fetch("./SpecialtyList.json", { cache:"no-store" });
-  specialtyLists = await res.json();
-
-  // alphabetical
-  specialtyLists.sort((a,b)=>
-    a.list.localeCompare(b.list)
-  );
-
-  renderSpecialtyLists();
-}
-
-function renderSpecialtyLists(){
-  const container = document.getElementById("specialtyListContainer");
-  container.innerHTML = "";
-
-  specialtyLists.forEach((entry, index) => {
-    const row = document.createElement("div");
-    row.className = "specialty-row";
-    row.textContent = entry.list;
-
-    row.style.cursor = "pointer";
-    row.style.fontSize = "16px";
-    row.style.fontWeight = "500";
-
-    // SELECT LIST
-    row.onclick = () => {
-      selectedSpecialtyList = entry;
-      console.log("Selected Specialty List:", entry.list);
-
-      // Close selector sheet (editor comes next step)
-      specialtySheet.style.transform = "translateX(100%)";
-      specialtyOverlay.classList.remove("show");
-    };
-
-    /* swipe-to-delete */
-    let startX = 0;
-    row.onpointerdown = e => startX = e.clientX;
-    row.onpointerup = e => {
-      if (startX - e.clientX > 80) {
-        if (confirm(`Delete "${entry.list}"?`)) {
-          specialtyLists.splice(index, 1);
-          renderSpecialtyLists();
-        }
-      }
-    };
-
-    container.appendChild(row);
-  });
-}
-
-
-
-    row.appendChild(select);
-
-    /* swipe-to-delete */
-    let startX = 0;
-    row.onpointerdown = e => startX = e.clientX;
-    row.onpointerup = e => {
-      if (startX - e.clientX > 80) {
-        if (confirm(`Delete "${entry.list}"?`)) {
-          specialtyLists.splice(index, 1);
-          renderSpecialtyLists();
-        }
-      }
-    };
-
-    container.appendChild(row);
-  });
-}
-
-const specialtyBtn = document.getElementById("specialtyListBtn");
-const specialtySheet = document.getElementById("specialtySheet");
-const specialtyOverlay = document.getElementById("specialtyOverlay");
-
-specialtyBtn.onclick = async () => {
-  drawer.classList.remove("open");
-  overlay.classList.remove("show");
-
-  await loadSpecialtyLists();
-
-  specialtySheet.style.transform = "translateX(0)";
-  specialtyOverlay.classList.add("show");
-};
-
-document.getElementById("closeSpecialty").onclick = () => {
-  specialtySheet.style.transform = "translateX(100%)";
-  specialtyOverlay.classList.remove("show");
-};
-
-specialtyOverlay.onclick = () => {
-  specialtySheet.style.transform = "translateX(100%)";
-  specialtyOverlay.classList.remove("show");
-};
-
-
-document.getElementById("addSpecialtyList").onclick = () => {
-  const name = prompt("New list name:");
-  if (!name) return;
-
-  if (specialtyLists.some(l => l.list === name)) {
-    alert("List already exists");
-    return;
-  }
-
-  specialtyLists.push({ list:name, value:[] });
-  specialtyLists.sort((a,b)=>a.list.localeCompare(b.list));
-  renderSpecialtyLists();
-};
 
 /* ---------------- HELPERS ---------------- */
 const round=v=>Math.round(v*10)/10;
