@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>Mercato</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -60,35 +60,15 @@ header img{max-width:100%;}
   padding:10px 12px;
   overflow-x:auto;
 }
-
 .tab{
-  padding:8px;
+  padding:8px 14px;
   border-radius:14px;
-background:rgba(240,233,233,.65);
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  background:#eee;
+  font-family:"Copperplate",serif;
+  font-size:14px;
   cursor:pointer;
-  min-width:56px;
 }
-
-.tab img{
-  width:34px;
-  height:34px;
-  object-fit:contain;
-  transition:.15s ease;
-}
-
-/* Rosé highlight when active */
-.tab.active{
-  background:rgba(217,124,138,.25);
-  box-shadow:0 0 0 2px rgba(217,124,138,.6);
-}
-
-.tab.active img{
-  filter:saturate(1.1);
-}
-
+.tab.active{background:#000;color:#fff;}
 
 /* ---------- SORT ---------- */
 .section{
@@ -304,7 +284,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
     <button id="cancelNewBottle">Cancel</button>
     <div style="font-family:'Copperplate',serif;">New Bottle</div>
-<button id="confirmNewBottle">Done</button>
+    <button disabled>Done</button>
   </div>
 
 <!-- IMAGE INPUT -->
@@ -621,25 +601,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   ></textarea>
 </div>
 
-<!-- DELETE (EDIT ONLY) -->
-<button
-  id="deleteBottleBtn"
-  style="
-    margin-top:18px;
-    width:100%;
-    padding:14px;
-    border-radius:14px;
-    border:none;
-    background:#b00020;
-    color:white;
-    font-size:16px;
-    display:none;
-  "
->
-  Delete Bottle
-</button>
-
-
 </div>
 
 <body>
@@ -648,17 +609,11 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
 <div class="drawer" id="drawer">
   <div class="drawer-title" id="pageTitle"></div>
-
   <button>New Project</button>
-
-  <button id="specialtyListBtn">Specialty List</button>
-  <button id="reserveListBtn">Reserve List</button>
-
   <button>Sales Report</button>
   <button>Dictionary File</button>
   <button id="exportBtn">Export</button>
 </div>
-
 
 <div class="overlay" id="overlay"></div>
 
@@ -667,32 +622,38 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 <div class="tabs" id="sourceTabs"></div>
 <section class="section"><select id="sortSelect"></select></section>
 <div class="list" id="list"></div>
+
 <nav class="action-bar">
-
-  <button id="undoBtn" title="Undo">
-    <img src="UndoTransparent.png" alt="Undo">
+<button id="newBottleBtn" title="New Bottle">
+    <svg viewBox="0 0 24 24">
+      <circle cx="9" cy="9" r="2"/>
+      <circle cx="13" cy="9" r="2"/>
+      <circle cx="11" cy="12" r="2"/>
+      <circle cx="9" cy="15" r="2"/>
+      <circle cx="13" cy="15" r="2"/>
+      <path d="M18 12v6"/>
+      <path d="M15 15h6"/>
+    </svg>
   </button>
 
-
-  <button id="newBottleBtn" title="New Bottle">
-    <img src="NewBottleTransparent.png" alt="New Bottle">
+  <button title="Undo">
+    <svg viewBox="0 0 24 24">
+      <path d="M9 14l-4-4 4-4"/>
+      <path d="M5 10h7a6 6 0 1 1 0 12"/>
+    </svg>
   </button>
-
 
   <button id="archiveBtn" title="Archive">
-    <img src="ArchiveTransparent.png" alt="Archive">
+    <svg viewBox="0 0 24 24">
+      <path d="M3 7h18"/>
+      <path d="M5 7v12h14V7"/>
+    </svg>
   </button>
 
-  <button id="groupBtn" title="Group">
-    <img src="GroupTransparent.png" alt="Group">
+  <button id="smartSortBtn" title="Smart Sort">
+    <img src="brain.png">
   </button>
-
-  <button id="smartSortBtn" title="Sort">
-    <img src="SortTransparent.png" alt="Sort">
-  </button>
-
 </nav>
-
 
 <script>
 /* ---------- PAGE TITLE ---------- */
@@ -754,17 +715,6 @@ const SOURCES=[
   "Wine Cellar","Liquor Closet","Prep Cooler","Other"
 ];
 
-const SOURCE_ICONS = {
-  "Emporio": "EmporioTransparent.png",
-  "Mezzo": "MezzoTransparent.png",
-  "Tetto (L)": "TettoLeftTransparent.png",
-  "Tetto (R)": "TettoRightTransparent.png",
-  "Liquor Closet": "LiquorClosetTransparent.png",
-  "Wine Cellar": "WineCellarTransparent.png",
-  "Prep Cooler": "PrepCoolerTransparent.png",
-  "Other": "OtherTransparent.png"
-};
-
 let items=[];
 let Source="Emporio";
 let Sort="Standard";
@@ -783,33 +733,21 @@ async function loadItems(){
 
 /* ---------------- TABS ---------------- */
 function buildSourceTabs(){
-  tabsEl.innerHTML = "";
-
-  SOURCES.forEach(src => {
-    const tab = document.createElement("div");
-    tab.className = "tab" + (src === Source ? " active" : "");
-
-    const img = document.createElement("img");
-    img.src = SOURCE_ICONS[src];
-    img.alt = src;
-    img.title = src;
-
-    tab.appendChild(img);
-
-    tab.onclick = () => {
-      Source = src;
-      document.querySelectorAll(".tab").forEach(t =>
-        t.classList.remove("active")
-      );
+  tabsEl.innerHTML="";
+  SOURCES.forEach(src=>{
+    const tab=document.createElement("div");
+    tab.className="tab"+(src===Source?" active":"");
+    tab.textContent=src;
+    tab.onclick=()=>{
+      Source=src;
+      document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
       tab.classList.add("active");
       updateSort(Source);
       renderItems();
     };
-
     tabsEl.appendChild(tab);
   });
 }
-
 
 /* ---------------- SORT ---------------- */
 function getSortOptions(src){
@@ -839,102 +777,17 @@ function baseSort(a,b,key){
 
 /* ---------------- RENDER ---------------- */
 function renderItems(){
-  list.innerHTML = "";
-
-  const key = `${Source}Complete`;
-
-  // normalize values
-  items.forEach(i => {
-    i[Source] = Math.max(0, Number(i[Source]) || 0);
-    if (typeof i[key] !== "boolean") i[key] = false;
-    if (typeof i.status !== "boolean") i.status = true;
+  list.innerHTML="";
+  const key=`${Source}Complete`;
+  items.forEach(i=>{
+    i[Source]=Math.max(0,Number(i[Source])||0);
+    if(typeof i[key]!=="boolean") i[key]=false;
   });
-
-  // 🔑 FILTER RULE
-  const visibleItems = items.filter(item =>
-    showArchived || item.status === true
-  );
-
-  visibleItems.sort((a, b) => baseSort(a, b, key));
-  visibleItems.forEach(drawItem);
+  items.sort((a,b)=>baseSort(a,b,key));
+  items.forEach(drawItem);
 }
-
 
 /* ---------------- DRAW ITEM ---------------- */
-function openEditBottle(item) {
-  editingItem = item;
-
-
-  // --- populate values ---
-  newBottleStatus = item.status;
-  statusValue.textContent = item.status ? "Active" : "Inactive";
-  statusValue.style.color = item.status ? "green" : "red";
-
-  newBottleTier = item.tier || "House";
-  tierToggle.onclick(); // force UI sync
-  tierToggle.onclick(); // toggle back to correct state
-
-  newBottleColor = item.color || "White";
-  updateColorUI();
-
-  brandInput.value = item.brand !== "N/A" ? item.brand : "";
-  newBottleBrand = brandInput.value;
-
-  identifierInput.value = item.identifier !== "N/A" ? item.identifier : "";
-  newBottleIdentifier = identifierInput.value || "N/A";
-
-  varietalInput.value = item.varietal !== "N/A" ? item.varietal : "";
-  newBottleVarietal = varietalInput.value;
-
-  yearInput.value = item.year !== "N/A" ? item.year : "";
-  newBottleYear = item.year;
-
-  priceInput.value = item.price || "";
-  newBottlePrice = item.price || null;
-
-  noteInput.value = item.note || "";
-  newBottleNote = item.note || "";
-deleteBottleBtn.style.display = "block";
-
-
-
-  // featured
-  newBottleFeatured = [];
-  document.querySelectorAll(".featured-btn").forEach(btn => {
-    const v = btn.dataset.value;
-    if ((item.featured || "").includes(v)) {
-      btn.classList.add("active");
-      newBottleFeatured.push(v);
-    } else {
-      btn.classList.remove("active");
-    }
-  });
-
-
-  // icon
-  if (item.base64) {
-    newBottleBase64 = true;
-    newBottleIcon = item.icon;
-    newBottleImageBox.innerHTML = `
-      <img src="data:image/*;base64,${item.icon}"
-           style="width:100%;height:100%;object-fit:cover;">
-    `;
-  } else {
-    newBottleBase64 = false;
-    newBottleIcon = null;
-    newBottleImageBox.textContent = "Insert Image";
-  }
-
-
-  // open sheet
-  document.body.style.overflow = "hidden";
-  newBottleSheet.style.opacity = "1";
-  newBottleSheet.style.pointerEvents = "auto";
-  newBottleSheet.style.transform = "translate(-50%, -50%) scale(1)";
-  newBottleOverlay.classList.add("show");
-}
-
-
 function drawItem(item){
   const key=`${Source}Complete`;
   const iconHTML=item.base64
@@ -981,72 +834,9 @@ function drawItem(item){
   valueEl.onpointerup=()=>clearTimeout(pressTimer);
   valueEl.onpointerleave=()=>clearTimeout(pressTimer);
 
-   const minusBtn = row.querySelector(".minus");
-  const plusBtn  = row.querySelector(".plus");
-
-  let holdTimerBtn;
-
-  /* ----- MINUS ----- */
-  minusBtn.onclick = () => {
-    item[Source] = Math.max(0, round(item[Source] - 1));
-    renderItems();
-  };
-
-  minusBtn.onpointerdown = () => {
-    holdTimerBtn = setTimeout(() => {
-      const v = prompt("Subtract how many?", 0);
-      if (v !== null && !isNaN(v)) {
-        item[Source] = Math.max(
-          0,
-          round(item[Source] - Number(v))
-        );
-        renderItems();
-      }
-    }, 450);
-  };
-
-  minusBtn.onpointerup = () => clearTimeout(holdTimerBtn);
-  minusBtn.onpointerleave = () => clearTimeout(holdTimerBtn);
-
-  /* ----- PLUS ----- */
-  plusBtn.onclick = () => {
-    item[Source] = round(item[Source] + 1);
-    renderItems();
-  };
-
-  plusBtn.onpointerdown = () => {
-    holdTimerBtn = setTimeout(() => {
-      const v = prompt("Add how many?", 0);
-      if (v !== null && !isNaN(v)) {
-        item[Source] = round(item[Source] + Number(v));
-        renderItems();
-      }
-    }, 450);
-  };
-
-  plusBtn.onpointerup = () => clearTimeout(holdTimerBtn);
-  plusBtn.onpointerleave = () => clearTimeout(holdTimerBtn);
-
-
+  row.querySelector(".minus").onclick=()=>{item[Source]=Math.max(0,round(item[Source]-1));renderItems();}
+  row.querySelector(".plus").onclick=()=>{item[Source]=round(item[Source]+1);renderItems();}
   row.querySelector(".toggle").onclick=()=>{item[key]=!item[key];renderItems();}
-
-let rowHoldTimer;
-
-row.onpointerdown = e => {
-  // ignore controls
-  if (
-    e.target.closest(".controls") ||
-    e.target.closest(".toggle") ||
-    e.target.closest(".value")
-  ) return;
-
-  rowHoldTimer = setTimeout(() => {
-    openEditBottle(item);
-  }, 1000);
-};
-
-row.onpointerup = () => clearTimeout(rowHoldTimer);
-row.onpointerleave = () => clearTimeout(rowHoldTimer);
 
   list.appendChild(row);
 }
@@ -1057,18 +847,8 @@ updateSort(Source);
 loadItems();
 
 /* ---------- ACTION STATES ---------- */
-let showArchived = false;
-let groupEnabled = false;
-
-archiveBtn.onclick = () => {
-  showArchived = !showArchived;
-  archiveBtn.classList.toggle("active", showArchived);
-  renderItems();
-};
-
+archiveBtn.onclick=()=>archiveBtn.classList.toggle("active");
 smartSortBtn.onclick=()=>smartSortBtn.classList.toggle("active");
-groupBtn.onclick=()=>groupBtn.classList.toggle("active");
-
 
 /* ---------- DRAWER ---------- */
 drawerTab.onclick=()=>{
@@ -1087,12 +867,8 @@ const newBottleOverlay = document.getElementById("newBottleOverlay");
 const cancelNewBottle = document.getElementById("cancelNewBottle");
 const statusToggle = document.getElementById("statusToggle");
 const statusValue = document.getElementById("statusValue");
-const deleteBottleBtn = document.getElementById("deleteBottleBtn");
-
-
 
 let newBottleStatus = true;
-let editingItem = null; // null = new bottle, object = editing existing
 let newBottleTier = "House"; // "House" | "Reserve"
 let newBottleColor = "White"; // White | Rose | Red
 let newBottleBrand = "";
@@ -1117,7 +893,6 @@ newBottleImageInput.value = "";
 newBottleImageBox.textContent = "Insert Image";
 noteInput.value = "";
 newBottleNote = "";
-deleteBottleBtn.style.display = "none";
 
 };
 
@@ -1133,7 +908,6 @@ newBottleImageInput.value = "";
 newBottleImageBox.textContent = "Insert Image";
 noteInput.value = "";
 newBottleNote = "";
-deleteBottleBtn.style.display = "none";
 
 }
 
@@ -1496,61 +1270,6 @@ const noteInput = document.getElementById("noteInput");
 noteInput.oninput = () => {
   newBottleNote = noteInput.value;
 };
-
-deleteBottleBtn.onclick = () => {
-  if (!editingItem) return;
-
-  const confirmed = confirm("Delete this bottle permanently?");
-  if (!confirmed) return;
-
-  items = items.filter(i => i !== editingItem);
-  editingItem = null;
-
-  renderItems();
-  closeNewBottle();
-};
-
-const confirmNewBottle = document.getElementById("confirmNewBottle");
-
-confirmNewBottle.onclick = () => {
-
-  const target = editingItem || {};
-
-  Object.assign(target, {
-    status: newBottleStatus,
-    tier: newBottleTier,
-    color: newBottleColor,
-    brand: newBottleBrand || "N/A",
-    identifier: newBottleIdentifier || "N/A",
-    varietal: newBottleVarietal || "N/A",
-    year: newBottleYear || "N/A",
-    price: newBottlePrice || 0,
-    featured: newBottleFeatured.join(", "),
-    distributor: newBottleDistributor || "N/A",
-    note: newBottleNote || "",
-    base64: newBottleBase64,
-    icon: newBottleBase64
-      ? newBottleIcon
-      : (newBottleColor === "White" ? "#c9b037"
-         : newBottleColor === "Rose" ? "#d97c8a"
-         : "#7b1e1e")
-  });
-
-  if (!editingItem) {
-    SOURCES.forEach(src => {
-      target[src] = 0;
-      target[`${src}Complete`] = false;
-    });
-    items.push(target);
-  }
-
-  editingItem = null;
-  renderItems();
-  closeNewBottle();
-};
-
-
-
 
 /*---------EXPORT---------------*/
   
