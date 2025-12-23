@@ -858,7 +858,18 @@ const SOURCE_ICONS = {
 let items=[];
 let Source="Emporio";
 let Sort="Standard";
-let specialtyLists = [];
+let specialtyData = {};
+
+async function loadSpecialtyLists(){
+  const res = await fetch("./SpecialtyList.json", { cache:"no-store" });
+  specialtyData = await res.json();
+
+  specialtyLists = Object.keys(specialtyData)
+    .sort((a,b)=>a.localeCompare(b));
+
+  renderSpecialtyLists();
+}
+
 let selectedSpecialtyList = null;
 let expandedSpecialtyList = null;
 
@@ -969,7 +980,47 @@ expandContainer.style.display =
   expandedSpecialtyList === listName ? "block" : "none";
 expandContainer.style.fontSize = "14px";
 expandContainer.style.color = "#333";
-expandContainer.textContent = "Items for this specialty list will appear here.";
+const uuids = specialtyData[listName] || [];
+
+if (uuids.length === 0) {
+  expandContainer.textContent = "No items in this list.";
+} else {
+  expandContainer.innerHTML = "";
+
+  uuids.forEach(uuid => {
+const item = items.find(i => i.UUID === uuid);
+    if (!item) return;
+
+    const row = document.createElement("div");
+    row.style.padding = "8px 0";
+    row.style.display = "flex";
+    row.style.justifyContent = "space-between";
+    row.style.alignItems = "center";
+
+    row.innerHTML = `
+      <div>${item.brand} ${item.varietal}</div>
+      <button style="
+        background:#b00020;
+        color:white;
+        border:none;
+        border-radius:6px;
+        padding:4px 8px;
+        font-size:12px;
+      ">Remove</button>
+    `;
+
+    // 🗑 remove UUID from list
+    row.querySelector("button").onclick = () => {
+      specialtyData[listName] =
+        specialtyData[listName].filter(id => id !== uuid);
+
+      renderSpecialtyLists();
+    };
+
+    expandContainer.appendChild(row);
+  });
+}
+
 row.appendChild(expandContainer);
 
 
