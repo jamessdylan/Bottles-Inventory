@@ -290,18 +290,20 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   transform:translateY(100%);
   transition:.25s ease;
   z-index:400;
-  #datePicker button{
+">
+
+
+  <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+    <button id="cancelDate">Cancel</button>
+    <button id="confirmDate">Done</button>
+
+#datePicker button{
   background:none;
   border:none;
   font-size:16px;
   color:var(--green);
 }
 
-">
-
-  <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-    <button id="cancelDate">Cancel</button>
-    <button id="confirmDate">Done</button>
   </div>
 
   <div style="display:flex; gap:12px; justify-content:center;">
@@ -979,21 +981,6 @@ function renderSpecialtyLists(){
 
     row.appendChild(select);
 
-    /* swipe-to-delete */
-    let startX = 0;
-    row.onpointerdown = e => startX = e.clientX;
-    row.onpointerup = e => {
-      if (startX - e.clientX > 80) {
-        if (confirm(`Delete "${entry.list}"?`)) {
-          specialtyLists.splice(index, 1);
-          renderSpecialtyLists();
-        }
-      }
-    };
-
-    container.appendChild(row);
-  });
-}
 
 const specialtyBtn = document.getElementById("specialtyListBtn");
 const specialtySheet = document.getElementById("specialtySheet");
@@ -1024,15 +1011,14 @@ document.getElementById("addSpecialtyList").onclick = () => {
   const name = prompt("New list name:");
   if (!name) return;
 
-  if (specialtyLists.some(l => l.list === name)) {
-    alert("List already exists");
-    return;
-  }
+ if (specialtyLists.includes(name)) {
+  alert("List already exists");
+  return;
+}
 
-  specialtyLists.push({ list:name, value:[] });
-  specialtyLists.sort((a,b)=>a.list.localeCompare(b.list));
-  renderSpecialtyLists();
-};
+specialtyLists.push(name);
+specialtyLists.sort((a,b)=>a.localeCompare(b));
+
 
 /* ---------------- HELPERS ---------------- */
 const round=v=>Math.round(v*10)/10;
