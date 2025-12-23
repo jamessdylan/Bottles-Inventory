@@ -211,46 +211,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 }
 .overlay.show{display:block;}
 
-<!-- SPECIALTY LIST OVERLAY -->
-<div id="specialtyOverlay" class="overlay"></div>
-
-<div id="specialtySheet" style="
-  position:fixed;
-  inset:0;
-  background:rgba(255,255,255,.92);
-  backdrop-filter:blur(16px);
-  padding:calc(20px + env(safe-area-inset-top)) 16px 20px;
-  transform:translateX(100%);
-  transition:.25s ease;
-  z-index:500;
-  overflow-y:auto;
-">
-
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-    <div style="font-family:'Copperplate',serif;font-size:18px;">
-      Select List to Edit
-    </div>
-    <button id="closeSpecialty">Done</button>
-  </div>
-
-  <!-- CREATE NEW LIST -->
-  <button id="addSpecialtyList" style="
-    width:100%;
-    padding:14px;
-    border-radius:14px;
-    border:none;
-    background:#1f5e3b;
-    color:white;
-    font-size:16px;
-    margin-bottom:16px;
-  ">
-    + Create New List
-  </button>
-
-  <!-- LISTS -->
-  <div id="specialtyListContainer"></div>
-</div>
-
 
 /* ---------- FIXED ACTION BAR ---------- */
 .action-bar{
@@ -737,6 +697,44 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
 <div class="overlay" id="overlay"></div>
 
+<!-- SPECIALTY LIST OVERLAY -->
+<div id="specialtyOverlay" class="overlay"></div>
+
+<div id="specialtySheet" style="
+  position:fixed;
+  inset:0;
+  background:rgba(255,255,255,.92);
+  backdrop-filter:blur(16px);
+  padding:calc(20px + env(safe-area-inset-top)) 16px 20px;
+  transform:translateX(100%);
+  transition:.25s ease;
+  z-index:500;
+  overflow-y:auto;
+">
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div style="font-family:'Copperplate',serif;font-size:18px;">
+      Select List to Edit
+    </div>
+    <button id="closeSpecialty">Done</button>
+  </div>
+
+  <button id="addSpecialtyList" style="
+    width:100%;
+    padding:14px;
+    border-radius:14px;
+    border:none;
+    background:#1f5e3b;
+    color:white;
+    font-size:16px;
+    margin-bottom:16px;
+  ">
+    + Create New List
+  </button>
+
+  <div id="specialtyListContainer"></div>
+</div>
+
 <header><img src="SiennaTransparent.png"></header>
 
 <div class="tabs" id="sourceTabs"></div>
@@ -851,6 +849,7 @@ const list=document.getElementById("list");
 const sortSelect=document.getElementById("sortSelect");
 const tabsEl=document.getElementById("sourceTabs");
 
+const drawer = document.getElementById("drawer");
 
 /* ---------------- LOAD ---------------- */
 async function loadItems(){
