@@ -797,6 +797,8 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   </button>
 
   <div id="specialtyListContainer"></div>
+<div id="specialtyExpandedContainer"></div>
+
 </div>
 
 <header><img src="SiennaTransparent.png"></header>
@@ -906,6 +908,7 @@ let items=[];
 let Source="Emporio";
 let Sort="Standard";
 let specialtyLists = [];
+let specialtyData = {};
 let selectedSpecialtyList = null;
 
 
@@ -969,14 +972,14 @@ function updateSort(src){
 
 async function loadSpecialtyLists(){
   const res = await fetch("./SpecialtyList.json", { cache:"no-store" });
-  const data = await res.json();
+  specialtyData = await res.json();
 
-  // Extract keys from dictionary
-  specialtyLists = Object.keys(data)
+  specialtyLists = Object.keys(specialtyData)
     .sort((a, b) => a.localeCompare(b));
 
   renderSpecialtyLists();
 }
+
 
 function renderSpecialtyLists(){
   const container = document.getElementById("specialtyListContainer");
@@ -991,13 +994,11 @@ function renderSpecialtyLists(){
     row.style.fontSize = "16px";
 
     // select list
-    row.onclick = () => {
-      selectedSpecialtyList = listName;
-      console.log("Selected Specialty List:", listName);
+   row.onclick = () => {
+  selectedSpecialtyList = listName;
+  renderExpandedSpecialtyList();
+};
 
-      specialtySheet.style.transform = "translateX(100%)";
-      specialtyOverlay.classList.remove("show");
-    };
 
 const lockedNames = ["Wine Cellar", "Prep Cooler"];
 
@@ -1110,7 +1111,140 @@ document.getElementById("addSpecialtyList").onclick = () => {
   renderSpecialtyLists();
 };
 
+/* ---------- EXPANDED SPECIALTY LIST ---------- */
+.specialty-expanded {
+  margin-top: 20px;
+}
 
+.specialty-expanded h2 {
+  font-family: "Copperplate", serif;
+  font-size: 18px;
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+/* item row wrapper */
+.specialty-item-wrapper {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  margin-bottom: 12px;
+}
+
+/* red delete background */
+.specialty-item-delete-bg {
+  position: absolute;
+  inset: 0;
+  background: #b00020;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 20px;
+  color: white;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+/* foreground row */
+.specialty-item-row {
+  background: rgba(255,255,255,.75);
+  padding: 14px 16px;
+  transition: transform .25s ease, opacity .25s ease;
+  touch-action: pan-y;
+}
+
+.specialty-item-row.deleting {
+  transform: translateX(-120%);
+  opacity: 0;
+}
+
+function renderExpandedSpecialtyList() {
+  const container = document.getElementById("specialtyExpandedContainer");
+  container.innerHTML = "";
+
+  if (!selectedSpecialtyList) return;
+
+  const uuids = specialtyData[selectedSpecialtyList]?.value || [];
+
+  // resolve UUIDs → items
+  const resolvedItems = uuids
+    .map(id => items.find(i => i.UUID === id))
+    .filter(Boolean)
+    .sort((a, b) =>
+      [
+        a.brand, a.identifier, a.varietal, a.year
+      ].join(" ").localeCompare(
+        [b.brand, b.identifier, b.varietal, b.year].join(" ")
+      )
+    );
+
+  const section = document.createElement("div");
+  section.className = "specialty-expanded";
+  section.innerHTML = `<h2>${selectedSpecialtyList}</h2>`;
+
+  resolvedItems.forEach(item => {
+    const wrapper = document.createElement("div");
+    wrapper.className = "specialty-item-wrapper";
+
+    const deleteBg = document.createElement("div");
+    deleteBg.className = "specialty-item-delete-bg";
+    deleteBg.textContent = "Delete";
+
+    const row = document.createElement("div");
+    row.className = "specialty-item-row";
+    row.textContent = [
+      item.brand,
+      item.identifier,
+      item.varietal,
+      item.year
+    ].filter(v => v && v !== "N/A").join(" ");
+
+    // swipe-to-delete
+    let startX = 0;
+    let currentX = 0;
+    let dragging = false;
+
+    row.addEventListener("pointerdown", e => {
+      startX = e.clientX;
+      dragging = true;
+      row.setPointerCapture(e.pointerId);
+    });
+
+    row.addEventListener("pointermove", e => {
+      if (!dragging) return;
+      currentX = e.clientX - startX;
+      if (currentX < 0) {
+        row.style.transform = `translateX(${currentX}px)`;
+      }
+    });
+
+    row.addEventListener("pointerup", () => {
+      dragging = false;
+
+      if (currentX < -90) {
+        row.classList.add("deleting");
+
+        setTimeout(() => {
+          specialtyData[selectedSpecialtyList].value =
+            specialtyData[selectedSpecialtyList].value.filter(
+              id => id !== item.UUID
+            );
+          renderExpandedSpecialtyList();
+        }, 250);
+      } else {
+        row.style.transform = "translateX(0)";
+      }
+
+      currentX = 0;
+    });
+
+    wrapper.appendChild(deleteBg);
+    wrapper.appendChild(row);
+    section.appendChild(wrapper);
+  });
+
+  container.appendChild(section);
+}
 
 /* ---------------- HELPERS ---------------- */
 const round=v=>Math.round(v*10)/10;
