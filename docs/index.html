@@ -668,6 +668,12 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
 <div class="tabs" id="sourceTabs"></div>
 <section class="section"><select id="sortSelect"></select></section>
+<section class="section" id="specialtySection" style="display:none;">
+  <select id="specialtySelect">
+    <option disabled selected>Select List to Edit</option>
+  </select>
+</section>
+
 <div class="list" id="list"></div>
 <nav class="action-bar">
 
@@ -830,17 +836,6 @@ function updateSort(src){
   Sort=sortSelect.value="Standard";
 }
 
-<section class="section" id="specialtySection" style="display:none;">
-  <select id="specialtySelect">
-    <option disabled selected>Select Specialty List</option>
-  </select>
-</section>
-
-<section class="section" id="specialtySection" style="display:none;">
-  <select id="specialtySelect">
-    <option disabled selected>Select Specialty List</option>
-  </select>
-</section>
 
 
 /* ---------------- HELPERS ---------------- */
@@ -1070,24 +1065,24 @@ row.onpointerleave = () => clearTimeout(rowHoldTimer);
 
 async function loadSpecialtyLists() {
   const res = await fetch("./SpecialtyList.json", { cache: "no-store" });
-  specialtyLists = await res.json();
-
-  const keys = Object.keys(specialtyLists).sort((a, b) =>
-    a.localeCompare(b)
-  );
+  specialtyLists = await res.json(); // ARRAY
 
   const select = document.getElementById("specialtySelect");
-  select.innerHTML = `<option disabled selected>Select Specialty List</option>`;
+  select.innerHTML = `<option disabled selected>Select List to Edit</option>`;
 
-  keys.forEach(key => {
-    const opt = document.createElement("option");
-    opt.value = key;
-    opt.textContent = key;
-    select.appendChild(opt);
-  });
+  specialtyLists
+    .map(e => e.list)
+    .sort((a, b) => a.localeCompare(b))
+    .forEach(name => {
+      const opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = name;
+      select.appendChild(opt);
+    });
 
   document.getElementById("specialtySection").style.display = "flex";
 }
+
 
 
 /* ---------- INIT ---------- */
