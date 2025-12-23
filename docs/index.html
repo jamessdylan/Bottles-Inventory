@@ -105,6 +105,12 @@ select{
   padding:8px 16px;
 }
 
+<section class="section" id="specialtySection" style="display:none;">
+  <select id="specialtySelect">
+    <option disabled selected>Select Specialty List</option>
+  </select>
+</section>
+
 /* ---------- LIST ---------- */
 .list{padding:8px 16px 140px;}
 
@@ -768,6 +774,8 @@ const SOURCE_ICONS = {
 let items=[];
 let Source="Emporio";
 let Sort="Standard";
+let specialtyLists = {};
+let selectedSpecialtyListKey = null;
 
 
 const list=document.getElementById("list");
@@ -1050,6 +1058,28 @@ row.onpointerleave = () => clearTimeout(rowHoldTimer);
 
   list.appendChild(row);
 }
+
+async function loadSpecialtyLists() {
+  const res = await fetch("./SpecialtyList.json", { cache: "no-store" });
+  specialtyLists = await res.json();
+
+  const keys = Object.keys(specialtyLists).sort((a, b) =>
+    a.localeCompare(b)
+  );
+
+  const select = document.getElementById("specialtySelect");
+  select.innerHTML = `<option disabled selected>Select Specialty List</option>`;
+
+  keys.forEach(key => {
+    const opt = document.createElement("option");
+    opt.value = key;
+    opt.textContent = key;
+    select.appendChild(opt);
+  });
+
+  document.getElementById("specialtySection").style.display = "flex";
+}
+
 
 /* ---------- INIT ---------- */
 buildSourceTabs();
@@ -1550,6 +1580,20 @@ confirmNewBottle.onclick = () => {
 };
 
 
+const specialtyListBtn = document.getElementById("specialtyListBtn");
+const specialtySelect = document.getElementById("specialtySelect");
+
+specialtyListBtn.onclick = async () => {
+  drawer.classList.remove("open");
+  overlay.classList.remove("show");
+
+  await loadSpecialtyLists();
+};
+
+specialtySelect.onchange = () => {
+  selectedSpecialtyListKey = specialtySelect.value;
+  console.log("Selected Specialty List:", selectedSpecialtyListKey);
+};
 
 
 /*---------EXPORT---------------*/
