@@ -11,34 +11,8 @@
 <style>
 :root { --green:#1f5e3b; --green-light:rgba(255,255,255,.25); }
 
-.featured-btn{
-  padding:10px 14px;
-  border-radius:10px;
-  border:none;
-  background:rgba(0,0,0,.08);
-  font-size:14px;
-  cursor:pointer;
-}
+<div id="featuredButtons" class="featured-buttons">
 
-.featured-btn.active{
-  background:#1f5e3b;
-  color:white;
-}
-
-body {
-  margin:0;
-  padding:
-    env(safe-area-inset-top)
-    env(safe-area-inset-right)
-    env(safe-area-inset-bottom)
-    env(safe-area-inset-left);
-  font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
-}
-.featured-buttons{
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px;
-}
 
 /* ---------- BACKGROUND ---------- */
 body::before{
@@ -307,34 +281,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   position: relative;
   overflow: hidden;
 }
-
-.specialty-delete-bg {
-  position: absolute;
-  inset: 0;
-  background: #d32f2f;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding-right: 20px;
-  color: white;
-  font-weight: 600;
-  font-size: 15px;
-  pointer-events: none;
-}
-
-.specialty-row {
-  position: relative;
-  background: #fff;
-  padding: 14px 16px;
-  transition: transform 0.25s ease, opacity 0.25s ease;
-  touch-action: pan-y;
-}
-
-.specialty-row.deleting {
-  transform: translateX(-120%);
-  opacity: 0;
-}
-
 .specialty-row.locked {
   opacity: 0.55;
 }
@@ -1164,32 +1110,6 @@ document.getElementById("addSpecialtyList").onclick = () => {
 };
 
 
-/* red delete background */
-.specialty-item-delete-bg {
-  position: absolute;
-  inset: 0;
-  background: #b00020;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding-right: 20px;
-  color: white;
-  font-weight: 600;
-  pointer-events: none;
-}
-
-/* foreground row */
-.specialty-item-row {
-  background: rgba(255,255,255,.75);
-  padding: 14px 16px;
-  transition: transform .25s ease, opacity .25s ease;
-  touch-action: pan-y;
-}
-
-.specialty-item-row.deleting {
-  transform: translateX(-120%);
-  opacity: 0;
-}
 
 function renderExpandedSpecialtyList() {
   const container = document.getElementById("specialtyExpandedContainer");
