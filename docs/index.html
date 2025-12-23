@@ -823,6 +823,21 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
     <button id="confirmAddToList">Add</button>
   </div>
 
+<input
+  id="addToListSearch"
+  type="text"
+  placeholder="Search bottles…"
+  style="
+    width:100%;
+    padding:12px;
+    font-size:15px;
+    border-radius:12px;
+    border:1px solid rgba(0,0,0,.15);
+    margin-bottom:12px;
+  "
+/>
+
+
   <div id="addToListContainer"></div>
 </div>
 
@@ -910,6 +925,7 @@ let Sort="Standard";
 let specialtyLists = [];
 let selectedSpecialtyList = null;
 let expandedSpecialtyList = null;
+let addToListAvailableItems = [];
 
 
 const list=document.getElementById("list");
@@ -1175,11 +1191,31 @@ const addToListContainer = document.getElementById("addToListContainer");
 
 function openAddToList(listName){
   addTargetList = listName;
+
+  addToListContainer.innerHTML = "";
+  document.getElementById("addToListSearch").value = "";
+
+  addToListAvailableItems = getAvailableItemsForList(listName);
+
+  renderAddToListItems(addToListAvailableItems);
+
+  addToListSheet.style.transform = "translateY(0)";
+  addToListOverlay.classList.add("show");
+}
+
+function renderAddToListItems(list){
   addToListContainer.innerHTML = "";
 
-  const available = getAvailableItemsForList(listName);
+  if (list.length === 0) {
+    const empty = document.createElement("div");
+    empty.textContent = "No matching bottles.";
+    empty.style.padding = "16px";
+    empty.style.color = "#666";
+    addToListContainer.appendChild(empty);
+    return;
+  }
 
-  available.forEach(item=>{
+  list.forEach(item => {
     const row = document.createElement("label");
     row.className = "add-to-list-row";
 
@@ -1194,10 +1230,18 @@ function openAddToList(listName){
     row.appendChild(text);
     addToListContainer.appendChild(row);
   });
-
-  addToListSheet.style.transform = "translateY(0)";
-  addToListOverlay.classList.add("show");
 }
+
+document.getElementById("addToListSearch").oninput = e => {
+  const q = e.target.value.toLowerCase();
+
+  const filtered = addToListAvailableItems.filter(item =>
+    standardWineTitle(item).toLowerCase().includes(q)
+  );
+
+  renderAddToListItems(filtered);
+};
+
 
 
 /* ---------------- HELPERS ---------------- */
