@@ -858,7 +858,6 @@ const SOURCE_ICONS = {
 let items=[];
 let Source="Emporio";
 let Sort="Standard";
-let specialtyData = {};
 
 async function loadSpecialtyLists() {
   const res = await fetch("./SpecialtyList.json", { cache: "no-store" });
@@ -868,6 +867,7 @@ async function loadSpecialtyLists() {
 
 let selectedSpecialtyList = null;
 let expandedSpecialtyList = null;
+let specialtyLists = {}; // dictionary: { listName: [UUID, UUID] }
 
 
 const list=document.getElementById("list");
@@ -941,27 +941,8 @@ async function loadSpecialtyLists(){
   renderSpecialtyLists();
 }
 
-function renderSpecialtyLists() {
-  const container = document.getElementById("specialtyListContainer");
-  container.innerHTML = "";
-
-  const listNames = Object.keys(specialtyLists)
-    .sort((a, b) => a.localeCompare(b));
-
-  listNames.forEach(listName => {
-    const row = document.createElement("div");
-    row.className = "specialty-row";
-    row.textContent = listName;
-    row.style.cursor = "pointer";
-
-    row.onclick = () => {
-      expandedSpecialtyList =
-        expandedSpecialtyList === listName ? null : listName;
-      renderSpecialtyLists();
-    };
-
     // ---------- EXPANDED CONTENT ----------
-    if (expandedSpecialtyList === listName) {
+if (specialtyLists[name]) {
       const values = specialtyLists[listName] || [];
 
       const expand = document.createElement("div");
@@ -996,60 +977,21 @@ function renderSpecialtyLists() {
   });
 }
 
-const expandContainer = document.createElement("div");
-expandContainer.style.marginTop = "10px";
-expandContainer.style.paddingLeft = "12px";
-expandContainer.style.display =
-  expandedSpecialtyList === listName ? "block" : "none";
-expandContainer.style.fontSize = "14px";
-expandContainer.style.color = "#333";
-const uuids = specialtyData[listName] || [];
 
-if (uuids.length === 0) {
-  expandContainer.textContent = "No items in this list.";
-} else {
-  expandContainer.innerHTML = "";
+function renderSpecialtyLists() {
+  const container = document.getElementById("specialtyListContainer");
+  container.innerHTML = "";
 
-  uuids.forEach(uuid => {
-const item = items.find(i => i.UUID === uuid);
-    if (!item) return;
+  const listNames = Object.keys(specialtyLists)
+    .sort((a, b) => a.localeCompare(b));
 
+  listNames.forEach(listName => {
     const row = document.createElement("div");
-    row.style.padding = "8px 0";
-    row.style.display = "flex";
-    row.style.justifyContent = "space-between";
-    row.style.alignItems = "center";
-
-    row.innerHTML = `
-      <div>${item.brand} ${item.varietal}</div>
-      <button style="
-        background:#b00020;
-        color:white;
-        border:none;
-        border-radius:6px;
-        padding:4px 8px;
-        font-size:12px;
-      ">Remove</button>
-    `;
-
-    // 🗑 remove UUID from list
-    row.querySelector("button").onclick = () => {
-      specialtyData[listName] =
-        specialtyData[listName].filter(id => id !== uuid);
-
-      renderSpecialtyLists();
-    };
-
-    expandContainer.appendChild(row);
-  });
-}
-
-row.appendChild(expandContainer);
-
+    row.className = "specialty-row";
+    row.textContent = listName;
+    row.style.cursor = "pointer";
 
 const lockedNames = ["Wine Cellar", "Prep Cooler"];
-
-
 
 row.addEventListener("pointerdown", e => {
   didSwipe = false;
@@ -1108,6 +1050,46 @@ row.addEventListener("pointerup", () => {
 }
 
 
+    row.onclick = () => {
+      expandedSpecialtyList =
+        expandedSpecialtyList === listName ? null : listName;
+      renderSpecialtyLists();
+    };
+
+    if (expandedSpecialtyList === listName) {
+      const values = specialtyLists[listName] || [];
+
+      const expand = document.createElement("div");
+      expand.style.marginTop = "10px";
+      expand.style.paddingLeft = "12px";
+
+      if (values.length === 0) {
+        expand.textContent = "No items in this list.";
+      } else {
+        values.forEach(uuid => {
+          const item = items.find(i => i.UUID === uuid);
+          if (!item) return;
+
+          const div = document.createElement("div");
+          div.style.padding = "6px 0";
+          div.textContent = [
+            item.brand,
+            item.identifier,
+            item.varietal,
+            item.year
+          ].filter(v => v && v !== "N/A").join(" ");
+
+          expand.appendChild(div);
+        });
+      }
+
+      row.appendChild(expand);
+    }
+
+    container.appendChild(row);
+  });
+}
+
 
 const specialtyBtn = document.getElementById("specialtyListBtn");
 const specialtySheet = document.getElementById("specialtySheet");
@@ -1138,12 +1120,12 @@ document.getElementById("addSpecialtyList").onclick = () => {
   const name = prompt("New list name:");
   if (!name) return;
 
-  if (specialtyLists.includes(name)) {
+if (specialtyLists[name]) {
     alert("List already exists");
     return;
   }
 
-  specialtyLists.push(name);
+ specialtyLists[name] = [];x
   specialtyLists.sort((a,b)=>a.localeCompare(b));
   renderSpecialtyLists();
 };
