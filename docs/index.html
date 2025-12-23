@@ -105,11 +105,7 @@ select{
   padding:8px 16px;
 }
 
-<section class="section" id="specialtySection" style="display:none;">
-  <select id="specialtySelect">
-    <option disabled selected>Select Specialty List</option>
-  </select>
-</section>
+
 
 /* ---------- LIST ---------- */
 .list{padding:8px 16px 140px;}
@@ -833,6 +829,19 @@ function updateSort(src){
   });
   Sort=sortSelect.value="Standard";
 }
+
+<section class="section" id="specialtySection" style="display:none;">
+  <select id="specialtySelect">
+    <option disabled selected>Select Specialty List</option>
+  </select>
+</section>
+
+<section class="section" id="specialtySection" style="display:none;">
+  <select id="specialtySelect">
+    <option disabled selected>Select Specialty List</option>
+  </select>
+</section>
+
 
 /* ---------------- HELPERS ---------------- */
 const round=v=>Math.round(v*10)/10;
