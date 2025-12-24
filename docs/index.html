@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM  Inventory</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -835,7 +835,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 <header><img src="SiennaTransparent.png"></header>
 
 <div class="tabs" id="sourceTabs"></div>
-<section class="section"><select id="sortSelect"></select></section>
 <div class="list" id="list"></div>
 <nav class="action-bar">
 
@@ -962,7 +961,6 @@ const SmartLists = {};
 
 
 const list=document.getElementById("list");
-const sortSelect=document.getElementById("sortSelect");
 const tabsEl=document.getElementById("sourceTabs");
 
 const drawer = document.getElementById("drawer");
@@ -1005,15 +1003,33 @@ function buildSourceTabs(){
   });
 }
 
+function smartColorThenStandardSort(a, b, key) {
+  const aIsRed = (a.color || "") === "Red";
+  const bIsRed = (b.color || "") === "Red";
+
+  // Non-Red first, Red last
+  if (aIsRed !== bIsRed) {
+    return aIsRed ? 1 : -1;
+  }
+
+  // Fall back to existing standard behavior
+  return baseSort(a, b,
 
 
 /* ---------------- SORT ---------------- */
-
-function updateSort(src){
-  // keep existing default behavior
-  Sort = "Standard";
+function getSortOptions(src){
+  if(src==="Prep Cooler") return["Standard","Tier"];
+  return["Standard","Smart","Tier"];
 }
-
+function updateSort(src){
+  sortSelect.innerHTML="";
+  getSortOptions(src).forEach(o=>{
+    const opt=document.createElement("option");
+    opt.value=o;opt.textContent=o;
+    sortSelect.appendChild(opt);
+  });
+  Sort=sortSelect.value="Standard";
+}
 
 async function loadSpecialtyLists(){
   const res = await fetch("./SpecialtyList.json", { cache:"no-store" });
@@ -1571,6 +1587,22 @@ function renderItems() {
     }
   });
 
+const smartColorActive =
+  smartSortBtn.classList.contains("active") &&
+  SMART_COLOR_SOURCES.has(Source);
+
+const key = `${Source}Complete`;
+
+if (smartColorActive) {
+  houseItems.sort((a, b) =>
+    smartColorThenStandardSort(a, b, key)
+  );
+
+  reserveItems.sort((a, b) =>
+    smartColorThenStandardSort(a, b, key)
+  );
+}
+
   // 5️⃣ RENDER GROUPS (only if they contain items)
   if (houseItems.length) {
     drawDivider("House");
@@ -1782,6 +1814,13 @@ updateSort(Source);
 loadItems();
 
 /* ---------- ACTION STATES ---------- */
+
+const SMART_COLOR_SOURCES = new Set([
+  "Emporio",
+  "Mezzo",
+  "Tetto (L)",
+  "Tetto (R)"
+]);
 
 
 archiveBtn.onclick = () => {
