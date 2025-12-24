@@ -299,34 +299,12 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   transform: translateY(-50%);
 }
 
-.specialty-row.expanded {
-  overflow: visible;
-}
-
-
-/* ---------- ADD NEW BOTTLE (SPECIALTY) ---------- */
-.add-specialty-bottle {
-  margin-top: 14px;
-  width: 100%;
-  padding: 12px;
-  border-radius: 12px;
-  border: none;
-  background: #1f5e3b;
-  color: white;
-  font-size: 15px;
-  cursor: pointer;
-}
-
 
 #datePicker button{
   background:none;
   border:none;
   font-size:16px;
   color:var(--green);
-}
-
-.specialty-row.expanded {
-  overflow: visible !important;
 }
 
 </style>
@@ -738,12 +716,12 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
 <div id="specialtySheet" style="
   position:fixed;
-  left: 100%;
-  transition: left .25s ease;
   inset:0;
   background:rgba(255,255,255,.92);
   backdrop-filter:blur(16px);
   padding:calc(20px + env(safe-area-inset-top)) 16px 20px;
+  transform:translateX(100%);
+  transition:.25s ease;
   z-index:500;
   overflow-y:auto;
 ">
@@ -804,8 +782,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
 
 <script>
-const floatingSuggestionBox = document.createElement("div");
-
 /* ---------- PAGE TITLE ---------- */
 const pageTitleEl=document.getElementById("pageTitle");
 
@@ -894,22 +870,6 @@ const tabsEl=document.getElementById("sourceTabs");
 const drawer = document.getElementById("drawer");
 const overlay = document.getElementById("overlay");
 
-document.addEventListener("pointerdown", e => {
-if (!floatingSuggestionBox.contains(e.target)) {
-  floatingSuggestionBox.style.display = "none";
-}
-});
-
-floatingSuggestionBox.style.position = "fixed";
-floatingSuggestionBox.style.background = "white";
-floatingSuggestionBox.style.borderRadius = "12px";
-floatingSuggestionBox.style.boxShadow = "0 6px 18px rgba(0,0,0,.15)";
-floatingSuggestionBox.style.zIndex = "1000";
-floatingSuggestionBox.style.display = "none";
-floatingSuggestionBox.style.maxHeight = "220px";
-floatingSuggestionBox.style.overflowY = "auto";
-
-document.body.appendChild(floatingSuggestionBox);
 
 /* ---------------- LOAD ---------------- */
 async function loadItems(){
@@ -984,35 +944,26 @@ function renderSpecialtyLists(){
   specialtyLists.forEach((listName, index) => {
     const row = document.createElement("div");
     row.className = "specialty-row";
-
-const header = document.createElement("div");
-header.textContent = listName;
-header.style.fontSize = "16px";
-header.style.cursor = "pointer";
-header.style.fontWeight = "500";
-
-row.appendChild(header);
+    row.textContent = listName;
+    row.style.cursor = "pointer";
     row.style.fontSize = "16px";
 
-if (expandedSpecialtyList === listName) {
-  row.classList.add("expanded");
-}
     // select list
 let startX = 0;
 let currentX = 0;
 let dragging = false;
 let didSwipe = false;
-header.onclick = e => {
-  e.stopPropagation();
-
+row.onclick = () => {
+if (didSwipe) return;
   expandedSpecialtyList =
     expandedSpecialtyList === listName ? null : listName;
+
 
   renderSpecialtyLists();
 };
 
+
 const expandContainer = document.createElement("div");
-expandContainer.style.overflow = "visible";
 expandContainer.style.marginTop = "10px";
 expandContainer.style.paddingLeft = "12px";
 expandContainer.style.display =
@@ -1025,10 +976,7 @@ if (expandedSpecialtyList === listName) {
   expandContainer.innerHTML = "";
 
   if (matchedItems.length === 0) {
-    const empty = document.createElement("div");
-    empty.textContent = "No matching items.";
-    empty.style.marginBottom = "10px";
-    expandContainer.appendChild(empty);
+    expandContainer.textContent = "No matching items.";
   } else {
     matchedItems.forEach(item => {
       const div = document.createElement("div");
@@ -1044,90 +992,74 @@ if (expandedSpecialtyList === listName) {
       ].filter(v => v && v !== "N/A").join(" ");
 
       expandContainer.appendChild(div);
-
     });
   }
-
-// --- Inline Add-to-List Search Row ---
-const addRow = document.createElement("div");
-addRow.style.padding = "6px 0";
-addRow.style.borderBottom = "1px solid rgba(0,0,0,.08)";
-addRow.style.position = "relative";
-
-const input = document.createElement("input");
-input.type = "text";
-input.placeholder = "+ Add bottle…";
-input.style.width = "100%";
-input.style.border = "none";
-input.style.outline = "none";
-input.style.background = "transparent";
-input.style.fontSize = "14px";
-input.style.fontFamily = "inherit";
-
-addRow.appendChild(input);
-expandContainer.appendChild(addRow);
-
-input.oninput = () => {
-  const query = input.value.trim().toLowerCase();
-  floatingSuggestionBox.innerHTML = "";
-
-  if (!query) {
-    floatingSuggestionBox.style.display = "none";
-    return;
-  }
+}
 
 row.appendChild(expandContainer);
-container.appendChild(row);
 
-  const rect = input.getBoundingClientRect();
-  floatingSuggestionBox.style.top = `${rect.bottom + 6}px`;
-  floatingSuggestionBox.style.left = `${rect.left}px`;
-  floatingSuggestionBox.style.width = `${rect.width}px`;
 
-  const matches = items.filter(item => {
-    const title = [
-      item.brand,
-      item.identifier,
-      item.varietal,
-      item.year
-    ].filter(v => v && v !== "N/A").join(" ").toLowerCase();
+const lockedNames = ["Wine Cellar", "Prep Cooler"];
 
-    return title.includes(query);
-  });
 
-  if (matches.length === 0) {
-    floatingSuggestionBox.style.display = "none";
-    return;
+
+row.addEventListener("pointerdown", e => {
+  didSwipe = false;
+  startX = e.clientX;
+  dragging = true;
+  row.setPointerCapture(e.pointerId);
+});
+
+row.addEventListener("pointermove", e => {
+  if (!dragging) return;
+
+  currentX = e.clientX - startX;
+
+  if (currentX < -10) didSwipe = true;
+
+  if (currentX < 0) {
+    row.style.transform = `translateX(${currentX}px)`;
+  }
+});
+
+
+row.addEventListener("pointerup", () => {
+  dragging = false;
+
+  // threshold reached → attempt delete
+  if (currentX < -80) {
+
+    // 🔒 locked list names
+    if (lockedNames.includes(listName)) {
+      row.style.transform = "translateX(0)";
+      return;
+    }
+
+    // animate out
+    row.classList.add("deleting");
+
+    setTimeout(() => {
+      const index = specialtyLists.indexOf(listName);
+      if (index > -1) {
+        specialtyLists.splice(index, 1);
+        renderSpecialtyLists();
+      }
+    }, 250);
+
+  } else {
+    // snap back
+    row.style.transform = "translateX(0)";
   }
 
-  matches.slice(0, 12).forEach(item => {
-    const row = document.createElement("div");
-    row.textContent = [
-      item.brand,
-      item.identifier,
-      item.varietal,
-      item.year
-    ].filter(v => v && v !== "N/A").join(" ");
-
-    row.style.padding = "10px 14px";
-    row.style.cursor = "pointer";
-    row.style.fontSize = "14px";
-
-    row.onclick = () => {
-      addItemToSpecialtyList(listName, item);
-      input.value = "";
-      floatingSuggestionBox.style.display = "none";
-      renderSpecialtyLists();
-    };
-
-    floatingSuggestionBox.appendChild(row);
-  });
-
-  floatingSuggestionBox.style.display = "block";
-};
-
-
+  currentX = 0;
 });
+
+
+    container.appendChild(row);
+  });
+}
+
+
 
 const specialtyBtn = document.getElementById("specialtyListBtn");
 const specialtySheet = document.getElementById("specialtySheet");
@@ -1139,25 +1071,17 @@ specialtyBtn.onclick = async () => {
 
   await loadSpecialtyLists();
 
-  specialtySheet.style.left = "0";
+  specialtySheet.style.transform = "translateX(0)";
   specialtyOverlay.classList.add("show");
 };
 
-document.getElementById("closeSpecialty").onclick = e => {
-  e.stopPropagation();
-
-  floatingSuggestionBox.style.display = "none";
-  expandedSpecialtyList = null;
-
-  specialtySheet.style.left = "100%";
+document.getElementById("closeSpecialty").onclick = () => {
+  specialtySheet.style.transform = "translateX(100%)";
   specialtyOverlay.classList.remove("show");
-
-  drawer.classList.add("open");
-  overlay.classList.add("show");
-}; 
+};
 
 specialtyOverlay.onclick = () => {
-  specialtySheet.style.left = "100%";
+  specialtySheet.style.transform = "translateX(100%)";
   specialtyOverlay.classList.remove("show");
 };
 
@@ -1193,32 +1117,11 @@ function getItemsForSpecialtyList(listName) {
   const uuidList = (specialtyListData[listName] || [])
     .map(u => String(u).toUpperCase());
 
-  // Build a lookup for fast access
-  const itemMap = {};
-  items.forEach(item => {
-    if (item.UUID) {
-      itemMap[String(item.UUID).toUpperCase()] = item;
-    }
-  });
-
-  // Return items in the EXACT order defined in SpecialtyList.json
-  return uuidList
-    .map(uuid => itemMap[uuid])
-    .filter(Boolean);
+  return items.filter(item =>
+    item.UUID &&
+    uuidList.includes(String(item.UUID).toUpperCase())
+  );
 }
-
-function addItemToSpecialtyList(listName, item) {
-  if (!item.UUID) return;
-
-  specialtyListData[listName] ??= [];
-
-  const uuid = String(item.UUID);
-
-  if (!specialtyListData[listName].includes(uuid)) {
-    specialtyListData[listName].push(uuid);
-  }
-}
-
 
 
 /* ---------------- RENDER ---------------- */
@@ -1464,7 +1367,6 @@ overlay.onclick=()=>{
   overlay.classList.remove("show");
 };
   
-
 /* ---------- NEW BOTTLE ---------- */
 const newBottleBtn = document.getElementById("newBottleBtn");
 const newBottleSheet = document.getElementById("newBottleSheet");
