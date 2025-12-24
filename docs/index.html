@@ -249,7 +249,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   padding:16px;
   border-radius:14px;
   margin-bottom:12px;
-  overflow:hidden;
+  overflow:visible;
 }
 
 .specialty-row select{
@@ -979,16 +979,22 @@ let startX = 0;
 let currentX = 0;
 let dragging = false;
 let didSwipe = false;
-row.onclick = () => {
-if (didSwipe) return;
+
+row.onclick = e => {
+  if (didSwipe) return;
+
+  if (expandedSpecialtyList === listName && e.target !== row) return;
+
+  if (e.target.closest(".specialty-add-input") ||
+      e.target.closest(".specialty-suggestions")) {
+    return;
+  }
+
   expandedSpecialtyList =
     expandedSpecialtyList === listName ? null : listName;
 
-
   renderSpecialtyLists();
 };
-
-
 const expandContainer = document.createElement("div");
 expandContainer.onclick = e => e.stopPropagation();
 expandContainer.style.marginTop = "10px";
