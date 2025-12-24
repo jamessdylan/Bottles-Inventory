@@ -1,3 +1,4 @@
+That didn’t work, here is my file:
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -969,8 +970,14 @@ function renderSpecialtyLists(){
   // --- Existing Lists ---
   specialtyLists.forEach((listName, index) => {
     const row = document.createElement("div");
+const header = document.createElement("div");
+header.textContent = listName;
+header.style.fontSize = "16px";
+header.style.cursor = "pointer";
+header.className = "specialty-header";
+
+row.appendChild(header);
     row.className = "specialty-row";
-    row.textContent = listName;
     row.style.cursor = "pointer";
     row.style.fontSize = "16px";
 
@@ -980,21 +987,12 @@ let currentX = 0;
 let dragging = false;
 let didSwipe = false;
 
-row.onclick = e => {
-  if (didSwipe) return;
-
-  if (expandedSpecialtyList === listName && e.target !== row) return;
-
-  if (e.target.closest(".specialty-add-input") ||
-      e.target.closest(".specialty-suggestions")) {
-    return;
-  }
-
+header.onclick = () => {
   expandedSpecialtyList =
     expandedSpecialtyList === listName ? null : listName;
-
   renderSpecialtyLists();
 };
+
 const expandContainer = document.createElement("div");
 expandContainer.onclick = e => e.stopPropagation();
 expandContainer.style.marginTop = "10px";
