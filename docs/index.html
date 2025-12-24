@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>SM Wine BG</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -42,6 +42,23 @@ body::before{
   inset:0;
   background:url("IMG_6048.jpeg") no-repeat right center / 1200px auto;
   opacity:.65;
+  z-index:-1;
+}
+
+body::after{
+  content:"";
+  position:fixed;
+  top:0;
+  left:0;
+  right:0;
+  height:500px; /* adjust height as needed */
+  background:linear-gradient(
+    to bottom,
+    rgba(255,255,255,.85),
+    rgba(255,255,255,.55),
+    rgba(255,255,255,0)
+  );
+  pointer-events:none;
   z-index:-1;
 }
 
