@@ -947,6 +947,13 @@ let expandedSpecialtyList = null;
 let archiveRows = [];
 let showArchived = false;
 let groupEnabled = false;
+let smartSortEnabled = false;
+
+smartSortBtn.onclick = () => {
+  smartSortEnabled = !smartSortEnabled;
+  smartSortBtn.classList.toggle("active", smartSortEnabled);
+  renderItems();
+};
 
 groupBtn.onclick = () => {
   groupEnabled = !groupEnabled;
@@ -1383,6 +1390,51 @@ function getSelectedAutocompleteItem(){
   return items.find(i => i.UUID === selectedAutocompleteUUID) || null;
 }
 
+function nonRedItems(items){
+  return items.filter(i => (i.color || "White") !== "Red");
+}
+
+function redItems(items){
+  return items.filter(i => (i.color || "White") === "Red");
+}
+
+async function getWineCellarSmartItems(items){
+  if (!SmartLists["Wine Cellar"]?.length){
+    const uuids = await fetchSourceValues("Wine Cellar");
+    SmartLists["Wine Cellar"] = uuids;
+  }
+
+  const set = new Set(SmartLists["Wine Cellar"]);
+  return items.filter(i => set.has(i.UUID));
+}
+
+async function applySecondaryGrouping(items){
+  if (!smartSortEnabled) return [items];
+
+  // Emporio / Mezzo / Tetto rules
+  if (
+    Source === "Emporio" ||
+    Source === "Mezzo" ||
+    Source === "Tetto (L)" ||
+    Source === "Tetto (R)"
+  ){
+    const nonRed = nonRedItems(items);
+    const red = redItems(items);
+    return [nonRed, red].filter(g => g.length);
+  }
+
+  // Wine Cellar rule
+  if (Source === "Wine Cellar"){
+    const smart = await getWineCellarSmartItems(items);
+    const smartSet = new Set(smart.map(i => i.UUID));
+    const rest = items.filter(i => !smartSet.has(i.UUID));
+
+    return [smart, rest].filter(g => g.length);
+  }
+
+  return [items];
+}
+
 
 async function openSmartSort(){
   if (Source !== "Wine Cellar") return;
@@ -1577,18 +1629,28 @@ function renderItems() {
     }
   });
 
-  // 5️⃣ RENDER GROUPS (only if they contain items)
-  if (houseItems.length) {
+// 5️⃣ RENDER GROUPS WITH OPTIONAL SECONDARY GROUPING
+(async () => {
+
+  if (houseItems.length){
     drawDivider("House");
-    houseItems.forEach(drawItem);
+
+    const houseGroups = await applySecondaryGrouping(houseItems);
+    houseGroups.forEach(group => {
+      group.forEach(drawItem);
+    });
   }
 
-  if (reserveItems.length) {
+  if (reserveItems.length){
     drawDivider("Reserve");
-    reserveItems.forEach(drawItem);
-  }
-}
 
+    const reserveGroups = await applySecondaryGrouping(reserveItems);
+    reserveGroups.forEach(group => {
+      group.forEach(drawItem);
+    });
+  }
+
+})();
 
 
 /* ---------------- DRAW ITEM ---------------- */
