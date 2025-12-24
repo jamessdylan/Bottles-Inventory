@@ -977,6 +977,7 @@ if (didSwipe) return;
 
 
 const expandContainer = document.createElement("div");
+expandContainer.style.overflow = "visible";
 expandContainer.style.marginTop = "10px";
 expandContainer.style.paddingLeft = "12px";
 expandContainer.style.display =
@@ -1047,6 +1048,12 @@ expandContainer.appendChild(addRow);
 input.oninput = () => {
   const query = input.value.trim().toLowerCase();
   suggestionBox.innerHTML = "";
+
+input.onblur = () => {
+  setTimeout(() => {
+    suggestionBox.style.display = "none";
+  }, 150);
+};
 
   if (!query) {
     suggestionBox.style.display = "none";
@@ -1241,9 +1248,6 @@ function addItemToSpecialtyList(listName, item) {
   }
 }
 
- input.onblur = () => {
-  setTimeout(() => suggestionBox.style.display = "none", 150);
-};
 
 
 /* ---------------- RENDER ---------------- */
