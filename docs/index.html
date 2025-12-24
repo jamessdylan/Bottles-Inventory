@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>SM Wine </title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -932,23 +932,7 @@ function buildSourceTabs(){
   });
 }
 
-/* ---------- SALES REPORT DEBUG ---------- */
-const salesReportBtn = document.getElementById("salesReportBtn");
 
-salesReportBtn.onclick = () => {
-  drawer.classList.remove("open");
-  overlay.classList.remove("show");
-
-  const message =
-`Sales Report Filters:
-
-ArchiveFilter: ${ArchiveFilter}
-GroupFilter: ${GroupFilter}
-SubgroupFilter: ${SubgroupFilter}
-ItemFilter: ${ItemFilter}`;
-
-  alert(message);
-};
  
 
 /* ---------------- SORT ---------------- */
@@ -1448,6 +1432,24 @@ overlay.onclick=()=>{
   drawer.classList.remove("open");
   overlay.classList.remove("show");
 };
+
+/* ---------- SALES REPORT DEBUG ---------- */
+const salesReportBtn = document.getElementById("salesReportBtn");
+
+salesReportBtn.onclick = () => {
+  drawer.classList.remove("open");
+  overlay.classList.remove("show");
+
+  const message =
+`Sales Report Filters:
+
+ArchiveFilter: ${ArchiveFilter}
+GroupFilter: ${GroupFilter}
+SubgroupFilter: ${SubgroupFilter}
+ItemFilter: ${ItemFilter}`;
+
+  alert(message);
+};
   
 /* ---------- NEW BOTTLE ---------- */
 const newBottleBtn = document.getElementById("newBottleBtn");
@@ -1878,6 +1880,7 @@ confirmNewBottle.onclick = () => {
   renderItems();
   closeNewBottle();
 };
+
 
 
 
