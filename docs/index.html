@@ -299,6 +299,11 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   transform: translateY(-50%);
 }
 
+.specialty-row.expanded {
+  overflow: visible;
+}
+
+
 /* ---------- ADD NEW BOTTLE (SPECIALTY) ---------- */
 .add-specialty-bottle {
   margin-top: 14px;
@@ -975,9 +980,6 @@ row.onclick = () => {
   renderSpecialtyLists();
 };
 
-.specialty-row.expanded {
-  overflow: visible;
-}
 
 const expandContainer = document.createElement("div");
 expandContainer.style.overflow = "visible";
@@ -1020,10 +1022,38 @@ const addRow = document.createElement("div");
 addRow.style.padding = "6px 0";
 addRow.style.borderBottom = "1px solid rgba(0,0,0,.08)";
 addRow.style.position = "relative";
+
+const input = document.createElement("input");
+input.type = "text";
+input.placeholder = "+ Add bottle…";
+input.style.width = "100%";
+input.style.border = "none";
+input.style.outline = "none";
+input.style.background = "transparent";
+input.style.fontSize = "14px";
+input.style.fontFamily = "inherit";
+
+const suggestionBox = document.createElement("div");
+suggestionBox.style.position = "absolute";
+suggestionBox.style.top = "100%";
+suggestionBox.style.left = "0";
+suggestionBox.style.right = "0";
+suggestionBox.style.background = "white";
+suggestionBox.style.borderRadius = "10px";
+suggestionBox.style.boxShadow = "0 6px 18px rgba(0,0,0,.15)";
+suggestionBox.style.zIndex = "600";
+suggestionBox.style.display = "none";
+suggestionBox.style.maxHeight = "220px";
+suggestionBox.style.overflowY = "auto";
+
+/* STOP ROW COLLAPSING */
 addRow.onclick = e => e.stopPropagation();
 input.onclick = e => e.stopPropagation();
 suggestionBox.onclick = e => e.stopPropagation();
 
+addRow.appendChild(input);
+addRow.appendChild(suggestionBox);
+expandContainer.appendChild(addRow);
 const input = document.createElement("input");
 input.type = "text";
 input.placeholder = "+ Add bottle…";
