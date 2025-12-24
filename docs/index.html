@@ -1,4 +1,3 @@
-That didn’t work, here is my file:
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1056,10 +1055,14 @@ if (expandedSpecialtyList === listName) {
         specialtyListData[listName] ??= [];
         specialtyListData[listName].push(item.UUID);
 
+  const added = document.createElement("div");
+  added.style.padding = "6px 0";
+  added.style.borderBottom = "1px solid rgba(0,0,0,.08)";
+  added.textContent = specialtyTitle(item);
+
+  expandContainer.insertBefore(added, input);
         input.value = "";
         suggestions.style.display = "none";
-
-        renderSpecialtyLists();
       };
 
       suggestions.appendChild(div);
