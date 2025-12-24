@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine BG</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -43,24 +43,6 @@ body::before{
   background:url("IMG_6048.jpeg") no-repeat right center / 1200px auto;
   opacity:.65;
   z-index:-1;
-}
-
-/* ---------- TOP GRADIENT OVERLAY ---------- */
-body::after{
-  content:"";
-  position:fixed;
-  top:0;
-  left:0;
-  right:0;
-  height:500px; /* adjust strength here */
-  background:linear-gradient(
-    to bottom,
-    rgba(255,255,255,.85),
-    rgba(255,255,255,.55),
-    rgba(255,255,255,0)
-  );
-  pointer-events:none;
-  z-index:-1;
 }
 
 /* ---------- HEADER ---------- */
@@ -1092,38 +1074,6 @@ document.getElementById("addSpecialtyList").onclick = () => {
   renderSpecialtyLists();
 };
 
-function showArchiveSuggestionOverlay(text){
-  const overlay = document.createElement("div");
-  overlay.style.cssText = `
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,.35);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    z-index:9999;
-  `;
-
-  const box = document.createElement("div");
-  box.style.cssText = `
-    background:white;
-    padding:20px;
-    border-radius:14px;
-    max-width:90%;
-    max-height:70%;
-    overflow:auto;
-    font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
-    white-space:pre-line;
-    font-size:14px;
-  `;
-
-  box.textContent = text;
-
-  overlay.onclick = () => overlay.remove();
-
-  overlay.appendChild(box);
-  document.body.appendChild(overlay);
-}
 
 
 /* ---------------- HELPERS ---------------- */
@@ -1136,57 +1086,6 @@ function baseSort(a,b,key){
     ||naLast(a.varietal,b.varietal)
     ||naLast(b.year,a.year);
 }
-
-function updateQtyAndArchiveSuggestion(items){
-  const SOURCES = [
-    "Emporio",
-    "Mezzo",
-    "Tetto (L)",
-    "Tetto (R)",
-    "Wine Cellar",
-    "Liquor Closet",
-    "Prep Cooler",
-    "Other"
-  ];
-
-  items.forEach(item => {
-    /* ---------- QTY ---------- */
-    item.qty = SOURCES.reduce(
-      (sum, key) => sum + Number(item[key] || 0),
-      0
-    );
-
-    /* ---------- ARCHIVE SUGGESTION ---------- */
-    if (item.qty > 0 && item.status === true){
-      item.archivesuggestion = "none";
-    }
-    else if (item.qty > 0 && item.status === false){
-      item.archivesuggestion = "Make Active";
-    }
-    else if (item.qty === 0 && item.status === true){
-      item.archivesuggestion = "Make Inactive";
-    }
-    else if (item.qty === 0 && item.status === false){
-      item.archivesuggestion = "Delete Item";
-    }
-  });
-}
-
-function itemDisplayName(item){
-  return [item.brand, item.identifier, item.varietal, item.year]
-    .filter(v => v && v !== "N/A")
-    .join(" ");
-}
-
-function buildArchiveSuggestionMessage(items){
-  return items
-    .filter(item => item.archivesuggestion !== "none")
-    .map(item => {
-      return `${itemDisplayName(item)} → ${item.archivesuggestion}`;
-    })
-    .join("\n");
-}
-
 
 /* ---------------- RENDER ---------------- */
 function renderItems(){
@@ -1411,39 +1310,11 @@ loadItems();
 let showArchived = false;
 let groupEnabled = false;
 
-let archivePressTimer;
-let archiveLongPress = false;
-
-archiveBtn.onpointerdown = () => {
-  archiveLongPress = false;
-
-  archivePressTimer = setTimeout(() => {
-    archiveLongPress = true;
-updateQtyAndArchiveSuggestion(items);
-
-const message = buildArchiveSuggestionMessage(items);
-
-showArchiveSuggestionOverlay(
-  message || "No archive actions suggested."
-);
-  }, 600); // long-press duration
+archiveBtn.onclick = () => {
+  showArchived = !showArchived;
+  archiveBtn.classList.toggle("active", showArchived);
+  renderItems();
 };
-
-archiveBtn.onpointerup = () => {
-  clearTimeout(archivePressTimer);
-
-  // normal tap (only if long-press did NOT fire)
-  if (!archiveLongPress) {
-    showArchived = !showArchived;
-    archiveBtn.classList.toggle("active", showArchived);
-    renderItems();
-  }
-};
-
-archiveBtn.onpointerleave = () => {
-  clearTimeout(archivePressTimer);
-};
-
 
 smartSortBtn.onclick=()=>smartSortBtn.classList.toggle("active");
 groupBtn.onclick=()=>groupBtn.classList.toggle("active");
