@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title> Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1371,7 +1371,7 @@ function getSelectedAutocompleteItem(){
 
 
 async function openSmartSort(){
-  if (currentSource !== "Wine Cellar") return;
+if (Source !== "Wine Cellar") return;
 
   const uuids = await fetchSourceValues("Wine Cellar");
   const uuidSet = new Set(uuids);
@@ -1711,7 +1711,21 @@ archiveBtn.onclick = () => {
   renderItems();
 };
 
+
+
+let smartPressTimer;
+
+smartSortBtn.onpointerdown = () => {
+  smartPressTimer = setTimeout(openSmartSort, 600);
+};
+
+smartSortBtn.onpointerup =
+smartSortBtn.onpointerleave = () =>
+  clearTimeout(smartPressTimer);
+
+
 smartSortBtn.onclick=()=>smartSortBtn.classList.toggle("active");
+
 groupBtn.onclick=()=>groupBtn.classList.toggle("active");
 
 
@@ -2201,15 +2215,7 @@ document.getElementById("confirmArchive").onclick = () => {
   renderItems();
 };
 
-let smartPressTimer;
 
-smartSortBtn.onpointerdown = () => {
-  smartPressTimer = setTimeout(openSmartSort, 600);
-};
-
-smartSortBtn.onpointerup =
-smartSortBtn.onpointerleave = () =>
-  clearTimeout(smartPressTimer);
 
 
 /*---------EXPORT---------------*/
