@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM New Sort</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -945,6 +945,8 @@ let specialtyLists = [];
 let selectedSpecialtyList = null;
 let expandedSpecialtyList = null;
 let archiveRows = [];
+let showArchived = false;
+let groupEnabled = false;
 
 groupBtn.onclick = () => {
   groupEnabled = !groupEnabled;
@@ -1786,8 +1788,7 @@ updateSort(Source);
 loadItems();
 
 /* ---------- ACTION STATES ---------- */
-let showArchived = false;
-let groupEnabled = false;
+
 
 archiveBtn.onclick = () => {
   showArchived = !showArchived;
@@ -1809,8 +1810,6 @@ smartSortBtn.onpointerleave = () =>
 
 
 smartSortBtn.onclick=()=>smartSortBtn.classList.toggle("active");
-
-groupBtn.onclick=()=>groupBtn.classList.toggle("active");
 
 
 /* ---------- DRAWER ---------- */
