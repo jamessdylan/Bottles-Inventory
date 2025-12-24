@@ -1054,32 +1054,6 @@ suggestionBox.onclick = e => e.stopPropagation();
 addRow.appendChild(input);
 addRow.appendChild(suggestionBox);
 expandContainer.appendChild(addRow);
-const input = document.createElement("input");
-input.type = "text";
-input.placeholder = "+ Add bottle…";
-input.style.width = "100%";
-input.style.border = "none";
-input.style.outline = "none";
-input.style.background = "transparent";
-input.style.fontSize = "14px";
-input.style.fontFamily = "inherit";
-
-const suggestionBox = document.createElement("div");
-suggestionBox.style.position = "absolute";
-suggestionBox.style.top = "100%";
-suggestionBox.style.left = "0";
-suggestionBox.style.right = "0";
-suggestionBox.style.background = "white";
-suggestionBox.style.borderRadius = "10px";
-suggestionBox.style.boxShadow = "0 6px 18px rgba(0,0,0,.15)";
-suggestionBox.style.zIndex = "600";
-suggestionBox.style.display = "none";
-suggestionBox.style.maxHeight = "220px";
-suggestionBox.style.overflowY = "auto";
-
-addRow.appendChild(input);
-addRow.appendChild(suggestionBox);
-expandContainer.appendChild(addRow);
 
 input.onblur = () => {
   setTimeout(() => {
