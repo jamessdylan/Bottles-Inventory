@@ -1055,6 +1055,7 @@ input.style.background = "transparent";
 input.style.fontSize = "14px";
 input.style.fontFamily = "inherit";
 
+addRow.appendChild(input);
 expandContainer.appendChild(addRow);
 
 document.addEventListener("pointerdown", e => {
@@ -1138,13 +1139,19 @@ specialtyBtn.onclick = async () => {
 };
 
 document.getElementById("closeSpecialty").onclick = () => {
+  // close suggestions
+  floatingSuggestionBox.style.display = "none";
+
+  // collapse expanded list
+  expandedSpecialtyList = null;
+
   specialtySheet.style.left = "100%";
   specialtyOverlay.classList.remove("show");
-  // ⬅️ Return to drawer menu
+
+  // return to drawer
   drawer.classList.add("open");
   overlay.classList.add("show");
 };
-
 specialtyOverlay.onclick = () => {
   specialtySheet.style.left = "100%";
   specialtyOverlay.classList.remove("show");
@@ -1455,7 +1462,8 @@ overlay.onclick=()=>{
   
 
 document.addEventListener("pointerdown", e => {
-  if (!e.target.closest("input")) {
+  if (!e.target.closest(".specialty-row") &&
+      !e.target.closest("input")) {
     floatingSuggestionBox.style.display = "none";
   }
 });
