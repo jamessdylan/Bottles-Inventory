@@ -1629,29 +1629,44 @@ function renderItems() {
     }
   });
 
-// 5️⃣ RENDER GROUPS WITH OPTIONAL SECONDARY GROUPING
-(async () => {
+// // 5️⃣ RENDER GROUPS WITH OPTIONAL SECONDARY GROUPING
+function renderGrouped(items, label){
+  if (!items.length) return;
 
-  if (houseItems.length){
-    drawDivider("House");
+  drawDivider(label);
 
-    const houseGroups = await applySecondaryGrouping(houseItems);
-    houseGroups.forEach(group => {
-      group.forEach(drawItem);
-    });
+  if (!smartSortEnabled){
+    items.forEach(drawItem);
+    return;
   }
 
-  if (reserveItems.length){
-    drawDivider("Reserve");
-
-    const reserveGroups = await applySecondaryGrouping(reserveItems);
-    reserveGroups.forEach(group => {
-      group.forEach(drawItem);
-    });
+  // Emporio / Mezzo / Tetto
+  if (
+    Source === "Emporio" ||
+    Source === "Mezzo" ||
+    Source === "Tetto (L)" ||
+    Source === "Tetto (R)"
+  ){
+    nonRedItems(items).forEach(drawItem);
+    redItems(items).forEach(drawItem);
+    return;
   }
 
-})();
+  // Wine Cellar
+  if (Source === "Wine Cellar"){
+    const smartUUIDs = new Set(SmartLists["Wine Cellar"] || []);
+    items.filter(i => smartUUIDs.has(i.UUID)).forEach(drawItem);
+    items.filter(i => !smartUUIDs.has(i.UUID)).forEach(drawItem);
+    return;
+  }
 
+  items.forEach(drawItem);
+}
+
+renderGrouped(houseItems, "House");
+renderGrouped(reserveItems, "Reserve");
+
+}
 
 /* ---------------- DRAW ITEM ---------------- */
 function openEditBottle(item) {
