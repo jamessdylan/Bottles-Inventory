@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title> Wine Inventory</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1530,16 +1530,6 @@ function drawDivider(label) {
   list.appendChild(div);
 }
 
-function redLastComparator(a, b) {
-  const aIsRed = (a.color || "").toLowerCase() === "red";
-  const bIsRed = (b.color || "").toLowerCase() === "red";
-
-  if (aIsRed !== bIsRed) {
-    return aIsRed ? 1 : -1; // non-red first, red last
-  }
-
-  return 0; // otherwise keep existing order
-}
 
 /* ---------------- RENDER ---------------- */
 function renderItems() {
@@ -1585,28 +1575,16 @@ function renderItems() {
     }
   });
 
- // 5️⃣ RENDER GROUPS (only if they contain items)
-const smartSortActive = smartSortBtn.classList.contains("active");
-
-if (houseItems.length) {
-  drawDivider("House");
-
-  if (smartSortActive) {
-    houseItems.sort(redLastComparator);
+  // 5️⃣ RENDER GROUPS (only if they contain items)
+  if (houseItems.length) {
+    drawDivider("House");
+    houseItems.forEach(drawItem);
   }
 
-  houseItems.forEach(drawItem);
-}
-
-if (reserveItems.length) {
-  drawDivider("Reserve");
-
-  if (smartSortActive) {
-    reserveItems.sort(redLastComparator);
+  if (reserveItems.length) {
+    drawDivider("Reserve");
+    reserveItems.forEach(drawItem);
   }
-
-  reserveItems.forEach(drawItem);
-}
 }
 
 
