@@ -1,3 +1,4 @@
+That didn’t work… this is my file:
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -323,6 +324,10 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   border:none;
   font-size:16px;
   color:var(--green);
+}
+
+.specialty-row.expanded {
+  overflow: visible !important;
 }
 
 </style>
@@ -973,13 +978,17 @@ let startX = 0;
 let currentX = 0;
 let dragging = false;
 let didSwipe = false;
-row.onclick = () => {
+row.onclick = e => {
+  // ❗ Ignore clicks inside the expanded content
+  if (e.target.closest("input") || e.target.closest(".suggestion-box")) {
+    return;
+  }
+
   expandedSpecialtyList =
     expandedSpecialtyList === listName ? null : listName;
 
   renderSpecialtyLists();
 };
-
 
 const expandContainer = document.createElement("div");
 expandContainer.style.overflow = "visible";
@@ -1195,6 +1204,10 @@ specialtyBtn.onclick = async () => {
 document.getElementById("closeSpecialty").onclick = () => {
   specialtySheet.style.transform = "translateX(100%)";
   specialtyOverlay.classList.remove("show");
+
+  // ⬅️ Return to drawer menu
+  drawer.classList.add("open");
+  overlay.classList.add("show");
 };
 
 specialtyOverlay.onclick = () => {
