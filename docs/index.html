@@ -299,6 +299,32 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   transform: translateY(-50%);
 }
 
+.specialty-add-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: none;
+  background: rgba(0,0,0,.06);
+  font-size: 14px;
+  outline: none;
+}
+
+.specialty-suggestions {
+  margin-top: 6px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.15);
+  overflow: hidden;
+}
+
+.specialty-suggestions div {
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.specialty-suggestions div:hover {
+  background: rgba(31,94,59,.08);
+}
 
 #datePicker button{
   background:none;
@@ -970,10 +996,79 @@ expandContainer.style.display =
   expandedSpecialtyList === listName ? "block" : "none";
 expandContainer.style.fontSize = "14px";
 expandContainer.style.color = "#333";
+
 if (expandedSpecialtyList === listName) {
+  expandContainer.innerHTML = "";
+
   const matchedItems = getItemsForSpecialtyList(listName);
 
-  expandContainer.innerHTML = "";
+  matchedItems.forEach(item => {
+    const div = document.createElement("div");
+    div.style.padding = "6px 0";
+    div.style.borderBottom = "1px solid rgba(0,0,0,.08)";
+    div.textContent = specialtyTitle(item);
+    expandContainer.appendChild(div);
+  });
+
+  /* ---------- ADD-TO INPUT ---------- */
+  const input = document.createElement("input");
+  input.className = "specialty-add-input";
+  input.placeholder = "+ Add item…";
+  input.autocomplete = "off";
+
+  const suggestions = document.createElement("div");
+  suggestions.className = "specialty-suggestions";
+  suggestions.style.display = "none";
+
+  expandContainer.appendChild(input);
+  expandContainer.appendChild(suggestions);
+
+  input.oninput = () => {
+    const value = input.value.trim().toLowerCase();
+    suggestions.innerHTML = "";
+
+    if (!value) {
+      suggestions.style.display = "none";
+      return;
+    }
+
+    const available = getAvailableItemsForList(listName);
+
+    const matches = available.filter(i =>
+      specialtyTitle(i).toLowerCase().includes(value)
+    );
+
+    if (matches.length === 0) {
+      suggestions.style.display = "none";
+      return;
+    }
+
+    matches.forEach(item => {
+      const div = document.createElement("div");
+      div.textContent = specialtyTitle(item);
+
+      div.onclick = () => {
+        specialtyListData[listName] ??= [];
+        specialtyListData[listName].push(item.UUID);
+
+        input.value = "";
+        suggestions.style.display = "none";
+
+        renderSpecialtyLists();
+      };
+
+      suggestions.appendChild(div);
+    });
+
+    suggestions.style.display = "block";
+  };
+
+  /* Prevent free entry */
+  input.onblur = () => {
+    input.value = "";
+    suggestions.style.display = "none";
+  };
+}
 
   if (matchedItems.length === 0) {
     expandContainer.textContent = "No matching items.";
@@ -1123,6 +1218,25 @@ function getItemsForSpecialtyList(listName) {
   );
 }
 
+function specialtyTitle(item) {
+  return [
+    item.brand,
+    item.identifier,
+    item.varietal,
+    item.year
+  ].filter(v => v && v !== "N/A").join(" ");
+}
+
+function getAvailableItemsForList(listName) {
+  const existingUUIDs = new Set(
+    (specialtyListData[listName] || []).map(u => String(u))
+  );
+
+  return items.filter(i =>
+    i.UUID &&
+    !existingUUIDs.has(String(i.UUID))
+  );
+}
 
 /* ---------------- RENDER ---------------- */
 function renderItems(){
