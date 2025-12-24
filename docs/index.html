@@ -311,6 +311,30 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 </head>
 <body>
 
+<!-- ARCHIVE RECONCILE OVERLAY -->
+<div id="archiveOverlay" class="overlay"></div>
+
+<div id="archiveSheet" style="
+  position:fixed;
+  inset:0;
+  background:rgba(255,255,255,.92);
+  backdrop-filter:blur(16px);
+  padding:calc(20px + env(safe-area-inset-top)) 16px 20px;
+  transform:translateY(100%);
+  transition:.25s ease;
+  z-index:500;
+  overflow-y:auto;
+">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div style="font-family:'Copperplate',serif;font-size:18px;">
+      Archive Reconciliation
+    </div>
+    <button id="confirmArchive">Confirm</button>
+  </div>
+
+  <div id="archiveList"></div>
+</div>
+
 
   <!-- MONTH / YEAR PICKER -->
 <div id="datePickerOverlay" class="overlay"></div>
@@ -861,6 +885,7 @@ let Sort="Standard";
 let specialtyLists = [];
 let selectedSpecialtyList = null;
 let expandedSpecialtyList = null;
+let archiveRows = [];
 
 
 const list=document.getElementById("list");
@@ -1085,6 +1110,74 @@ function baseSort(a,b,key){
     ||naLast(a.identifier,b.identifier)
     ||naLast(a.varietal,b.varietal)
     ||naLast(b.year,a.year);
+}
+
+function wineTitle(item){
+  return [item.brand,item.identifier,item.varietal,item.year]
+    .filter(v => v && v !== "N/A")
+    .join(" ");
+}
+
+function totalQty(item){
+  return SOURCES.reduce((sum, src) =>
+    sum + Number(item[src] || 0), 0
+  );
+}
+
+function defaultArchiveAction(item){
+  const qty = totalQty(item);
+
+  if (qty > 0 && item.status === false) return "Make Active";
+  if (qty === 0 && item.status === false) return "Delete Item";
+  if (qty === 0 && item.status === true) return "Make Inactive";
+  return "None";
+}
+
+function openArchiveReconcile(){
+  // recompute qtys implicitly
+  archiveRows = items
+    .filter(item => !(totalQty(item) > 0 && item.status === true))
+    .sort((a,b)=>wineTitle(a).localeCompare(wineTitle(b)))
+    .map(item => ({
+      item,
+      suggested: defaultArchiveAction(item),
+      value: "None",
+      initialized: false
+    }));
+
+  const container = document.getElementById("archiveList");
+  container.innerHTML = "";
+
+  archiveRows.forEach(row => {
+    const div = document.createElement("div");
+    div.style.padding = "14px";
+    div.style.borderBottom = "1px solid #ddd";
+
+    const action = document.createElement("div");
+    action.textContent = row.suggested;
+    action.style.color = "#aaa";
+    action.style.cursor = "pointer";
+    action.style.marginTop = "6px";
+
+    action.onclick = () => {
+      if (!row.initialized){
+        row.value = row.suggested;
+        row.initialized = true;
+      } else {
+        const opts = ["Make Active","Make Inactive","Delete Item","None"];
+        row.value = opts[(opts.indexOf(row.value)+1)%opts.length];
+      }
+      action.textContent = row.value;
+      action.style.color = "#000";
+    };
+
+    div.innerHTML = `<div>${wineTitle(row.item)}</div>`;
+    div.appendChild(action);
+    container.appendChild(div);
+  });
+
+  archiveSheet.style.transform = "translateY(0)";
+  archiveOverlay.classList.add("show");
 }
 
 /* ---------------- RENDER ---------------- */
@@ -1760,6 +1853,51 @@ confirmNewBottle.onclick = () => {
   closeNewBottle();
 };
 
+let archivePressTimer;
+
+archiveBtn.onpointerdown = () => {
+  archivePressTimer = setTimeout(() => {
+    openArchiveReconcile();
+  }, 600);
+};
+
+archiveBtn.onpointerup =
+archiveBtn.onpointerleave = () =>
+  clearTimeout(archivePressTimer);
+
+archiveBtn.onclick = () => {
+  showArchived = !showArchived;
+  archiveBtn.classList.toggle("active", showArchived);
+  renderItems();
+};
+
+
+document.getElementById("confirmArchive").onclick = () => {
+  let updated = [...items];
+
+  archiveRows.forEach(r => {
+    if (!r.initialized || r.value === "None") return;
+
+    if (r.value === "Delete Item"){
+      updated = updated.filter(i => i !== r.item);
+    }
+    if (r.value === "Make Active"){
+      r.item.status = true;
+    }
+    if (r.value === "Make Inactive"){
+      r.item.status = false;
+    }
+  });
+
+  items = updated;
+  showArchived = false;
+  archiveBtn.classList.remove("active");
+
+  archiveSheet.style.transform = "translateY(100%)";
+  archiveOverlay.classList.remove("show");
+
+  renderItems();
+};
 
 
 
