@@ -1003,18 +1003,6 @@ function buildSourceTabs(){
   });
 }
 
-function smartColorThenStandardSort(a, b, key) {
-  const aIsRed = (a.color || "") === "Red";
-  const bIsRed = (b.color || "") === "Red";
-
-  // Non-Red first, Red last
-  if (aIsRed !== bIsRed) {
-    return aIsRed ? 1 : -1;
-  }
-
-  // Fall back to existing standard behavior
-  return baseSort(a, b,
-
 
 /* ---------------- SORT ---------------- */
 function getSortOptions(src){
@@ -1587,22 +1575,6 @@ function renderItems() {
     }
   });
 
-const smartColorActive =
-  smartSortBtn.classList.contains("active") &&
-  SMART_COLOR_SOURCES.has(Source);
-
-const key = `${Source}Complete`;
-
-if (smartColorActive) {
-  houseItems.sort((a, b) =>
-    smartColorThenStandardSort(a, b, key)
-  );
-
-  reserveItems.sort((a, b) =>
-    smartColorThenStandardSort(a, b, key)
-  );
-}
-
   // 5️⃣ RENDER GROUPS (only if they contain items)
   if (houseItems.length) {
     drawDivider("House");
@@ -1814,13 +1786,6 @@ updateSort(Source);
 loadItems();
 
 /* ---------- ACTION STATES ---------- */
-
-const SMART_COLOR_SOURCES = new Set([
-  "Emporio",
-  "Mezzo",
-  "Tetto (L)",
-  "Tetto (R)"
-]);
 
 
 archiveBtn.onclick = () => {
