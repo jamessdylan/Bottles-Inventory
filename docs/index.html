@@ -990,6 +990,7 @@ if (didSwipe) return;
 
 
 const expandContainer = document.createElement("div");
+expandContainer.onclick = e => e.stopPropagation();
 expandContainer.style.marginTop = "10px";
 expandContainer.style.paddingLeft = "12px";
 expandContainer.style.display =
@@ -1064,10 +1065,12 @@ if (expandedSpecialtyList === listName) {
   };
 
   /* Prevent free entry */
-  input.onblur = () => {
-    input.value = "";
+input.onblur = () => {
+  setTimeout(() => {
     suggestions.style.display = "none";
-  };
+    input.value = "";
+  }, 150);
+};
 }
 }
 
@@ -1151,6 +1154,7 @@ specialtyBtn.onclick = async () => {
 };
 
 document.getElementById("closeSpecialty").onclick = () => {
+  expandedSpecialtyList = null;   // 🔑 reset state
   specialtySheet.style.transform = "translateX(100%)";
   specialtyOverlay.classList.remove("show");
 };
