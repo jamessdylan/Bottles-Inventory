@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine </title>
+<title>SM New Sort</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -946,6 +946,13 @@ let selectedSpecialtyList = null;
 let expandedSpecialtyList = null;
 let archiveRows = [];
 
+groupBtn.onclick = () => {
+  groupEnabled = !groupEnabled;
+  groupBtn.classList.toggle("active", groupEnabled);
+  renderItems();
+};
+
+
 /* ---------- SMART LIST STORE ---------- */
 const SmartLists = {}; 
 // Example:
@@ -1504,8 +1511,28 @@ function closeSmartSort(){
   smartOverlay.classList.remove("show");
 }
 
+const GROUPABLE_SOURCES = new Set([
+  "Emporio",
+  "Mezzo",
+  "Tetto (L)",
+  "Tetto (R)",
+  "Prep Cooler"
+]);
+
+function drawDivider(label) {
+  const div = document.createElement("div");
+  div.textContent = label;
+  div.style.margin = "18px 0 8px";
+  div.style.fontFamily = "Copperplate, serif";
+  div.style.fontSize = "14px";
+  div.style.color = "#1f5e3b";
+  div.style.opacity = "0.85";
+  list.appendChild(div);
+}
+
+
 /* ---------------- RENDER ---------------- */
-function renderItems(){
+function renderItems() {
   list.innerHTML = "";
 
   const key = `${Source}Complete`;
@@ -1517,14 +1544,49 @@ function renderItems(){
     if (typeof i.status !== "boolean") i.status = true;
   });
 
-  // 🔑 FILTER RULE
-  const visibleItems = items.filter(item =>
+  // 1️⃣ ARCHIVE FILTER FIRST
+  let visibleItems = items.filter(item =>
     showArchived || item.status === true
   );
 
+  // 2️⃣ BASE SORT (existing behavior)
   visibleItems.sort((a, b) => baseSort(a, b, key));
-  visibleItems.forEach(drawItem);
+
+  // 3️⃣ GROUP LOGIC
+  const canGroup =
+    groupEnabled &&
+    GROUPABLE_SOURCES.has(Source);
+
+  // Wine Cellar / Other → never grouped
+  if (!canGroup) {
+    visibleItems.forEach(drawItem);
+    return;
+  }
+
+  // 4️⃣ SPLIT BY TIER
+  const houseItems = [];
+  const reserveItems = [];
+
+  visibleItems.forEach(item => {
+    if ((item.tier || "House") === "House") {
+      houseItems.push(item);
+    } else {
+      reserveItems.push(item);
+    }
+  });
+
+  // 5️⃣ RENDER GROUPS (only if they contain items)
+  if (houseItems.length) {
+    drawDivider("House");
+    houseItems.forEach(drawItem);
+  }
+
+  if (reserveItems.length) {
+    drawDivider("Reserve");
+    reserveItems.forEach(drawItem);
+  }
 }
+
 
 
 /* ---------------- DRAW ITEM ---------------- */
