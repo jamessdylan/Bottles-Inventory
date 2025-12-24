@@ -892,6 +892,17 @@ const tabsEl=document.getElementById("sourceTabs");
 const drawer = document.getElementById("drawer");
 const overlay = document.getElementById("overlay");
 
+const floatingSuggestionBox = document.createElement("div");
+floatingSuggestionBox.style.position = "fixed";
+floatingSuggestionBox.style.background = "white";
+floatingSuggestionBox.style.borderRadius = "12px";
+floatingSuggestionBox.style.boxShadow = "0 6px 18px rgba(0,0,0,.15)";
+floatingSuggestionBox.style.zIndex = "1000";
+floatingSuggestionBox.style.display = "none";
+floatingSuggestionBox.style.maxHeight = "220px";
+floatingSuggestionBox.style.overflowY = "auto";
+
+document.body.appendChild(floatingSuggestionBox);
 
 /* ---------------- LOAD ---------------- */
 async function loadItems(){
@@ -1044,26 +1055,6 @@ input.style.background = "transparent";
 input.style.fontSize = "14px";
 input.style.fontFamily = "inherit";
 
-const suggestionBox = document.createElement("div");
-suggestionBox.style.position = "absolute";
-suggestionBox.style.top = "100%";
-suggestionBox.style.left = "0";
-suggestionBox.style.right = "0";
-suggestionBox.style.background = "white";
-suggestionBox.style.borderRadius = "10px";
-suggestionBox.style.boxShadow = "0 6px 18px rgba(0,0,0,.15)";
-suggestionBox.style.zIndex = "600";
-suggestionBox.style.display = "none";
-suggestionBox.style.maxHeight = "220px";
-suggestionBox.style.overflowY = "auto";
-
-/* STOP ROW COLLAPSING */
-addRow.onclick = e => e.stopPropagation();
-input.onclick = e => e.stopPropagation();
-suggestionBox.onclick = e => e.stopPropagation();
-
-addRow.appendChild(input);
-addRow.appendChild(suggestionBox);
 expandContainer.appendChild(addRow);
 
 document.addEventListener("pointerdown", e => {
@@ -1077,12 +1068,17 @@ document.addEventListener("pointerdown", e => {
 
 input.oninput = () => {
   const query = input.value.trim().toLowerCase();
-  suggestionBox.innerHTML = "";
+  floatingSuggestionBox.innerHTML = "";
 
   if (!query) {
-    suggestionBox.style.display = "none";
+    floatingSuggestionBox.style.display = "none";
     return;
   }
+
+  const rect = input.getBoundingClientRect();
+  floatingSuggestionBox.style.top = `${rect.bottom + 6}px`;
+  floatingSuggestionBox.style.left = `${rect.left}px`;
+  floatingSuggestionBox.style.width = `${rect.width}px`;
 
   const matches = items.filter(item => {
     const title = [
@@ -1096,7 +1092,7 @@ input.oninput = () => {
   });
 
   if (matches.length === 0) {
-    suggestionBox.style.display = "none";
+    floatingSuggestionBox.style.display = "none";
     return;
   }
 
@@ -1116,85 +1112,15 @@ input.oninput = () => {
     row.onclick = () => {
       addItemToSpecialtyList(listName, item);
       input.value = "";
-      suggestionBox.style.display = "none";
+      floatingSuggestionBox.style.display = "none";
       renderSpecialtyLists();
     };
 
-    suggestionBox.appendChild(row);
+    floatingSuggestionBox.appendChild(row);
   });
 
-  suggestionBox.style.display = "block";
+  floatingSuggestionBox.style.display = "block";
 };
-
-
-
-const lockedNames = ["Wine Cellar", "Prep Cooler"];
-
-
-
-row.addEventListener("pointerdown", e => {
-  if (expandedSpecialtyList === listName) return;
-  didSwipe = false;
-  startX = e.clientX;
-  dragging = true;
-  row.setPointerCapture(e.pointerId);
-});
-
-row.addEventListener("pointermove", e => {
-  if (expandedSpecialtyList === listName) return;  if (!dragging) return;
-
-  currentX = e.clientX - startX;
-
-  if (currentX < -10) didSwipe = true;
-
-  if (currentX < 0) {
-    row.style.transform = `translateX(${currentX}px)`;
-  }
-});
-
-
-row.addEventListener("pointerup", e => {
-  if (expandedSpecialtyList === listName) {
-    row.style.transform = "none";
-    currentX = 0;
-    dragging = false;
-    return;
-  }
-
-  // threshold reached → attempt delete
-  if (currentX < -80) {
-
-    // 🔒 locked list names
-    if (lockedNames.includes(listName)) {
-      row.style.transform = "translateX(0)";
-      return;
-    }
-
-    // animate out
-    row.classList.add("deleting");
-
-    setTimeout(() => {
-      const index = specialtyLists.indexOf(listName);
-      if (index > -1) {
-        specialtyLists.splice(index, 1);
-        renderSpecialtyLists();
-      }
-    }, 250);
-
-  } else {
-    // snap back
-    row.style.transform = "translateX(0)";
-  }
-
-  currentX = 0;
-});
-
-
-row.appendChild(expandContainer);
-container.appendChild(row);
-  });
-}
-
 
 
 const specialtyBtn = document.getElementById("specialtyListBtn");
@@ -1528,6 +1454,13 @@ overlay.onclick=()=>{
   overlay.classList.remove("show");
 };
   
+
+document.addEventListener("pointerdown", e => {
+  if (!e.target.closest("input")) {
+    floatingSuggestionBox.style.display = "none";
+  }
+});
+
 /* ---------- NEW BOTTLE ---------- */
 const newBottleBtn = document.getElementById("newBottleBtn");
 const newBottleSheet = document.getElementById("newBottleSheet");
