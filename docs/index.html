@@ -738,12 +738,12 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
 <div id="specialtySheet" style="
   position:fixed;
+  left: 100%;
+  transition: left .25s ease;
   inset:0;
   background:rgba(255,255,255,.92);
   backdrop-filter:blur(16px);
   padding:calc(20px + env(safe-area-inset-top)) 16px 20px;
-  transform:translateX(100%);
-  transition:.25s ease;
   z-index:500;
   overflow-y:auto;
 ">
@@ -1138,6 +1138,7 @@ specialtyBtn.onclick = async () => {
 };
 
 document.getElementById("closeSpecialty").onclick = () => {
+  specialtySheet.style.left = "100%";
   specialtySheet.style.transform = "translateX(100%)";
   specialtyOverlay.classList.remove("show");
 
@@ -1148,6 +1149,7 @@ document.getElementById("closeSpecialty").onclick = () => {
 
 specialtyOverlay.onclick = () => {
   specialtySheet.style.transform = "translateX(100%)";
+  specialtySheet.style.left = "0";
   specialtyOverlay.classList.remove("show");
 };
 
