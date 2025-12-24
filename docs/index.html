@@ -946,6 +946,11 @@ let selectedSpecialtyList = null;
 let expandedSpecialtyList = null;
 let archiveRows = [];
 
+/* ---------- SMART LIST STORE ---------- */
+const SmartLists = {}; 
+// Example:
+// SmartLists["Wine Cellar"] = ["UUID1","UUID2",...]
+
 
 const list=document.getElementById("list");
 const sortSelect=document.getElementById("sortSelect");
@@ -1371,12 +1376,20 @@ function getSelectedAutocompleteItem(){
 
 
 async function openSmartSort(){
-if (Source !== "Wine Cellar") return;
+  if (Source !== "Wine Cellar") return;
 
-  const uuids = await fetchSourceValues("Wine Cellar");
-  const uuidSet = new Set(uuids);
-
-  smartSortItems = items.filter(i => uuidSet.has(i.UUID));
+  // If a SmartList already exists, use it
+  if (SmartLists[Source]?.length){
+    const uuidSet = new Set(SmartLists[Source]);
+    smartSortItems = SmartLists[Source]
+      .map(uuid => items.find(i => i.UUID === uuid))
+      .filter(Boolean);
+  } else {
+    // Otherwise load from source JSON
+    const uuids = await fetchSourceValues(Source);
+    const uuidSet = new Set(uuids);
+    smartSortItems = items.filter(i => uuidSet.has(i.UUID));
+  }
 
   renderSmartSortList();
   initAutocompleteForSmartSort();
@@ -1384,6 +1397,7 @@ if (Source !== "Wine Cellar") return;
   smartSheet.style.transform = "translateY(0)";
   smartOverlay.classList.add("show");
 }
+
 
 function renderSmartSortList(){
   const list = document.getElementById("smartList");
@@ -1478,6 +1492,14 @@ async function initAutocompleteForSmartSort(){
 
 
 function closeSmartSort(){
+  // 🔑 Persist Smart List for current Source
+  SmartLists[Source] = smartSortItems.map(item => item.UUID);
+
+  console.log(
+    `${Source}SmartList saved:`,
+    SmartLists[Source]
+  );
+
   smartSheet.style.transform = "translateY(100%)";
   smartOverlay.classList.remove("show");
 }
