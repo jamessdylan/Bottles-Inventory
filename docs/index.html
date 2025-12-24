@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>White Background</title>
+<title>Long Press</title>
  
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1328,11 +1328,33 @@ loadItems();
 let showArchived = false;
 let groupEnabled = false;
  
-archiveBtn.onclick = () => {
-  showArchived = !showArchived;
-  archiveBtn.classList.toggle("active", showArchived);
-  renderItems();
+let archivePressTimer;
+let archiveLongPress = false;
+
+archiveBtn.onpointerdown = () => {
+  archiveLongPress = false;
+
+  archivePressTimer = setTimeout(() => {
+    archiveLongPress = true;
+    alert("This Will be Wired Eventually");
+  }, 600); // long-press duration
 };
+
+archiveBtn.onpointerup = () => {
+  clearTimeout(archivePressTimer);
+
+  // normal tap (only if long-press did NOT fire)
+  if (!archiveLongPress) {
+    showArchived = !showArchived;
+    archiveBtn.classList.toggle("active", showArchived);
+    renderItems();
+  }
+};
+
+archiveBtn.onpointerleave = () => {
+  clearTimeout(archivePressTimer);
+};
+
  
 smartSortBtn.onclick=()=>smartSortBtn.classList.toggle("active");
 groupBtn.onclick=()=>groupBtn.classList.toggle("active");
