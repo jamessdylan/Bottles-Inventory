@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>SM COLOR Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1171,6 +1171,24 @@ function drawDivider(label) {
   list.appendChild(div);
 }
 
+function applySubgroupSort(arr) {
+  if (SubgroupFilter !== "Color") return arr;
+
+  const nonRed = [];
+  const red = [];
+
+  arr.forEach(item => {
+    if ((item.color || "").toLowerCase() === "red") {
+      red.push(item);
+    } else {
+      nonRed.push(item);
+    }
+  });
+
+  return nonRed.concat(red);
+}
+
+
 /* ---------------- RENDER ---------------- */
 async function renderItems() {
   list.innerHTML = "";
@@ -1189,21 +1207,25 @@ async function renderItems() {
     ArchiveFilter === true || item.status === true
   );
 
-  // base sort stays intact
+  // base sort (global)
   visibleItems.sort((a, b) => baseSort(a, b, key));
 
   /* ---------------- GROUPING ---------------- */
 
   // ⛔ NONE
   if (GroupFilter === "None") {
-    visibleItems.forEach(drawItem);
+    const finalItems = applySubgroupSort(visibleItems); // 🔹
+    finalItems.forEach(drawItem);
     return;
   }
 
   // 🟦 TIER
   if (GroupFilter === "Tier") {
-    const house = visibleItems.filter(i => i.tier === "House");
-    const reserve = visibleItems.filter(i => i.tier !== "House");
+    let house = visibleItems.filter(i => i.tier === "House");
+    let reserve = visibleItems.filter(i => i.tier !== "House");
+
+    house = applySubgroupSort(house);     // 🔹
+    reserve = applySubgroupSort(reserve); // 🔹
 
     if (house.length) {
       drawDivider("House");
@@ -1229,8 +1251,8 @@ async function renderItems() {
       console.warn("Special list not found for", Source);
     }
 
-    const suggested = [];
-    const other = [];
+    let suggested = [];
+    let other = [];
 
     visibleItems.forEach(item => {
       if (suggestedUUIDs.includes(item.UUID)) {
@@ -1239,6 +1261,9 @@ async function renderItems() {
         other.push(item);
       }
     });
+
+    suggested = applySubgroupSort(suggested); // 🔹
+    other = applySubgroupSort(other);         // 🔹
 
     if (suggested.length) {
       drawDivider("Suggested");
@@ -1253,6 +1278,7 @@ async function renderItems() {
     return;
   }
 }
+
 
 
 
