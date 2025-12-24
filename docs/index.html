@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>DrawerFix</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -879,7 +879,7 @@ let Sort="Standard";
 let specialtyLists = [];
 let selectedSpecialtyList = null;
 let expandedSpecialtyList = null;
-
+const drawerTab = document.getElementById("drawerTab");
 
 const list=document.getElementById("list");
 const sortSelect=document.getElementById("sortSelect");
@@ -1342,11 +1342,6 @@ loadItems();
 let showArchived = false;
 let groupEnabled = false;
 
-archiveBtn.onclick = () => {
-  showArchived = !showArchived;
-  archiveBtn.classList.toggle("active", showArchived);
-  renderItems();
-};
 
 smartSortBtn.onclick=()=>smartSortBtn.classList.toggle("active");
 groupBtn.onclick=()=>groupBtn.classList.toggle("active");
@@ -1378,7 +1373,15 @@ function endPress(e){
 
   if (!longPressTriggered){
     // Normal Archive behavior
-    runArchive();
+    function endPress(e){
+  clearTimeout(pressTimer);
+
+  if (!longPressTriggered){
+    showArchived = !showArchived;
+    archiveBtn.classList.toggle("active", showArchived);
+    renderItems();
+  }
+};
   }
 }
 
@@ -1832,12 +1835,8 @@ window.addEventListener("message", e => {
   if (!e.data?.updatedItems) return;
 
   items = e.data.updatedItems;
-
-  // Re-render / re-save / re-sort as needed
-  saveItems();
-  render();
+  renderItems();
 });
-
 
 /*---------EXPORT---------------*/
   
