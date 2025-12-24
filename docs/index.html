@@ -1069,26 +1069,6 @@ if (expandedSpecialtyList === listName) {
     suggestions.style.display = "none";
   };
 }
-
-  if (matchedItems.length === 0) {
-    expandContainer.textContent = "No matching items.";
-  } else {
-    matchedItems.forEach(item => {
-      const div = document.createElement("div");
-      div.style.padding = "6px 0";
-      div.style.borderBottom = "1px solid rgba(0,0,0,.08)";
-      div.style.fontSize = "14px";
-
-      div.textContent = [
-        item.brand,
-        item.identifier,
-        item.varietal,
-        item.year
-      ].filter(v => v && v !== "N/A").join(" ");
-
-      expandContainer.appendChild(div);
-    });
-  }
 }
 
 row.appendChild(expandContainer);
