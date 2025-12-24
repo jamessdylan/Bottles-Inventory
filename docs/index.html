@@ -45,23 +45,6 @@ body::before{
   z-index:-1;
 }
 
-body::after{
-  content:"";
-  position:fixed;
-  top:0;
-  left:0;
-  right:0;
-  height:500px; /* adjust height as needed */
-  background:linear-gradient(
-    to bottom,
-    rgba(255,255,255,.85),
-    rgba(255,255,255,.55),
-    rgba(255,255,255,0)
-  );
-  pointer-events:none;
-  z-index:-1;
-}
-
 /* ---------- HEADER ---------- */
 header{
   display:flex;
@@ -328,30 +311,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 </head>
 <body>
 
-<!-- ARCHIVE RECONCILE OVERLAY -->
-<div id="archiveOverlay" class="overlay"></div>
-
-<div id="archiveSheet" style="
-  position:fixed;
-  inset:0;
-  background:rgba(255,255,255,.92);
-  backdrop-filter:blur(16px);
-  padding:calc(20px + env(safe-area-inset-top)) 16px 20px;
-  transform:translateY(100%);
-  transition:.25s ease;
-  z-index:500;
-  overflow-y:auto;
-">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-    <div style="font-family:'Copperplate',serif;font-size:18px;">
-      Archive Reconciliation
-    </div>
-    <button id="confirmArchive">Confirm</button>
-  </div>
-
-  <div id="archiveList"></div>
-</div>
-
 
   <!-- MONTH / YEAR PICKER -->
 <div id="datePickerOverlay" class="overlay"></div>
@@ -379,48 +338,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   <div style="display:flex; gap:12px; justify-content:center;">
     <select id="monthPicker" style="font-size:18px;"></select>
     <select id="yearPicker" style="font-size:18px;"></select>
-  </div>
-</div>
-
-<!-- SMART SORT OVERLAY -->
-<div id="smartOverlay" class="overlay"></div>
-
-<div id="smartSheet" style="
-  position:fixed;
-  inset:0;
-  background:rgba(255,255,255,.95);
-  backdrop-filter:blur(16px);
-  padding:calc(20px + env(safe-area-inset-top)) 16px 20px;
-  transform:translateY(100%);
-  transition:.25s ease;
-  z-index:600;
-  overflow-y:auto;
-">
-
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-    <div style="font-family:'Copperplate',serif;">Smart Sort – Wine Cellar</div>
-    <button onclick="closeSmartSort()">Done</button>
-  </div>
-
-  <div id="smartList"></div>
-
-  <!-- ADD ROW -->
-  <div style="margin-top:16px;">
-    <input
-      id="itemAutocomplete"
-      placeholder="Add item…"
-      autocomplete="off"
-      style="width:100%;padding:12px;border-radius:10px;border:1px solid #ccc;"
-    />
-    <div id="autocompleteList" style="
-      position:relative;
-      background:white;
-      border:1px solid #ddd;
-      border-radius:10px;
-      max-height:220px;
-      overflow-y:auto;
-      display:none;
-    "></div>
   </div>
 </div>
 
@@ -835,6 +752,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 <header><img src="SiennaTransparent.png"></header>
 
 <div class="tabs" id="sourceTabs"></div>
+<section class="section"><select id="sortSelect"></select></section>
 <div class="list" id="list"></div>
 <nav class="action-bar">
 
@@ -943,24 +861,17 @@ let Sort="Standard";
 let specialtyLists = [];
 let selectedSpecialtyList = null;
 let expandedSpecialtyList = null;
-let archiveRows = [];
-let showArchived = false;
-let groupEnabled = false;
 
-groupBtn.onclick = () => {
-  groupEnabled = !groupEnabled;
-  groupBtn.classList.toggle("active", groupEnabled);
-  renderItems();
-};
+// ---------- GLOBAL FILTERS ----------
+let ArchiveFilter = false;   // true | false
+let GroupFilter   = "None";  // None | Tier | Special
+let SubgroupFilter = "None"; // None | Color
+let ItemFilter    = "None";  // None | Special
 
-
-/* ---------- SMART LIST STORE ---------- */
-const SmartLists = {}; 
-// Example:
-// SmartLists["Wine Cellar"] = ["UUID1","UUID2",...]
 
 
 const list=document.getElementById("list");
+const sortSelect=document.getElementById("sortSelect");
 const tabsEl=document.getElementById("sourceTabs");
 
 const drawer = document.getElementById("drawer");
@@ -991,6 +902,7 @@ function buildSourceTabs(){
 
     tab.onclick = () => {
       Source = src;
+      updateGlobalFilters();
       document.querySelectorAll(".tab").forEach(t =>
         t.classList.remove("active")
       );
@@ -1170,7 +1082,6 @@ document.getElementById("addSpecialtyList").onclick = () => {
   renderSpecialtyLists();
 };
 
-let smartSortItems = []; // ordered array of item objects
 
 
 /* ---------------- HELPERS ---------------- */
@@ -1184,355 +1095,74 @@ function baseSort(a,b,key){
     ||naLast(b.year,a.year);
 }
 
-function wineTitle(item){
-  return [item.brand,item.identifier,item.varietal,item.year]
-    .filter(v => v && v !== "N/A")
-    .join(" ");
-}
+function updateGlobalFilters() {
+  /* ---------- ARCHIVE ---------- */
+  ArchiveFilter = archiveBtn.classList.contains("active");
 
-function totalQty(item){
-  return SOURCES.reduce((sum, src) =>
-    sum + Number(item[src] || 0), 0
-  );
-}
-
-function defaultArchiveAction(item){
-  const qty = totalQty(item);
-
-  if (qty > 0 && item.status === false) return "Make Active";
-  if (qty === 0 && item.status === false) return "Delete Item";
-  if (qty === 0 && item.status === true) return "Make Inactive";
-  return "None";
-}
-
-function openArchiveReconcile(){
-  // recompute qtys implicitly
-  archiveRows = items
-    .filter(item => !(totalQty(item) > 0 && item.status === true))
-    .sort((a,b)=>wineTitle(a).localeCompare(wineTitle(b)))
-    .map(item => ({
-      item,
-      suggested: defaultArchiveAction(item),
-      value: "None",
-      initialized: false
-    }));
-
-  const container = document.getElementById("archiveList");
-  container.innerHTML = "";
-
-  archiveRows.forEach(row => {
-    const div = document.createElement("div");
-    div.style.padding = "14px";
-    div.style.borderBottom = "1px solid #ddd";
-
-    const action = document.createElement("div");
-    action.textContent = row.suggested;
-    action.style.color = "#aaa";
-    action.style.cursor = "pointer";
-    action.style.marginTop = "6px";
-
-    action.onclick = () => {
-      if (!row.initialized){
-        row.value = row.suggested;
-        row.initialized = true;
-      } else {
-        const opts = ["Make Active","Make Inactive","Delete Item","None"];
-        row.value = opts[(opts.indexOf(row.value)+1)%opts.length];
-      }
-      action.textContent = row.value;
-      action.style.color = "#000";
-    };
-
-    div.innerHTML = `<div>${wineTitle(row.item)}</div>`;
-    div.appendChild(action);
-    container.appendChild(div);
-  });
-
-  archiveSheet.style.transform = "translateY(0)";
-  archiveOverlay.classList.add("show");
-}
-
-async function fetchSourceJSON(source){
-  const fileName = `${source}.json`;
-
-  const url = `./${fileName}`; 
-  // or `./data/${fileName}` if they live in a folder
-
-  try {
-    const response = await fetch(url, { cache: "no-store" });
-
-    if (!response.ok) {
-      throw new Error(`Failed to load ${fileName}`);
+  /* ---------- GROUP ---------- */
+  if (groupBtn.classList.contains("active")) {
+    if (
+      Source === "Emporio" ||
+      Source === "Mezzo" ||
+      Source === "Tetto (L)" ||
+      Source === "Tetto (R)" ||
+      Source === "Prep Cooler"
+    ) {
+      GroupFilter = "Tier";
+    } else if (
+      Source === "Liquor Closet" ||
+      Source === "Wine Cellar"
+    ) {
+      GroupFilter = "Special";
+    } else {
+      GroupFilter = "None";
     }
-
-    return await response.json();
-  } catch (err) {
-    console.error(err);
-    alert(`Could not load ${fileName}`);
-    return null;
-  }
-}
-
-async function fetchSourceValues(source){
-  const data = await fetchSourceJSON(source);
-
-  if (!data) return [];
-
-  if (!Array.isArray(data)) {
-    console.error("Source JSON is not an array:", data);
-    return [];
-  }
-
-  return data;
-}
-
-async function getItemsForSource(source){
-  const uuids = await fetchSourceValues(source);
-  if (!uuids.length) return [];
-
-  const uuidSet = new Set(uuids);
-
-  return items.filter(item => uuidSet.has(item.UUID));
-}
-
-function itemTitle(item){
-  return [item.brand, item.identifier, item.varietal, item.year]
-    .filter(v => v && v !== "N/A")
-    .join(" ");
-}
-
-async function getAutocompleteCandidates(source){
-  const sourceItems = await getItemsForSource(source);
-  const sourceUUIDs = new Set(sourceItems.map(i => i.UUID));
-
-  return items
-    .filter(item => !sourceUUIDs.has(item.UUID))
-    .map(item => ({
-      title: itemTitle(item),
-      UUID: item.UUID
-    }))
-    .sort((a,b)=>a.title.localeCompare(b.title));
-}
-
-let autocompleteOptions = [];
-let selectedAutocompleteUUID = null;
-
-async function initAutocomplete(source){
-  autocompleteOptions = await getAutocompleteCandidates(source);
-  selectedAutocompleteUUID = null;
-
-  const input = document.getElementById("itemAutocomplete");
-  const list = document.getElementById("autocompleteList");
-
-  input.value = "";
-  list.innerHTML = "";
-  list.style.display = "none";
-
-  input.oninput = () => {
-    const query = input.value.toLowerCase().trim();
-    list.innerHTML = "";
-    selectedAutocompleteUUID = null;
-
-    if (!query){
-      list.style.display = "none";
-      return;
-    }
-
-    const matches = autocompleteOptions.filter(opt =>
-      opt.title.toLowerCase().includes(query)
-    );
-
-    if (!matches.length){
-      list.style.display = "none";
-      return;
-    }
-
-    matches.forEach(opt => {
-      const div = document.createElement("div");
-      div.textContent = opt.title;
-      div.style.padding = "10px";
-      div.style.cursor = "pointer";
-
-      div.onmousedown = () => {
-        input.value = opt.title;
-        selectedAutocompleteUUID = opt.UUID;
-        list.style.display = "none";
-      };
-
-      list.appendChild(div);
-    });
-
-    list.style.display = "block";
-  };
-
-  // Enforce strict validity on blur
-  input.onblur = () => {
-    setTimeout(() => {
-      if (!selectedAutocompleteUUID){
-        input.value = "";
-      }
-      list.style.display = "none";
-    }, 150);
-  };
-}
-
-function getSelectedAutocompleteItem(){
-  if (!selectedAutocompleteUUID) return null;
-  return items.find(i => i.UUID === selectedAutocompleteUUID) || null;
-}
-
-
-async function openSmartSort(){
-  if (Source !== "Wine Cellar") return;
-
-  // If a SmartList already exists, use it
-  if (SmartLists[Source]?.length){
-    const uuidSet = new Set(SmartLists[Source]);
-    smartSortItems = SmartLists[Source]
-      .map(uuid => items.find(i => i.UUID === uuid))
-      .filter(Boolean);
   } else {
-    // Otherwise load from source JSON
-    const uuids = await fetchSourceValues(Source);
-    const uuidSet = new Set(uuids);
-    smartSortItems = items.filter(i => uuidSet.has(i.UUID));
+    GroupFilter = "None";
   }
 
-  renderSmartSortList();
-  initAutocompleteForSmartSort();
+  /* ---------- SUBGROUP ---------- */
+  if (smartSortBtn.classList.contains("active")) {
+    if (
+      Source === "Other" ||
+      Source === "Emporio" ||
+      Source === "Mezzo" ||
+      Source === "Tetto (L)" ||
+      Source === "Tetto (R)"
+    ) {
+      SubgroupFilter = "Color";
+    } else {
+      SubgroupFilter = "None";
+    }
+  } else {
+    SubgroupFilter = "None";
+  }
 
-  smartSheet.style.transform = "translateY(0)";
-  smartOverlay.classList.add("show");
-}
-
-
-function renderSmartSortList(){
-  const list = document.getElementById("smartList");
-  list.innerHTML = "";
-
-  smartSortItems.forEach((item, index) => {
-    const row = document.createElement("div");
-    row.className = "row";
-    row.draggable = true;
-
-    row.ondragstart = e => {
-      e.dataTransfer.setData("text/plain", index);
-    };
-
-    row.ondragover = e => e.preventDefault();
-
-    row.ondrop = e => {
-      const from = Number(e.dataTransfer.getData("text/plain"));
-      const to = index;
-      const moved = smartSortItems.splice(from,1)[0];
-      smartSortItems.splice(to,0,moved);
-      renderSmartSortList();
-    };
-
-    const remove = document.createElement("div");
-    remove.textContent = "×";
-    remove.style.cursor = "pointer";
-    remove.style.fontSize = "18px";
-    remove.onclick = () => {
-      smartSortItems = smartSortItems.filter(i => i !== item);
-      renderSmartSortList();
-      initAutocompleteForSmartSort();
-    };
-
-    const title = document.createElement("div");
-    title.textContent = itemTitle(item);
-    title.style.flex = "1";
-
-    row.appendChild(remove);
-    row.appendChild(title);
-    list.appendChild(row);
-  });
-}
-
-async function initAutocompleteForSmartSort(){
-  const usedUUIDs = new Set(smartSortItems.map(i => i.UUID));
-
-  autocompleteOptions = items
-    .filter(i => !usedUUIDs.has(i.UUID))
-    .map(i => ({
-      title: itemTitle(i),
-      UUID: i.UUID
-    }))
-    .sort((a,b)=>a.title.localeCompare(b.title));
-
-  selectedAutocompleteUUID = null;
-
-  const input = document.getElementById("itemAutocomplete");
-  const list = document.getElementById("autocompleteList");
-
-  input.value = "";
-  list.innerHTML = "";
-  list.style.display = "none";
-
-  input.oninput = () => {
-    const q = input.value.toLowerCase().trim();
-    list.innerHTML = "";
-    selectedAutocompleteUUID = null;
-
-    if (!q) return;
-
-    autocompleteOptions
-      .filter(o => o.title.toLowerCase().includes(q))
-      .forEach(o => {
-        const div = document.createElement("div");
-        div.textContent = o.title;
-        div.style.padding = "10px";
-        div.onclick = () => {
-          const item = items.find(i => i.UUID === o.UUID);
-          if (!item) return;
-
-          smartSortItems.push(item);
-          renderSmartSortList();
-          initAutocompleteForSmartSort();
-        };
-        list.appendChild(div);
-      });
-
-    list.style.display = "block";
-  };
-}
-
-
-function closeSmartSort(){
-  // 🔑 Persist Smart List for current Source
-  SmartLists[Source] = smartSortItems.map(item => item.UUID);
-
-  console.log(
-    `${Source}SmartList saved:`,
-    SmartLists[Source]
-  );
-
-  smartSheet.style.transform = "translateY(100%)";
-  smartOverlay.classList.remove("show");
-}
-
-const GROUPABLE_SOURCES = new Set([
-  "Emporio",
-  "Mezzo",
-  "Tetto (L)",
-  "Tetto (R)",
-  "Prep Cooler"
-]);
-
-function drawDivider(label) {
-  const div = document.createElement("div");
-  div.textContent = label;
-  div.style.margin = "18px 0 8px";
-  div.style.fontFamily = "Copperplate, serif";
-  div.style.fontSize = "14px";
-  div.style.color = "#1f5e3b";
-  div.style.opacity = "0.85";
-  list.appendChild(div);
+  /* ---------- ITEM ---------- */
+  if (smartSortBtn.classList.contains("active")) {
+    if (
+      Source === "Other" ||
+      Source === "Emporio" ||
+      Source === "Mezzo" ||
+      Source === "Tetto (L)" ||
+      Source === "Tetto (R)" ||
+      Source === "Liquor Closet" ||
+      Source === "Prep Cooler"
+    ) {
+      ItemFilter = "None";
+    } else if (Source === "Wine Cellar") {
+      ItemFilter = "Special";
+    } else {
+      ItemFilter = "None";
+    }
+  } else {
+    ItemFilter = "None";
+  }
 }
 
 
 /* ---------------- RENDER ---------------- */
-function renderItems() {
+function renderItems(){
   list.innerHTML = "";
 
   const key = `${Source}Complete`;
@@ -1544,49 +1174,14 @@ function renderItems() {
     if (typeof i.status !== "boolean") i.status = true;
   });
 
-  // 1️⃣ ARCHIVE FILTER FIRST
-  let visibleItems = items.filter(item =>
+  // 🔑 FILTER RULE
+  const visibleItems = items.filter(item =>
     showArchived || item.status === true
   );
 
-  // 2️⃣ BASE SORT (existing behavior)
   visibleItems.sort((a, b) => baseSort(a, b, key));
-
-  // 3️⃣ GROUP LOGIC
-  const canGroup =
-    groupEnabled &&
-    GROUPABLE_SOURCES.has(Source);
-
-  // Wine Cellar / Other → never grouped
-  if (!canGroup) {
-    visibleItems.forEach(drawItem);
-    return;
-  }
-
-  // 4️⃣ SPLIT BY TIER
-  const houseItems = [];
-  const reserveItems = [];
-
-  visibleItems.forEach(item => {
-    if ((item.tier || "House") === "House") {
-      houseItems.push(item);
-    } else {
-      reserveItems.push(item);
-    }
-  });
-
-  // 5️⃣ RENDER GROUPS (only if they contain items)
-  if (houseItems.length) {
-    drawDivider("House");
-    houseItems.forEach(drawItem);
-  }
-
-  if (reserveItems.length) {
-    drawDivider("Reserve");
-    reserveItems.forEach(drawItem);
-  }
+  visibleItems.forEach(drawItem);
 }
-
 
 
 /* ---------------- DRAW ITEM ---------------- */
@@ -1786,28 +1381,27 @@ updateSort(Source);
 loadItems();
 
 /* ---------- ACTION STATES ---------- */
-
+let showArchived = false;
+let groupEnabled = false;
 
 archiveBtn.onclick = () => {
   showArchived = !showArchived;
   archiveBtn.classList.toggle("active", showArchived);
+  updateGlobalFilters();
   renderItems();
 };
 
-
-
-let smartPressTimer;
-
-smartSortBtn.onpointerdown = () => {
-  smartPressTimer = setTimeout(openSmartSort, 600);
+groupBtn.onclick = () => {
+  groupBtn.classList.toggle("active");
+  updateGlobalFilters();
+  renderItems();
 };
 
-smartSortBtn.onpointerup =
-smartSortBtn.onpointerleave = () =>
-  clearTimeout(smartPressTimer);
-
-
-smartSortBtn.onclick=()=>smartSortBtn.classList.toggle("active");
+smartSortBtn.onclick = () => {
+  smartSortBtn.classList.toggle("active");
+  updateGlobalFilters();
+  renderItems();
+};
 
 
 /* ---------- DRAWER ---------- */
@@ -2250,52 +1844,6 @@ confirmNewBottle.onclick = () => {
   closeNewBottle();
 };
 
-let archivePressTimer;
-
-archiveBtn.onpointerdown = () => {
-  archivePressTimer = setTimeout(() => {
-    openArchiveReconcile();
-  }, 600);
-};
-
-archiveBtn.onpointerup =
-archiveBtn.onpointerleave = () =>
-  clearTimeout(archivePressTimer);
-
-archiveBtn.onclick = () => {
-  showArchived = !showArchived;
-  archiveBtn.classList.toggle("active", showArchived);
-  renderItems();
-};
-
-
-document.getElementById("confirmArchive").onclick = () => {
-  let updated = [...items];
-
-  archiveRows.forEach(r => {
-    if (!r.initialized || r.value === "None") return;
-
-    if (r.value === "Delete Item"){
-      updated = updated.filter(i => i !== r.item);
-    }
-    if (r.value === "Make Active"){
-      r.item.status = true;
-    }
-    if (r.value === "Make Inactive"){
-      r.item.status = false;
-    }
-  });
-
-  items = updated;
-  showArchived = false;
-  archiveBtn.classList.remove("active");
-
-  archiveSheet.style.transform = "translateY(100%)";
-  archiveOverlay.classList.remove("show");
-
-  renderItems();
-};
-
 
 
 
@@ -2451,3 +1999,5 @@ exportBtn.onclick = () => {
 
 </body>
 </html>
+
+
