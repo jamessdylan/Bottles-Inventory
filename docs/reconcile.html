@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Archive New</title>
+<title>Archive NEWEST</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -118,12 +118,28 @@ let items = [];
 let rows = [];
 
 /* ---------- RECEIVE ITEMS ---------- */
-window.addEventListener("message", e => {
-  if (!e.data?.items) return;
+let received = false;
 
-  items = e.data.items;
-  prepareRows();
+window.addEventListener("message", e => {
+  if (Array.isArray(e.data?.items)){
+    received = true;
+    items = e.data.items;
+    prepareRows();
+  }
 });
+
+window.onload = () => {
+  if (window.opener){
+    window.opener.postMessage({ type:"RECONCILE_READY" }, "*");
+
+    setTimeout(() => {
+      if (!received){
+        window.opener.postMessage({ type:"RECONCILE_REQUEST" }, "*");
+      }
+    }, 250);
+  }
+};
+
 
 /* ---------- HELPERS ---------- */
 function itemTitle(item){
@@ -145,6 +161,30 @@ function prepareRows(){
 
   render();
 }
+
+function updateTabUI(tab, row){
+  tab.className = "tab none";
+  tab.textContent = "none";
+
+  if (!row.initialized){
+    if (row.item.archivesuggestion !== "none"){
+      tab.innerHTML = `<span class="suggestion">${row.item.archivesuggestion}</span>`;
+    } else {
+      tab.textContent = "—";
+      tab.style.opacity = "0.4";
+    }
+    return;
+  }
+
+  tab.style.opacity = "1";
+  tab.textContent = row.tabValue;
+
+  if (row.tabValue === "Make Active") tab.classList.add("active");
+  if (row.tabValue === "Make Inactive") tab.classList.add("inactive");
+  if (row.tabValue === "Delete Item") tab.classList.add("delete");
+}
+
+
 
 /* ---------- TAB CYCLE ---------- */
 const TAB_ORDER = ["Make Active","Make Inactive","Delete Item","none"];
@@ -205,6 +245,18 @@ function updateTabUI(tab, row){
   if (row.tabValue === "Make Inactive") tab.classList.add("inactive");
   if (row.tabValue === "Delete Item") tab.classList.add("delete");
 }
+
+tab.onclick = () => {
+  if (row.item.archivesuggestion === "none" && !row.initialized) return;
+
+  if (!row.initialized){
+    row.tabValue = row.item.archivesuggestion;
+    row.initialized = true;
+  } else {
+    row.tabValue = nextTabValue(row.tabValue);
+  }
+  updateTabUI(tab, row);
+};
 
 /* ---------- CONFIRM ---------- */
 function confirmActions(){
