@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>SM Wine New</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1032,6 +1032,22 @@ row.addEventListener("pointerup", () => {
     container.appendChild(row);
   });
 }
+
+window.addEventListener("message", e => {
+  if (e.data?.type !== "RECONCILE_COMPLETE") return;
+
+  // Replace authoritative items list
+  items = e.data.items;
+
+  // Recalculate derived values if needed
+  updateQtyAndArchiveSuggestion();
+
+  // Re-render the list
+  renderItems();
+
+  // Optional: persist to localStorage / file / Shortcuts
+  saveItems?.();
+});
 
 
 
