@@ -1133,23 +1133,20 @@ specialtyBtn.onclick = async () => {
 
   await loadSpecialtyLists();
 
-  specialtySheet.style.transform = "translateX(0)";
+  specialtySheet.style.left = "0";
   specialtyOverlay.classList.add("show");
 };
 
 document.getElementById("closeSpecialty").onclick = () => {
   specialtySheet.style.left = "100%";
-  specialtySheet.style.transform = "translateX(100%)";
   specialtyOverlay.classList.remove("show");
-
   // ⬅️ Return to drawer menu
   drawer.classList.add("open");
   overlay.classList.add("show");
 };
 
 specialtyOverlay.onclick = () => {
-  specialtySheet.style.transform = "translateX(100%)";
-  specialtySheet.style.left = "0";
+  specialtySheet.style.left = "100%";
   specialtyOverlay.classList.remove("show");
 };
 
