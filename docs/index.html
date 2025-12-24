@@ -966,8 +966,14 @@ function renderSpecialtyLists(){
   specialtyLists.forEach((listName, index) => {
     const row = document.createElement("div");
     row.className = "specialty-row";
-    row.textContent = listName;
-    row.style.cursor = "pointer";
+
+const header = document.createElement("div");
+header.textContent = listName;
+header.style.fontSize = "16px";
+header.style.cursor = "pointer";
+header.style.fontWeight = "500";
+
+row.appendChild(header);
     row.style.fontSize = "16px";
 if (expandedSpecialtyList === listName) {
   row.classList.add("expanded");
@@ -977,11 +983,8 @@ let startX = 0;
 let currentX = 0;
 let dragging = false;
 let didSwipe = false;
-row.onclick = e => {
-  // ❗ Ignore clicks inside the expanded content
-  if (e.target.closest("input") || e.target.closest(".suggestion-box")) {
-    return;
-  }
+header.onclick = e => {
+  e.stopPropagation();
 
   expandedSpecialtyList =
     expandedSpecialtyList === listName ? null : listName;
@@ -1128,6 +1131,7 @@ const lockedNames = ["Wine Cellar", "Prep Cooler"];
 
 
 row.addEventListener("pointerdown", e => {
+  if (expandedSpecialtyList === listName) return;
   didSwipe = false;
   startX = e.clientX;
   dragging = true;
@@ -1135,7 +1139,7 @@ row.addEventListener("pointerdown", e => {
 });
 
 row.addEventListener("pointermove", e => {
-  if (!dragging) return;
+  if (expandedSpecialtyList === listName) return;  if (!dragging) return;
 
   currentX = e.clientX - startX;
 
@@ -1147,8 +1151,8 @@ row.addEventListener("pointermove", e => {
 });
 
 
-row.addEventListener("pointerup", () => {
-  dragging = false;
+row.addEventListener("pointerup", e => {
+  if (expandedSpecialtyList === listName) return;  dragging = false;
 
   // threshold reached → attempt delete
   if (currentX < -80) {
