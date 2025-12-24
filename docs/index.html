@@ -835,7 +835,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 <header><img src="SiennaTransparent.png"></header>
 
 <div class="tabs" id="sourceTabs"></div>
-<section class="section"><select id="sortSelect"></select></section>
 <div class="list" id="list"></div>
 <nav class="action-bar">
 
@@ -945,10 +944,23 @@ let specialtyLists = [];
 let selectedSpecialtyList = null;
 let expandedSpecialtyList = null;
 let archiveRows = [];
+let showArchived = false;
+let groupEnabled = false;
+
+groupBtn.onclick = () => {
+  groupEnabled = !groupEnabled;
+  groupBtn.classList.toggle("active", groupEnabled);
+  renderItems();
+};
+
+
+/* ---------- SMART LIST STORE ---------- */
+const SmartLists = {}; 
+// Example:
+// SmartLists["Wine Cellar"] = ["UUID1","UUID2",...]
 
 
 const list=document.getElementById("list");
-const sortSelect=document.getElementById("sortSelect");
 const tabsEl=document.getElementById("sourceTabs");
 
 const drawer = document.getElementById("drawer");
@@ -1371,12 +1383,20 @@ function getSelectedAutocompleteItem(){
 
 
 async function openSmartSort(){
-if (Source !== "Wine Cellar") return;
+  if (Source !== "Wine Cellar") return;
 
-  const uuids = await fetchSourceValues("Wine Cellar");
-  const uuidSet = new Set(uuids);
-
-  smartSortItems = items.filter(i => uuidSet.has(i.UUID));
+  // If a SmartList already exists, use it
+  if (SmartLists[Source]?.length){
+    const uuidSet = new Set(SmartLists[Source]);
+    smartSortItems = SmartLists[Source]
+      .map(uuid => items.find(i => i.UUID === uuid))
+      .filter(Boolean);
+  } else {
+    // Otherwise load from source JSON
+    const uuids = await fetchSourceValues(Source);
+    const uuidSet = new Set(uuids);
+    smartSortItems = items.filter(i => uuidSet.has(i.UUID));
+  }
 
   renderSmartSortList();
   initAutocompleteForSmartSort();
@@ -1384,6 +1404,7 @@ if (Source !== "Wine Cellar") return;
   smartSheet.style.transform = "translateY(0)";
   smartOverlay.classList.add("show");
 }
+
 
 function renderSmartSortList(){
   const list = document.getElementById("smartList");
@@ -1478,12 +1499,50 @@ async function initAutocompleteForSmartSort(){
 
 
 function closeSmartSort(){
+  // 🔑 Persist Smart List for current Source
+  SmartLists[Source] = smartSortItems.map(item => item.UUID);
+
+  console.log(
+    `${Source}SmartList saved:`,
+    SmartLists[Source]
+  );
+
   smartSheet.style.transform = "translateY(100%)";
   smartOverlay.classList.remove("show");
 }
 
+const GROUPABLE_SOURCES = new Set([
+  "Emporio",
+  "Mezzo",
+  "Tetto (L)",
+  "Tetto (R)",
+  "Prep Cooler"
+]);
+
+function drawDivider(label) {
+  const div = document.createElement("div");
+  div.textContent = label;
+  div.style.margin = "18px 0 8px";
+  div.style.fontFamily = "Copperplate, serif";
+  div.style.fontSize = "14px";
+  div.style.color = "#1f5e3b";
+  div.style.opacity = "0.85";
+  list.appendChild(div);
+}
+
+function redLastComparator(a, b) {
+  const aIsRed = (a.color || "").toLowerCase() === "red";
+  const bIsRed = (b.color || "").toLowerCase() === "red";
+
+  if (aIsRed !== bIsRed) {
+    return aIsRed ? 1 : -1; // non-red first, red last
+  }
+
+  return 0; // otherwise keep existing order
+}
+
 /* ---------------- RENDER ---------------- */
-function renderItems(){
+function renderItems() {
   list.innerHTML = "";
 
   const key = `${Source}Complete`;
@@ -1495,14 +1554,61 @@ function renderItems(){
     if (typeof i.status !== "boolean") i.status = true;
   });
 
-  // 🔑 FILTER RULE
-  const visibleItems = items.filter(item =>
+  // 1️⃣ ARCHIVE FILTER FIRST
+  let visibleItems = items.filter(item =>
     showArchived || item.status === true
   );
 
+  // 2️⃣ BASE SORT (existing behavior)
   visibleItems.sort((a, b) => baseSort(a, b, key));
-  visibleItems.forEach(drawItem);
+
+  // 3️⃣ GROUP LOGIC
+  const canGroup =
+    groupEnabled &&
+    GROUPABLE_SOURCES.has(Source);
+
+  // Wine Cellar / Other → never grouped
+  if (!canGroup) {
+    visibleItems.forEach(drawItem);
+    return;
+  }
+
+  // 4️⃣ SPLIT BY TIER
+  const houseItems = [];
+  const reserveItems = [];
+
+  visibleItems.forEach(item => {
+    if ((item.tier || "House") === "House") {
+      houseItems.push(item);
+    } else {
+      reserveItems.push(item);
+    }
+  });
+
+ // 5️⃣ RENDER GROUPS (only if they contain items)
+const smartSortActive = smartSortBtn.classList.contains("active");
+
+if (houseItems.length) {
+  drawDivider("House");
+
+  if (smartSortActive) {
+    houseItems.sort(redLastComparator);
+  }
+
+  houseItems.forEach(drawItem);
 }
+
+if (reserveItems.length) {
+  drawDivider("Reserve");
+
+  if (smartSortActive) {
+    reserveItems.sort(redLastComparator);
+  }
+
+  reserveItems.forEach(drawItem);
+}
+}
+
 
 
 /* ---------------- DRAW ITEM ---------------- */
@@ -1702,8 +1808,7 @@ updateSort(Source);
 loadItems();
 
 /* ---------- ACTION STATES ---------- */
-let showArchived = false;
-let groupEnabled = false;
+
 
 archiveBtn.onclick = () => {
   showArchived = !showArchived;
@@ -1725,8 +1830,6 @@ smartSortBtn.onpointerleave = () =>
 
 
 smartSortBtn.onclick=()=>smartSortBtn.classList.toggle("active");
-
-groupBtn.onclick=()=>groupBtn.classList.toggle("active");
 
 
 /* ---------- DRAWER ---------- */
