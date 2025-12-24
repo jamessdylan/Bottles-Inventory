@@ -52,7 +52,7 @@ body::after{
   top:0;
   left:0;
   right:0;
-  height:500px; /* adjust strength here */
+  height:180px; /* adjust strength here */
   background:linear-gradient(
     to bottom,
     rgba(255,255,255,.85),
@@ -1105,6 +1105,20 @@ function baseSort(a,b,key){
     ||naLast(b.year,a.year);
 }
 
+function openReconcile(){
+  const win = window.open("reconcile.html", "_blank");
+
+  // Wait for the window to exist before messaging
+  const interval = setInterval(() => {
+    if (!win || win.closed) {
+      clearInterval(interval);
+      return;
+    }
+    win.postMessage({ items }, "*");
+    clearInterval(interval);
+  }, 50);
+}
+
 /* ---------------- RENDER ---------------- */
 function renderItems(){
   list.innerHTML = "";
@@ -1336,6 +1350,42 @@ archiveBtn.onclick = () => {
 
 smartSortBtn.onclick=()=>smartSortBtn.classList.toggle("active");
 groupBtn.onclick=()=>groupBtn.classList.toggle("active");
+
+
+const archiveBtn = document.getElementById("archiveBtn");
+
+let pressTimer = null;
+let longPressTriggered = false;
+
+archiveBtn.addEventListener("touchstart", startPress);
+archiveBtn.addEventListener("mousedown", startPress);
+
+archiveBtn.addEventListener("touchend", endPress);
+archiveBtn.addEventListener("mouseup", endPress);
+archiveBtn.addEventListener("mouseleave", cancelPress);
+
+function startPress(e){
+  longPressTriggered = false;
+
+  pressTimer = setTimeout(() => {
+    longPressTriggered = true;
+    openReconcile();
+  }, 600); // long-press threshold
+}
+
+function endPress(e){
+  clearTimeout(pressTimer);
+
+  if (!longPressTriggered){
+    // Normal Archive behavior
+    runArchive();
+  }
+}
+
+function cancelPress(){
+  clearTimeout(pressTimer);
+}
+
 
 
 /* ---------- DRAWER ---------- */
@@ -1778,7 +1828,15 @@ confirmNewBottle.onclick = () => {
   closeNewBottle();
 };
 
+window.addEventListener("message", e => {
+  if (!e.data?.updatedItems) return;
 
+  items = e.data.updatedItems;
+
+  // Re-render / re-save / re-sort as needed
+  saveItems();
+  render();
+});
 
 
 /*---------EXPORT---------------*/
