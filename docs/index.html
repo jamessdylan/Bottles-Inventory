@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>SM Wine</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1074,38 +1074,6 @@ document.getElementById("addSpecialtyList").onclick = () => {
   renderSpecialtyLists();
 };
 
-function showArchiveSuggestionOverlay(text){
-  const overlay = document.createElement("div");
-  overlay.style.cssText = `
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,.35);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    z-index:9999;
-  `;
-
-  const box = document.createElement("div");
-  box.style.cssText = `
-    background:white;
-    padding:20px;
-    border-radius:14px;
-    max-width:90%;
-    max-height:70%;
-    overflow:auto;
-    font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
-    white-space:pre-line;
-    font-size:14px;
-  `;
-
-  box.textContent = text;
-
-  overlay.onclick = () => overlay.remove();
-
-  overlay.appendChild(box);
-  document.body.appendChild(overlay);
-}
 
 
 /* ---------------- HELPERS ---------------- */
@@ -1119,56 +1087,121 @@ function baseSort(a,b,key){
     ||naLast(b.year,a.year);
 }
 
-function updateQtyAndArchiveSuggestion(items){
-  const SOURCES = [
-    "Emporio",
-    "Mezzo",
-    "Tetto (L)",
-    "Tetto (R)",
-    "Wine Cellar",
-    "Liquor Closet",
-    "Prep Cooler",
-    "Other"
-  ];
+const ARCHIVE_ACTIONS = ["Make Active","Make Inactive","Delete Item","none"];
+let archiveRows = [];
 
+function computeArchiveSuggestions(){
   items.forEach(item => {
-    /* ---------- QTY ---------- */
-    item.qty = SOURCES.reduce(
-      (sum, key) => sum + Number(item[key] || 0),
-      0
-    );
+    const qty =
+      Number(item.Emporio||0)+
+      Number(item.Mezzo||0)+
+      Number(item["Tetto (L)"]||0)+
+      Number(item["Tetto (R)"]||0)+
+      Number(item["Wine Cellar"]||0)+
+      Number(item["Liquor Closet"]||0)+
+      Number(item["Prep Cooler"]||0)+
+      Number(item.Other||0);
 
-    /* ---------- ARCHIVE SUGGESTION ---------- */
-    if (item.qty > 0 && item.status === true){
+    item.qty = qty;
+
+    if (qty > 0 && item.status === true)
       item.archivesuggestion = "none";
-    }
-    else if (item.qty > 0 && item.status === false){
+    else if (qty > 0 && item.status === false)
       item.archivesuggestion = "Make Active";
-    }
-    else if (item.qty === 0 && item.status === true){
+    else if (qty === 0 && item.status === true)
       item.archivesuggestion = "Make Inactive";
-    }
-    else if (item.qty === 0 && item.status === false){
+    else
       item.archivesuggestion = "Delete Item";
-    }
   });
 }
 
-function itemDisplayName(item){
-  return [item.brand, item.identifier, item.varietal, item.year]
-    .filter(v => v && v !== "N/A")
-    .join(" ");
+function openArchivePopup(){
+  computeArchiveSuggestions();
+
+  archiveRows = items
+    .filter(i => i.archivesuggestion !== "none")
+    .slice()
+    .sort((a,b)=>wineTitle(a).localeCompare(wineTitle(b)))
+    .map(item => ({
+      item,
+      value: "none",
+      initialized: false
+    }));
+
+  const list = document.getElementById("archiveList");
+  list.innerHTML = "";
+
+  archiveRows.forEach(row => {
+    const el = document.createElement("div");
+    el.className = "archive-row";
+
+    const title = document.createElement("div");
+    title.className = "archive-title";
+    title.textContent = wineTitle(row.item);
+
+    const tab = document.createElement("div");
+    tab.className = "archive-tab";
+
+    function update(){
+      tab.className = "archive-tab";
+      tab.textContent = row.value;
+
+      if (!row.initialized){
+        tab.textContent = row.item.archivesuggestion;
+        tab.classList.add("suggestion");
+        return;
+      }
+
+      if (row.value === "Make Active") tab.classList.add("active");
+      if (row.value === "Make Inactive") tab.classList.add("inactive");
+      if (row.value === "Delete Item") tab.classList.add("delete");
+    }
+
+    tab.onclick = () => {
+      if (!row.initialized){
+        row.value = row.item.archivesuggestion;
+        row.initialized = true;
+      } else {
+        row.value =
+          ARCHIVE_ACTIONS[
+            (ARCHIVE_ACTIONS.indexOf(row.value)+1)%ARCHIVE_ACTIONS.length
+          ];
+      }
+      update();
+    };
+
+    update();
+    el.append(title, tab);
+    list.appendChild(el);
+  });
+
+  document.getElementById("archiveOverlay").style.display = "block";
+  document.getElementById("archiveSheet").classList.add("open");
 }
 
-function buildArchiveSuggestionMessage(items){
-  return items
-    .filter(item => item.archivesuggestion !== "none")
-    .map(item => {
-      return `${itemDisplayName(item)} → ${item.archivesuggestion}`;
-    })
-    .join("\n");
+function confirmArchiveActions(){
+  archiveRows.forEach(r => {
+    const item = r.item;
+
+    if (r.value === "Delete Item"){
+      items = items.filter(i => i !== item);
+    }
+    if (r.value === "Make Active"){
+      item.status = true;
+    }
+    if (r.value === "Make Inactive"){
+      item.status = false;
+    }
+  });
+
+  closeArchive();
+  renderItems();
 }
 
+function closeArchive(){
+  document.getElementById("archiveOverlay").style.display = "none";
+  document.getElementById("archiveSheet").classList.remove("open");
+}
 
 /* ---------------- RENDER ---------------- */
 function renderItems(){
@@ -1401,13 +1434,7 @@ archiveBtn.onpointerdown = () => {
 
   archivePressTimer = setTimeout(() => {
     archiveLongPress = true;
-updateQtyAndArchiveSuggestion(items);
-
-const message = buildArchiveSuggestionMessage(items);
-
-showArchiveSuggestionOverlay(
-  message || "No archive actions suggested."
-);
+    openArchivePopup();
   }, 600); // long-press duration
 };
 
@@ -1871,7 +1898,23 @@ confirmNewBottle.onclick = () => {
   closeNewBottle();
 };
 
+<div id="archiveOverlay"></div>
 
+<div id="archiveSheet">
+  <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
+    <div style="font-family:'Copperplate',serif;">Archive Suggestions</div>
+    <button onclick="closeArchive()">Cancel</button>
+  </div>
+
+  <div id="archiveList"></div>
+
+  <button
+    style="width:100%;margin-top:14px;padding:14px;border-radius:14px;border:none;
+           background:#1f5e3b;color:white;font-size:16px;"
+    onclick="confirmArchiveActions()">
+    Confirm
+  </button>
+</div>
 
 
 /*---------EXPORT---------------*/
@@ -2023,6 +2066,7 @@ exportBtn.onclick = () => {
 };
 
 </script>
+
 
 </body>
 </html>
