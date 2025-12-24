@@ -967,13 +967,15 @@ let currentX = 0;
 let dragging = false;
 let didSwipe = false;
 row.onclick = () => {
-if (didSwipe) return;
-  expandedSpecialtyList =
-    expandedSpecialtyList === listName ? null : listName;
-
+if (expandedSpecialtyList === listName) {
+  row.style.overflow = "visible";
+row.classList.add("expanded")
+}
 
   renderSpecialtyLists();
+
 };
+
 
 
 const expandContainer = document.createElement("div");
@@ -1045,15 +1047,16 @@ addRow.appendChild(input);
 addRow.appendChild(suggestionBox);
 expandContainer.appendChild(addRow);
 
-input.oninput = () => {
-  const query = input.value.trim().toLowerCase();
-  suggestionBox.innerHTML = "";
-
 input.onblur = () => {
   setTimeout(() => {
     suggestionBox.style.display = "none";
   }, 150);
 };
+
+
+input.oninput = () => {
+  const query = input.value.trim().toLowerCase();
+  suggestionBox.innerHTML = "";
 
   if (!query) {
     suggestionBox.style.display = "none";
@@ -1160,7 +1163,8 @@ row.addEventListener("pointerup", () => {
 });
 
 
-    container.appendChild(row);
+row.appendChild(expandContainer);
+container.appendChild(row);
   });
 }
 
