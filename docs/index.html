@@ -1,3 +1,4 @@
+In this file, change the item layout so that it is based on ArchiveFilter. If ArchiveFilter is true, show all items retrieved from the json. If not, filter the items retrieved that have a status value true. Here is the file:
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1175,10 +1176,11 @@ function renderItems(){
     if (typeof i.status !== "boolean") i.status = true;
   });
 
-  // 🔑 FILTER RULE
-  const visibleItems = items.filter(item =>
-    showArchived || item.status === true
-  );
+// 🔑 FILTER RULE — ArchiveFilter authoritative
+const visibleItems = items.filter(item =>
+  ArchiveFilter === true || item.status === true
+);
+
 
   visibleItems.sort((a, b) => baseSort(a, b, key));
   visibleItems.forEach(drawItem);
