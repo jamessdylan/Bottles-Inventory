@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SMart Sort</title>
+<title>sort</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -947,15 +947,12 @@ let expandedSpecialtyList = null;
 let archiveRows = [];
 let showArchived = false;
 let groupEnabled = false;
-let smartSortEnabled = false;
-
 
 groupBtn.onclick = () => {
   groupEnabled = !groupEnabled;
   groupBtn.classList.toggle("active", groupEnabled);
   renderItems();
 };
-
 
 
 /* ---------- SMART LIST STORE ---------- */
@@ -1535,54 +1532,44 @@ function drawDivider(label) {
   list.appendChild(div);
 }
 
-// Returns items whose color is NOT Red
-function filterNotRed(items) {
-  return items.filter(item => {
-    const color = (item.color || "").toLowerCase();
-    return color !== "red";
-  });
-}
+function getSmartSubgroups(items) {
+  // Smart Sort OFF → single subgroup
+  if (!smartSortEnabled) {
+    return [items];
+  }
 
-// Returns items whose color IS Red
-function filterRed(items) {
-  return items.filter(item => {
-    const color = (item.color || "").toLowerCase();
-    return color === "red";
-  });
-}
-
-function applySmartPreSort(items) {
-  // Emporio / Mezzo / Tetto → Non-Red first
+  // Emporio / Mezzo / Tetto → color-based
   if (
     ["Emporio", "Mezzo", "Tetto (L)", "Tetto (R)"].includes(Source)
   ) {
+    const nonRed = filterNotRed(items);
+    const red = filterRed(items);
+
     return [
-      ...filterNotRed(items),
-      ...filterRed(items)
-    ];
+      nonRed,
+      red
+    ].filter(group => group.length);
   }
 
-  // Other / Prep Cooler → no pre-sort
-  if (["Other", "Prep Cooler"].includes(Source)) {
-    return items;
-  }
-
-  // Wine Cellar → Smart List priority
+  // Wine Cellar → SmartList-based
   if (Source === "Wine Cellar") {
-    // Generate SmartList if missing
     if (!SmartLists[Source]?.length) {
       SmartLists[Source] = items.map(i => i.UUID);
     }
 
     const smartSet = new Set(SmartLists[Source]);
 
-    const inList = items.filter(i => smartSet.has(i.UUID));
-    const notInList = items.filter(i => !smartSet.has(i.UUID));
+    const inSmart = items.filter(i => smartSet.has(i.UUID));
+    const outSmart = items.filter(i => !smartSet.has(i.UUID));
 
-    return [...inList, ...notInList];
+    return [
+      inSmart,
+      outSmart
+    ].filter(group => group.length);
   }
 
-  return items;
+  // Other / Prep Cooler → no smart subdivision
+  return [items];
 }
 
 
@@ -1592,59 +1579,66 @@ function renderItems() {
 
   const key = `${Source}Complete`;
 
-  // normalize values
+  // Normalize
   items.forEach(i => {
     i[Source] = Math.max(0, Number(i[Source]) || 0);
     if (typeof i[key] !== "boolean") i[key] = false;
     if (typeof i.status !== "boolean") i.status = true;
   });
 
-// 1️⃣ ARCHIVE FILTER FIRST
-let visibleItems = items.filter(item =>
-  showArchived || item.status === true
-);
+  // 1️⃣ ARCHIVE FILTER
+  let visibleItems = items.filter(item =>
+    showArchived || item.status === true
+  );
 
-// 2️⃣ SMART PRE-SORT (tap only, source-dependent)
-if (smartSortEnabled) {
-  visibleItems = applySmartPreSort(visibleItems);
-}
-
-// 3️⃣ BASE SORT (always applied after pre-sort)
-visibleItems.sort((a, b) => baseSort(a, b, key));
-
-
-  // 3️⃣ GROUP LOGIC
   const canGroup =
     groupEnabled &&
     GROUPABLE_SOURCES.has(Source);
 
-  // Wine Cellar / Other → never grouped
+  // 2️⃣ NO GROUPING → flat path
   if (!canGroup) {
-    visibleItems.forEach(drawItem);
+    const subgroups = getSmartSubgroups(visibleItems);
+
+    subgroups.forEach(group => {
+      group.sort((a, b) => baseSort(a, b, key));
+      group.forEach(drawItem);
+    });
+
     return;
   }
 
-  // 4️⃣ SPLIT BY TIER
-  const houseItems = [];
-  const reserveItems = [];
+  // 3️⃣ GROUP SPLIT
+  const house = [];
+  const reserve = [];
 
   visibleItems.forEach(item => {
-    if ((item.tier || "House") === "House") {
-      houseItems.push(item);
-    } else {
-      reserveItems.push(item);
-    }
+    ((item.tier || "House") === "House"
+      ? house
+      : reserve
+    ).push(item);
   });
 
-  // 5️⃣ RENDER GROUPS (only if they contain items)
-  if (houseItems.length) {
+  // 4️⃣ RENDER EACH GROUP INDEPENDENTLY
+  if (house.length) {
     drawDivider("House");
-    houseItems.forEach(drawItem);
+
+    const subgroups = getSmartSubgroups(house);
+
+    subgroups.forEach(group => {
+      group.sort((a, b) => baseSort(a, b, key));
+      group.forEach(drawItem);
+    });
   }
 
-  if (reserveItems.length) {
+  if (reserve.length) {
     drawDivider("Reserve");
-    reserveItems.forEach(drawItem);
+
+    const subgroups = getSmartSubgroups(reserve);
+
+    subgroups.forEach(group => {
+      group.sort((a, b) => baseSort(a, b, key));
+      group.forEach(drawItem);
+    });
   }
 }
 
@@ -1868,12 +1862,7 @@ smartSortBtn.onpointerleave = () =>
   clearTimeout(smartPressTimer);
 
 
-smartSortBtn.onclick = () => {
-  smartSortEnabled = !smartSortEnabled;
-  smartSortBtn.classList.toggle("active", smartSortEnabled);
-  renderItems();
-};
-
+smartSortBtn.onclick=()=>smartSortBtn.classList.toggle("active");
 
 
 /* ---------- DRAWER ---------- */
