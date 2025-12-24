@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Inventory Reconciliation</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
+  background:#f5f5f5;
+}
+
+header{
+  padding:20px;
+  font-family:"Copperplate",serif;
+  text-align:center;
+  font-size:20px;
+}
+
+.list{
+  padding:12px 16px 100px;
+}
+
+.row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:14px 16px;
+  margin-bottom:12px;
+  background:white;
+  border-radius:14px;
+}
+
+.title{
+  flex:1;
+  font-size:15px;
+}
+
+.qty{
+  font-weight:bold;
+  min-width:40px;
+  text-align:right;
+}
+
+/* ---------- ACTION PILL ---------- */
+.action{
+  min-width:120px;
+  text-align:center;
+  padding:8px 10px;
+  border-radius:999px;
+  font-size:13px;
+  cursor:pointer;
+  user-select:none;
+  background:#ddd;
+  color:#555;
+  opacity:.45;
+}
+
+.action.confirmed{
+  opacity:1;
+}
+
+.action.inactive{
+  background:#ccc;
+  color:#444;
+}
+
+.action.active{
+  background:#1f5e3b;
+  color:white;
+}
+
+.action.delete{
+  background:#b00020;
+  color:white;
+}
+
+/* ---------- FOOTER ---------- */
+.footer{
+  position:fixed;
+  left:0;right:0;bottom:0;
+  padding:14px 16px;
+  background:white;
+  border-top:1px solid #ddd;
+  display:flex;
+  justify-content:space-between;
+}
+
+button{
+  border:none;
+  border-radius:10px;
+  padding:12px 18px;
+  font-size:16px;
+  cursor:pointer;
+}
+
+.confirm{
+  background:#1f5e3b;
+  color:white;
+}
+</style>
+</head>
+
+<body>
+
+<header>Inventory Reconciliation</header>
+
+<div class="list" id="list"></div>
+
+<div class="footer">
+  <button onclick="window.close()">Cancel</button>
+  <button class="confirm" onclick="applyActions()">Confirm</button>
+</div>
+
+<script>
+let items = [];
+let workingItems = [];
+
+/* ---------- RECEIVE ITEMS ---------- */
+window.addEventListener("message", e => {
+  if (!e.data?.items) return;
+
+  items = JSON.parse(JSON.stringify(e.data.items));
+  prepareItems();
+});
+
+/* ---------- HELPERS ---------- */
+const SOURCES = [
+  "Emporio","Mezzo","Tetto (L)","Tetto (R)",
+  "Wine Cellar","Liquor Closet","Prep Cooler","Other"
+];
+
+function totalQty(item){
+  return SOURCES.reduce((t, s) => t + Number(item[s] || 0), 0);
+}
+
+function title(item){
+  return [item.brand,item.identifier,item.varietal,item.year]
+    .filter(v => v && v !== "N/A")
+    .join(" ");
+}
+
+/* ---------- PREP ---------- */
+function prepareItems(){
+  workingItems = items
+    .map(item => ({
+      item,
+      qty: totalQty(item),
+      action: defaultAction(item),
+      confirmed:false
+    }))
+    .filter(w => {
+      if (w.item.status === true && w.qty > 0) return false;
+      return true;
+    })
+    .sort((a,b)=>title(a.item).localeCompare(title(b.item)));
+
+  render();
+}
+
+/* ---------- DEFAULT ACTION ---------- */
+function defaultAction(item){
+  const qty = totalQty(item);
+
+  if (item.status && qty === 0) return "inactive";
+  if (!item.status && qty > 0) return "active";
+  if (!item.status && qty === 0) return "delete";
+  return null;
+}
+
+/* ---------- ACTION CYCLE ---------- */
+const ACTIONS = [null,"inactive","active","delete"];
+
+function nextAction(current){
+  const i = ACTIONS.indexOf(current);
+  return ACTIONS[(i + 1) % ACTIONS.length];
+}
+
+/* ---------- RENDER ---------- */
+function render(){
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+
+  workingItems.forEach(w => {
+    const row = document.createElement("div");
+    row.className = "row";
+
+    const action = document.createElement("div");
+    action.className = "action";
+    updateActionUI(action, w);
+
+    action.onclick = () => {
+      w.action = nextAction(w.action);
+      w.confirmed = w.action !== null;
+      updateActionUI(action, w);
+    };
+
+    row.innerHTML = `
+      <div class="title">${title(w.item)}</div>
+      <div class="qty">${w.qty}</div>
+    `;
+
+    row.appendChild(action);
+    list.appendChild(row);
+  });
+}
+
+function updateActionUI(el, w){
+  el.className = "action";
+  el.textContent = "No Action";
+
+  if (!w.confirmed){
+    el.style.opacity = .45;
+    return;
+  }
+
+  el.classList.add("confirmed");
+  el.style.opacity = 1;
+
+  if (w.action === "inactive"){
+    el.textContent = "Make Inactive";
+    el.classList.add("inactive");
+  }
+  if (w.action === "active"){
+    el.textContent = "Make Active";
+    el.classList.add("active");
+  }
+  if (w.action === "delete"){
+    el.textContent = "Delete Item";
+    el.classList.add("delete");
+  }
+}
+
+/* ---------- APPLY ---------- */
+function applyActions(){
+  let updated = items.filter(item => {
+    const w = workingItems.find(x => x.item === item);
+    if (!w || !w.confirmed) return true;
+
+    if (w.action === "delete") return false;
+    if (w.action === "inactive") item.status = false;
+    if (w.action === "active") item.status = true;
+
+    return true;
+  });
+
+  window.opener?.postMessage({ updatedItems: updated }, "*");
+  window.close();
+}
+</script>
+
+</body>
+</html>
