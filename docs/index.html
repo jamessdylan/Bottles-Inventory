@@ -960,23 +960,24 @@ function renderSpecialtyLists(){
     row.textContent = listName;
     row.style.cursor = "pointer";
     row.style.fontSize = "16px";
-
+if (expandedSpecialtyList === listName) {
+  row.classList.add("expanded");
+}
     // select list
 let startX = 0;
 let currentX = 0;
 let dragging = false;
 let didSwipe = false;
 row.onclick = () => {
-if (expandedSpecialtyList === listName) {
-  row.style.overflow = "visible";
-row.classList.add("expanded")
-}
+  expandedSpecialtyList =
+    expandedSpecialtyList === listName ? null : listName;
 
   renderSpecialtyLists();
-
 };
 
-
+.specialty-row.expanded {
+  overflow: visible;
+}
 
 const expandContainer = document.createElement("div");
 expandContainer.style.overflow = "visible";
@@ -1019,6 +1020,9 @@ const addRow = document.createElement("div");
 addRow.style.padding = "6px 0";
 addRow.style.borderBottom = "1px solid rgba(0,0,0,.08)";
 addRow.style.position = "relative";
+addRow.onclick = e => e.stopPropagation();
+input.onclick = e => e.stopPropagation();
+suggestionBox.onclick = e => e.stopPropagation();
 
 const input = document.createElement("input");
 input.type = "text";
