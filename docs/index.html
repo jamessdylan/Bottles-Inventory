@@ -1,3 +1,4 @@
+That didn’t work, here is my file:
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1089,6 +1090,9 @@ const lockedNames = ["Wine Cellar", "Prep Cooler"];
 
 
 row.addEventListener("pointerdown", e => {
+  // ⛔ disable swipe when expanded
+  if (expandedSpecialtyList === listName) return;
+
   didSwipe = false;
   startX = e.clientX;
   dragging = true;
@@ -1096,7 +1100,7 @@ row.addEventListener("pointerdown", e => {
 });
 
 row.addEventListener("pointermove", e => {
-  if (!dragging) return;
+  if (!dragging || expandedSpecialtyList === listName) return;
 
   currentX = e.clientX - startX;
 
@@ -1107,20 +1111,22 @@ row.addEventListener("pointermove", e => {
   }
 });
 
-
 row.addEventListener("pointerup", () => {
+  if (expandedSpecialtyList === listName) {
+    dragging = false;
+    currentX = 0;
+    row.style.transform = "translateX(0)";
+    return;
+  }
+
   dragging = false;
 
-  // threshold reached → attempt delete
   if (currentX < -80) {
-
-    // 🔒 locked list names
     if (lockedNames.includes(listName)) {
       row.style.transform = "translateX(0)";
       return;
     }
 
-    // animate out
     row.classList.add("deleting");
 
     setTimeout(() => {
@@ -1130,15 +1136,12 @@ row.addEventListener("pointerup", () => {
         renderSpecialtyLists();
       }
     }, 250);
-
   } else {
-    // snap back
     row.style.transform = "translateX(0)";
   }
 
   currentX = 0;
 });
-
 
     container.appendChild(row);
   });
