@@ -804,6 +804,8 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
 
 <script>
+const floatingSuggestionBox = document.createElement("div");
+
 /* ---------- PAGE TITLE ---------- */
 const pageTitleEl=document.getElementById("pageTitle");
 
@@ -994,6 +996,7 @@ header.style.fontWeight = "500";
 
 row.appendChild(header);
     row.style.fontSize = "16px";
+
 if (expandedSpecialtyList === listName) {
   row.classList.add("expanded");
 }
@@ -1065,7 +1068,6 @@ input.style.fontFamily = "inherit";
 
 addRow.appendChild(input);
 expandContainer.appendChild(addRow);
-});
 
 input.oninput = () => {
   const query = input.value.trim().toLowerCase();
@@ -1123,6 +1125,8 @@ input.oninput = () => {
   floatingSuggestionBox.style.display = "block";
 };
 
+
+});
 
 const specialtyBtn = document.getElementById("specialtyListBtn");
 const specialtySheet = document.getElementById("specialtySheet");
@@ -1459,13 +1463,6 @@ overlay.onclick=()=>{
   overlay.classList.remove("show");
 };
   
-
-document.addEventListener("pointerdown", e => {
-  if (!e.target.closest(".specialty-row") &&
-      !e.target.closest("input")) {
-    floatingSuggestionBox.style.display = "none";
-  }
-});
 
 /* ---------- NEW BOTTLE ---------- */
 const newBottleBtn = document.getElementById("newBottleBtn");
