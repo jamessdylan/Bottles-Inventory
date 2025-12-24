@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Archive NEWEST</title>
+<title>Archive Reconciliation</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -120,25 +120,14 @@ let rows = [];
 /* ---------- RECEIVE ITEMS ---------- */
 let received = false;
 
-window.addEventListener("message", e => {
-  if (Array.isArray(e.data?.items)){
-    received = true;
-    items = e.data.items;
-    prepareRows();
-  }
-});
+const stored = sessionStorage.getItem("RECONCILE_ITEMS");
 
-window.onload = () => {
-  if (window.opener){
-    window.opener.postMessage({ type:"RECONCILE_READY" }, "*");
-
-    setTimeout(() => {
-      if (!received){
-        window.opener.postMessage({ type:"RECONCILE_REQUEST" }, "*");
-      }
-    }, 250);
-  }
-};
+if (!stored){
+  alert("No items received.");
+} else {
+  items = JSON.parse(stored);
+  prepareRows();
+}
 
 
 /* ---------- HELPERS ---------- */
@@ -260,41 +249,31 @@ tab.onclick = () => {
 
 /* ---------- CONFIRM ---------- */
 function confirmActions(){
-  // Clone original items so we don’t mutate unexpectedly
   let updatedItems = items.slice();
 
   rows.forEach(row => {
     const action = row.tabValue;
     const item = row.item;
 
-    if (action === "none") return;
-
-    if (action === "Delete Item") {
+    if (action === "Delete Item"){
       updatedItems = updatedItems.filter(i => i !== item);
     }
-
-    if (action === "Make Active") {
+    if (action === "Make Active"){
       item.status = true;
     }
-
-    if (action === "Make Inactive") {
+    if (action === "Make Inactive"){
       item.status = false;
     }
   });
 
-  // Send updated items back to index.html
-  if (window.opener) {
-    window.opener.postMessage(
-      {
-        type: "RECONCILE_COMPLETE",
-        items: updatedItems
-      },
-      "*"
-    );
-  }
+  sessionStorage.setItem(
+    "RECONCILE_RESULT",
+    JSON.stringify(updatedItems)
+  );
 
   window.close();
 }
+
 
 </script>
 
