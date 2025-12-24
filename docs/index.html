@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine New</title>
+<title>SM NEWEST</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1036,18 +1036,16 @@ row.addEventListener("pointerup", () => {
 window.addEventListener("message", e => {
   if (e.data?.type !== "RECONCILE_COMPLETE") return;
 
-  // Replace authoritative items list
-  items = e.data.items;
+  // Replace entire dataset
+  items = structuredClone(e.data.items);
 
-  // Recalculate derived values if needed
+  // Recompute derived values
   updateQtyAndArchiveSuggestion();
 
-  // Re-render the list
-  renderItems();
-
-  // Optional: persist to localStorage / file / Shortcuts
-  saveItems?.();
+  // Force full UI rebuild
+  hardRefreshItems();
 });
+
 
 
 
@@ -1203,6 +1201,18 @@ function openArchiveReconcile(items){
   }, 50);
 }
 
+function hardRefreshItems(){
+  // Clear any cached references
+  activeFilters = null;
+  groupedItems = null;
+
+  const list = document.getElementById("itemList");
+  list.innerHTML = "";
+
+  items.forEach(item => {
+    list.appendChild(buildItemRow(item));
+  });
+}
 
 
 /* ---------------- RENDER ---------------- */
