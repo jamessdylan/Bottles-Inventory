@@ -45,6 +45,24 @@ body::before{
   z-index:-1;
 }
 
+/* ---------- TOP GRADIENT OVERLAY ---------- */
+body::after{
+  content:"";
+  position:fixed;
+  top:0;
+  left:0;
+  right:0;
+  height:180px; /* adjust strength here */
+  background:linear-gradient(
+    to bottom,
+    rgba(255,255,255,.85),
+    rgba(255,255,255,.55),
+    rgba(255,255,255,0)
+  );
+  pointer-events:none;
+  z-index:-1;
+}
+
 /* ---------- HEADER ---------- */
 header{
   display:flex;
