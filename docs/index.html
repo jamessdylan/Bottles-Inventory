@@ -1,3 +1,4 @@
+That didn’t work, this is my file:
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -299,63 +300,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   transform: translateY(-50%);
 }
 
-/* ---------- ARCHIVE RECONCILE ---------- */
-#archiveOverlay{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.35);
-  display:none;
-  z-index:600;
-}
-
-#archiveSheet{
-  position:fixed;
-  inset:auto 0 0 0;
-  background:rgba(255,255,255,.95);
-  backdrop-filter:blur(16px);
-  max-height:80vh;
-  border-radius:20px 20px 0 0;
-  padding:16px;
-  transform:translateY(100%);
-  transition:.25s ease;
-  z-index:601;
-  overflow-y:auto;
-}
-
-#archiveSheet.open{
-  transform:translateY(0);
-}
-
-.archive-row{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  background:white;
-  padding:14px;
-  border-radius:14px;
-  margin-bottom:10px;
-}
-
-.archive-title{
-  flex:1;
-  font-size:14px;
-}
-
-.archive-tab{
-  min-width:110px;
-  text-align:center;
-  padding:8px 10px;
-  border-radius:999px;
-  font-size:13px;
-  background:#e0e0e0;
-  color:#666;
-  cursor:pointer;
-}
-
-.archive-tab.active{background:#1f5e3b;color:white;}
-.archive-tab.inactive{background:#848484;color:white;}
-.archive-tab.delete{background:#7b1e1e;color:white;}
-.archive-tab.suggestion{color:#999;font-style:italic;}
 
 #datePicker button{
   background:none;
@@ -1144,122 +1088,6 @@ function baseSort(a,b,key){
     ||naLast(b.year,a.year);
 }
 
-const ARCHIVE_ACTIONS = ["Make Active","Make Inactive","Delete Item","none"];
-let archiveRows = [];
-
-function computeArchiveSuggestions(){
-  items.forEach(item => {
-    const qty =
-      Number(item.Emporio||0)+
-      Number(item.Mezzo||0)+
-      Number(item["Tetto (L)"]||0)+
-      Number(item["Tetto (R)"]||0)+
-      Number(item["Wine Cellar"]||0)+
-      Number(item["Liquor Closet"]||0)+
-      Number(item["Prep Cooler"]||0)+
-      Number(item.Other||0);
-
-    item.qty = qty;
-
-    if (qty > 0 && item.status === true)
-      item.archivesuggestion = "none";
-    else if (qty > 0 && item.status === false)
-      item.archivesuggestion = "Make Active";
-    else if (qty === 0 && item.status === true)
-      item.archivesuggestion = "Make Inactive";
-    else
-      item.archivesuggestion = "Delete Item";
-  });
-}
-
-function openArchivePopup(){
-  computeArchiveSuggestions();
-
-  archiveRows = items
-    .filter(i => i.archivesuggestion !== "none")
-    .slice()
-    .sort((a,b)=>wineTitle(a).localeCompare(wineTitle(b)))
-    .map(item => ({
-      item,
-      value: "none",
-      initialized: false
-    }));
-
-  const list = document.getElementById("archiveList");
-  list.innerHTML = "";
-
-  archiveRows.forEach(row => {
-    const el = document.createElement("div");
-    el.className = "archive-row";
-
-    const title = document.createElement("div");
-    title.className = "archive-title";
-    title.textContent = wineTitle(row.item);
-
-    const tab = document.createElement("div");
-    tab.className = "archive-tab";
-
-    function update(){
-      tab.className = "archive-tab";
-      tab.textContent = row.value;
-
-      if (!row.initialized){
-        tab.textContent = row.item.archivesuggestion;
-        tab.classList.add("suggestion");
-        return;
-      }
-
-      if (row.value === "Make Active") tab.classList.add("active");
-      if (row.value === "Make Inactive") tab.classList.add("inactive");
-      if (row.value === "Delete Item") tab.classList.add("delete");
-    }
-
-    tab.onclick = () => {
-      if (!row.initialized){
-        row.value = row.item.archivesuggestion;
-        row.initialized = true;
-      } else {
-        row.value =
-          ARCHIVE_ACTIONS[
-            (ARCHIVE_ACTIONS.indexOf(row.value)+1)%ARCHIVE_ACTIONS.length
-          ];
-      }
-      update();
-    };
-
-    update();
-    el.append(title, tab);
-    list.appendChild(el);
-  });
-
-  document.getElementById("archiveOverlay").style.display = "block";
-  document.getElementById("archiveSheet").classList.add("open");
-}
-
-function confirmArchiveActions(){
-  archiveRows.forEach(r => {
-    const item = r.item;
-
-    if (r.value === "Delete Item"){
-      items = items.filter(i => i !== item);
-    }
-    if (r.value === "Make Active"){
-      item.status = true;
-    }
-    if (r.value === "Make Inactive"){
-      item.status = false;
-    }
-  });
-
-  closeArchive();
-  renderItems();
-}
-
-function closeArchive(){
-  document.getElementById("archiveOverlay").style.display = "none";
-  document.getElementById("archiveSheet").classList.remove("open");
-}
-
 /* ---------------- RENDER ---------------- */
 function renderItems(){
   list.innerHTML = "";
@@ -1491,7 +1319,7 @@ archiveBtn.onpointerdown = () => {
 
   archivePressTimer = setTimeout(() => {
     archiveLongPress = true;
-openArchivePopup();
+    alert("This Will be Wired Eventually");
   }, 600); // long-press duration
 };
 
@@ -1956,23 +1784,7 @@ confirmNewBottle.onclick = () => {
 };
 
 
-<div id="archiveOverlay"></div>
 
-<div id="archiveSheet">
-  <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
-    <div style="font-family:'Copperplate',serif;">Archive Suggestions</div>
-    <button onclick="closeArchive()">Cancel</button>
-  </div>
-
-  <div id="archiveList"></div>
-
-  <button
-    style="width:100%;margin-top:14px;padding:14px;border-radius:14px;border:none;
-           background:#1f5e3b;color:white;font-size:16px;"
-    onclick="confirmArchiveActions()">
-    Confirm
-  </button>
-</div>
 
 /*---------EXPORT---------------*/
   
