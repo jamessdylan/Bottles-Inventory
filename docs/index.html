@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM  Inventory</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -947,13 +947,6 @@ let expandedSpecialtyList = null;
 let archiveRows = [];
 let showArchived = false;
 let groupEnabled = false;
-let smartSortEnabled = false;
-
-smartSortBtn.onclick = () => {
-  smartSortEnabled = !smartSortEnabled;
-  smartSortBtn.classList.toggle("active", smartSortEnabled);
-  renderItems();
-};
 
 groupBtn.onclick = () => {
   groupEnabled = !groupEnabled;
@@ -1014,19 +1007,13 @@ function buildSourceTabs(){
 
 
 /* ---------------- SORT ---------------- */
-function getSortOptions(src){
-  if(src==="Prep Cooler") return["Standard","Tier"];
-  return["Standard","Smart","Tier"];
-}
+
 function updateSort(src){
-  sortSelect.innerHTML="";
-  getSortOptions(src).forEach(o=>{
-    const opt=document.createElement("option");
-    opt.value=o;opt.textContent=o;
-    sortSelect.appendChild(opt);
-  });
-  Sort=sortSelect.value="Standard";
+function updateSort(src){
+  // dropdown removed — keep default behavior
+  Sort = "Standard";
 }
+
 
 async function loadSpecialtyLists(){
   const res = await fetch("./SpecialtyList.json", { cache:"no-store" });
@@ -1390,51 +1377,6 @@ function getSelectedAutocompleteItem(){
   return items.find(i => i.UUID === selectedAutocompleteUUID) || null;
 }
 
-function nonRedItems(items){
-  return items.filter(i => (i.color || "White") !== "Red");
-}
-
-function redItems(items){
-  return items.filter(i => (i.color || "White") === "Red");
-}
-
-async function getWineCellarSmartItems(items){
-  if (!SmartLists["Wine Cellar"]?.length){
-    const uuids = await fetchSourceValues("Wine Cellar");
-    SmartLists["Wine Cellar"] = uuids;
-  }
-
-  const set = new Set(SmartLists["Wine Cellar"]);
-  return items.filter(i => set.has(i.UUID));
-}
-
-async function applySecondaryGrouping(items){
-  if (!smartSortEnabled) return [items];
-
-  // Emporio / Mezzo / Tetto rules
-  if (
-    Source === "Emporio" ||
-    Source === "Mezzo" ||
-    Source === "Tetto (L)" ||
-    Source === "Tetto (R)"
-  ){
-    const nonRed = nonRedItems(items);
-    const red = redItems(items);
-    return [nonRed, red].filter(g => g.length);
-  }
-
-  // Wine Cellar rule
-  if (Source === "Wine Cellar"){
-    const smart = await getWineCellarSmartItems(items);
-    const smartSet = new Set(smart.map(i => i.UUID));
-    const rest = items.filter(i => !smartSet.has(i.UUID));
-
-    return [smart, rest].filter(g => g.length);
-  }
-
-  return [items];
-}
-
 
 async function openSmartSort(){
   if (Source !== "Wine Cellar") return;
@@ -1629,44 +1571,19 @@ function renderItems() {
     }
   });
 
-// // 5️⃣ RENDER GROUPS WITH OPTIONAL SECONDARY GROUPING
-function renderGrouped(items, label){
-  if (!items.length) return;
-
-  drawDivider(label);
-
-  if (!smartSortEnabled){
-    items.forEach(drawItem);
-    return;
+  // 5️⃣ RENDER GROUPS (only if they contain items)
+  if (houseItems.length) {
+    drawDivider("House");
+    houseItems.forEach(drawItem);
   }
 
-  // Emporio / Mezzo / Tetto
-  if (
-    Source === "Emporio" ||
-    Source === "Mezzo" ||
-    Source === "Tetto (L)" ||
-    Source === "Tetto (R)"
-  ){
-    nonRedItems(items).forEach(drawItem);
-    redItems(items).forEach(drawItem);
-    return;
+  if (reserveItems.length) {
+    drawDivider("Reserve");
+    reserveItems.forEach(drawItem);
   }
-
-  // Wine Cellar
-  if (Source === "Wine Cellar"){
-    const smartUUIDs = new Set(SmartLists["Wine Cellar"] || []);
-    items.filter(i => smartUUIDs.has(i.UUID)).forEach(drawItem);
-    items.filter(i => !smartUUIDs.has(i.UUID)).forEach(drawItem);
-    return;
-  }
-
-  items.forEach(drawItem);
 }
 
-renderGrouped(houseItems, "House");
-renderGrouped(reserveItems, "Reserve");
 
-}
 
 /* ---------------- DRAW ITEM ---------------- */
 function openEditBottle(item) {
