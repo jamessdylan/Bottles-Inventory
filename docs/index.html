@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>SMart Sort</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -947,12 +947,15 @@ let expandedSpecialtyList = null;
 let archiveRows = [];
 let showArchived = false;
 let groupEnabled = false;
+let smartSortEnabled = false;
+
 
 groupBtn.onclick = () => {
   groupEnabled = !groupEnabled;
   groupBtn.classList.toggle("active", groupEnabled);
   renderItems();
 };
+
 
 
 /* ---------- SMART LIST STORE ---------- */
@@ -1532,6 +1535,56 @@ function drawDivider(label) {
   list.appendChild(div);
 }
 
+// Returns items whose color is NOT Red
+function filterNotRed(items) {
+  return items.filter(item => {
+    const color = (item.color || "").toLowerCase();
+    return color !== "red";
+  });
+}
+
+// Returns items whose color IS Red
+function filterRed(items) {
+  return items.filter(item => {
+    const color = (item.color || "").toLowerCase();
+    return color === "red";
+  });
+}
+
+function applySmartPreSort(items) {
+  // Emporio / Mezzo / Tetto → Non-Red first
+  if (
+    ["Emporio", "Mezzo", "Tetto (L)", "Tetto (R)"].includes(Source)
+  ) {
+    return [
+      ...filterNotRed(items),
+      ...filterRed(items)
+    ];
+  }
+
+  // Other / Prep Cooler → no pre-sort
+  if (["Other", "Prep Cooler"].includes(Source)) {
+    return items;
+  }
+
+  // Wine Cellar → Smart List priority
+  if (Source === "Wine Cellar") {
+    // Generate SmartList if missing
+    if (!SmartLists[Source]?.length) {
+      SmartLists[Source] = items.map(i => i.UUID);
+    }
+
+    const smartSet = new Set(SmartLists[Source]);
+
+    const inList = items.filter(i => smartSet.has(i.UUID));
+    const notInList = items.filter(i => !smartSet.has(i.UUID));
+
+    return [...inList, ...notInList];
+  }
+
+  return items;
+}
+
 
 /* ---------------- RENDER ---------------- */
 function renderItems() {
@@ -1546,13 +1599,19 @@ function renderItems() {
     if (typeof i.status !== "boolean") i.status = true;
   });
 
-  // 1️⃣ ARCHIVE FILTER FIRST
-  let visibleItems = items.filter(item =>
-    showArchived || item.status === true
-  );
+// 1️⃣ ARCHIVE FILTER FIRST
+let visibleItems = items.filter(item =>
+  showArchived || item.status === true
+);
 
-  // 2️⃣ BASE SORT (existing behavior)
-  visibleItems.sort((a, b) => baseSort(a, b, key));
+// 2️⃣ SMART PRE-SORT (tap only, source-dependent)
+if (smartSortEnabled) {
+  visibleItems = applySmartPreSort(visibleItems);
+}
+
+// 3️⃣ BASE SORT (always applied after pre-sort)
+visibleItems.sort((a, b) => baseSort(a, b, key));
+
 
   // 3️⃣ GROUP LOGIC
   const canGroup =
@@ -1809,7 +1868,12 @@ smartSortBtn.onpointerleave = () =>
   clearTimeout(smartPressTimer);
 
 
-smartSortBtn.onclick=()=>smartSortBtn.classList.toggle("active");
+smartSortBtn.onclick = () => {
+  smartSortEnabled = !smartSortEnabled;
+  smartSortBtn.classList.toggle("active", smartSortEnabled);
+  renderItems();
+};
+
 
 
 /* ---------- DRAWER ---------- */
