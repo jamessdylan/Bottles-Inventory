@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>sort</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1383,6 +1383,14 @@ function getSelectedAutocompleteItem(){
   return items.find(i => i.UUID === selectedAutocompleteUUID) || null;
 }
 
+function filterRed(items) {
+  return items.filter(item => item.color === "Red");
+}
+
+function filterNotRed(items) {
+  return items.filter(item => item.color !== "Red");
+}
+
 
 async function openSmartSort(){
   if (Source !== "Wine Cellar") return;
@@ -1534,7 +1542,7 @@ function drawDivider(label) {
 
 function getSmartSubgroups(items) {
   // Smart Sort OFF → single subgroup
-  if (!smartSortEnabled) {
+  if (Sort !== "Smart") {
     return [items];
   }
 
@@ -1553,11 +1561,8 @@ function getSmartSubgroups(items) {
 
   // Wine Cellar → SmartList-based
   if (Source === "Wine Cellar") {
-    if (!SmartLists[Source]?.length) {
-      SmartLists[Source] = items.map(i => i.UUID);
-    }
-
-    const smartSet = new Set(SmartLists[Source]);
+    const list = SmartLists[Source] || [];
+    const smartSet = new Set(list);
 
     const inSmart = items.filter(i => smartSet.has(i.UUID));
     const outSmart = items.filter(i => !smartSet.has(i.UUID));
@@ -1568,9 +1573,10 @@ function getSmartSubgroups(items) {
     ].filter(group => group.length);
   }
 
-  // Other / Prep Cooler → no smart subdivision
+  // Prep Cooler / Other → no smart subdivision
   return [items];
 }
+
 
 
 /* ---------------- RENDER ---------------- */
