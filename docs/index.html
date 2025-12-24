@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -299,6 +299,63 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   transform: translateY(-50%);
 }
 
+/* ---------- ARCHIVE RECONCILE ---------- */
+#archiveOverlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.35);
+  display:none;
+  z-index:600;
+}
+
+#archiveSheet{
+  position:fixed;
+  inset:auto 0 0 0;
+  background:rgba(255,255,255,.95);
+  backdrop-filter:blur(16px);
+  max-height:80vh;
+  border-radius:20px 20px 0 0;
+  padding:16px;
+  transform:translateY(100%);
+  transition:.25s ease;
+  z-index:601;
+  overflow-y:auto;
+}
+
+#archiveSheet.open{
+  transform:translateY(0);
+}
+
+.archive-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  background:white;
+  padding:14px;
+  border-radius:14px;
+  margin-bottom:10px;
+}
+
+.archive-title{
+  flex:1;
+  font-size:14px;
+}
+
+.archive-tab{
+  min-width:110px;
+  text-align:center;
+  padding:8px 10px;
+  border-radius:999px;
+  font-size:13px;
+  background:#e0e0e0;
+  color:#666;
+  cursor:pointer;
+}
+
+.archive-tab.active{background:#1f5e3b;color:white;}
+.archive-tab.inactive{background:#848484;color:white;}
+.archive-tab.delete{background:#7b1e1e;color:white;}
+.archive-tab.suggestion{color:#999;font-style:italic;}
 
 #datePicker button{
   background:none;
@@ -1434,7 +1491,7 @@ archiveBtn.onpointerdown = () => {
 
   archivePressTimer = setTimeout(() => {
     archiveLongPress = true;
-    openArchivePopup();
+openArchivePopup();
   }, 600); // long-press duration
 };
 
@@ -1898,6 +1955,7 @@ confirmNewBottle.onclick = () => {
   closeNewBottle();
 };
 
+
 <div id="archiveOverlay"></div>
 
 <div id="archiveSheet">
@@ -1915,7 +1973,6 @@ confirmNewBottle.onclick = () => {
     Confirm
   </button>
 </div>
-
 
 /*---------EXPORT---------------*/
   
@@ -2066,7 +2123,6 @@ exportBtn.onclick = () => {
 };
 
 </script>
-
 
 </body>
 </html>
