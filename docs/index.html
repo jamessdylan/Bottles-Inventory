@@ -1,4 +1,3 @@
-That didn’t work, here is my file:
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -250,7 +249,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   padding:16px;
   border-radius:14px;
   margin-bottom:12px;
-  overflow:visible;
+  overflow:hidden;
 }
 
 .specialty-row select{
@@ -300,32 +299,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   transform: translateY(-50%);
 }
 
-.specialty-add-input {
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: none;
-  background: rgba(0,0,0,.06);
-  font-size: 14px;
-  outline: none;
-}
-
-.specialty-suggestions {
-  margin-top: 6px;
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 6px 18px rgba(0,0,0,.15);
-  overflow: hidden;
-}
-
-.specialty-suggestions div {
-  padding: 10px 12px;
-  cursor: pointer;
-}
-
-.specialty-suggestions div:hover {
-  background: rgba(31,94,59,.08);
-}
 
 #datePicker button{
   background:none;
@@ -950,13 +923,12 @@ function updateSort(src){
   Sort=sortSelect.value="Standard";
 }
 
-let specialtyListData = {};
-
 async function loadSpecialtyLists(){
   const res = await fetch("./SpecialtyList.json", { cache:"no-store" });
-  specialtyListData = await res.json();
+  const data = await res.json();
 
-  specialtyLists = Object.keys(specialtyListData)
+  // Extract keys from dictionary
+  specialtyLists = Object.keys(data)
     .sort((a, b) => a.localeCompare(b));
 
   renderSpecialtyLists();
@@ -970,14 +942,8 @@ function renderSpecialtyLists(){
   // --- Existing Lists ---
   specialtyLists.forEach((listName, index) => {
     const row = document.createElement("div");
-const header = document.createElement("div");
-header.textContent = listName;
-header.style.fontSize = "16px";
-header.style.cursor = "pointer";
-header.className = "specialty-header";
-
-row.appendChild(header);
     row.className = "specialty-row";
+    row.textContent = listName;
     row.style.cursor = "pointer";
     row.style.fontSize = "16px";
 
@@ -986,102 +952,24 @@ let startX = 0;
 let currentX = 0;
 let dragging = false;
 let didSwipe = false;
-
-header.onclick = () => {
+row.onclick = () => {
+if (didSwipe) return;
   expandedSpecialtyList =
     expandedSpecialtyList === listName ? null : listName;
+
+
   renderSpecialtyLists();
 };
 
+
 const expandContainer = document.createElement("div");
-expandContainer.onclick = e => e.stopPropagation();
 expandContainer.style.marginTop = "10px";
 expandContainer.style.paddingLeft = "12px";
 expandContainer.style.display =
   expandedSpecialtyList === listName ? "block" : "none";
 expandContainer.style.fontSize = "14px";
 expandContainer.style.color = "#333";
-
-if (expandedSpecialtyList === listName) {
-  expandContainer.innerHTML = "";
-
-  const matchedItems = getItemsForSpecialtyList(listName);
-
-  matchedItems.forEach(item => {
-    const div = document.createElement("div");
-    div.style.padding = "6px 0";
-    div.style.borderBottom = "1px solid rgba(0,0,0,.08)";
-    div.textContent = specialtyTitle(item);
-    expandContainer.appendChild(div);
-  });
-
-  /* ---------- ADD-TO INPUT ---------- */
-  const input = document.createElement("input");
-  input.className = "specialty-add-input";
-  input.placeholder = "+ Add item…";
-  input.autocomplete = "off";
-
-  const suggestions = document.createElement("div");
-  suggestions.className = "specialty-suggestions";
-  suggestions.style.display = "none";
-
-  expandContainer.appendChild(input);
-  expandContainer.appendChild(suggestions);
-
-  input.oninput = () => {
-    const value = input.value.trim().toLowerCase();
-    suggestions.innerHTML = "";
-
-    if (!value) {
-      suggestions.style.display = "none";
-      return;
-    }
-
-    const available = getAvailableItemsForList(listName);
-
-    const matches = available.filter(i =>
-      specialtyTitle(i).toLowerCase().includes(value)
-    );
-
-    if (matches.length === 0) {
-      suggestions.style.display = "none";
-      return;
-    }
-
-    matches.forEach(item => {
-      const div = document.createElement("div");
-      div.textContent = specialtyTitle(item);
-
-      div.onclick = () => {
-        specialtyListData[listName] ??= [];
-        specialtyListData[listName].push(item.UUID);
-
-  const added = document.createElement("div");
-  added.style.padding = "6px 0";
-  added.style.borderBottom = "1px solid rgba(0,0,0,.08)";
-  added.textContent = specialtyTitle(item);
-
-  expandContainer.insertBefore(added, input);
-        input.value = "";
-        suggestions.style.display = "none";
-      };
-
-      suggestions.appendChild(div);
-    });
-
-    suggestions.style.display = "block";
-  };
-
-  /* Prevent free entry */
-input.onblur = () => {
-  setTimeout(() => {
-    suggestions.style.display = "none";
-    input.value = "";
-  }, 150);
-};
-}
-}
-
+expandContainer.textContent = "Items for this specialty list will appear here.";
 row.appendChild(expandContainer);
 
 
@@ -1090,9 +978,6 @@ const lockedNames = ["Wine Cellar", "Prep Cooler"];
 
 
 row.addEventListener("pointerdown", e => {
-  // ⛔ disable swipe when expanded
-  if (expandedSpecialtyList === listName) return;
-
   didSwipe = false;
   startX = e.clientX;
   dragging = true;
@@ -1100,7 +985,7 @@ row.addEventListener("pointerdown", e => {
 });
 
 row.addEventListener("pointermove", e => {
-  if (!dragging || expandedSpecialtyList === listName) return;
+  if (!dragging) return;
 
   currentX = e.clientX - startX;
 
@@ -1111,22 +996,20 @@ row.addEventListener("pointermove", e => {
   }
 });
 
-row.addEventListener("pointerup", () => {
-  if (expandedSpecialtyList === listName) {
-    dragging = false;
-    currentX = 0;
-    row.style.transform = "translateX(0)";
-    return;
-  }
 
+row.addEventListener("pointerup", () => {
   dragging = false;
 
+  // threshold reached → attempt delete
   if (currentX < -80) {
+
+    // 🔒 locked list names
     if (lockedNames.includes(listName)) {
       row.style.transform = "translateX(0)";
       return;
     }
 
+    // animate out
     row.classList.add("deleting");
 
     setTimeout(() => {
@@ -1136,12 +1019,15 @@ row.addEventListener("pointerup", () => {
         renderSpecialtyLists();
       }
     }, 250);
+
   } else {
+    // snap back
     row.style.transform = "translateX(0)";
   }
 
   currentX = 0;
 });
+
 
     container.appendChild(row);
   });
@@ -1164,7 +1050,6 @@ specialtyBtn.onclick = async () => {
 };
 
 document.getElementById("closeSpecialty").onclick = () => {
-  expandedSpecialtyList = null;   // 🔑 reset state
   specialtySheet.style.transform = "translateX(100%)";
   specialtyOverlay.classList.remove("show");
 };
@@ -1200,36 +1085,6 @@ function baseSort(a,b,key){
     ||naLast(a.identifier,b.identifier)
     ||naLast(a.varietal,b.varietal)
     ||naLast(b.year,a.year);
-}
-
-function getItemsForSpecialtyList(listName) {
-  const uuidList = (specialtyListData[listName] || [])
-    .map(u => String(u).toUpperCase());
-
-  return items.filter(item =>
-    item.UUID &&
-    uuidList.includes(String(item.UUID).toUpperCase())
-  );
-}
-
-function specialtyTitle(item) {
-  return [
-    item.brand,
-    item.identifier,
-    item.varietal,
-    item.year
-  ].filter(v => v && v !== "N/A").join(" ");
-}
-
-function getAvailableItemsForList(listName) {
-  const existingUUIDs = new Set(
-    (specialtyListData[listName] || []).map(u => String(u))
-  );
-
-  return items.filter(i =>
-    i.UUID &&
-    !existingUUIDs.has(String(i.UUID))
-  );
 }
 
 /* ---------------- RENDER ---------------- */
