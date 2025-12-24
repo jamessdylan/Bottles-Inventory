@@ -341,6 +341,23 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   </div>
 </div>
 
+/* ---------- SALES REPORT DEBUG ---------- */
+const salesReportBtn = document.getElementById("salesReportBtn");
+
+salesReportBtn.onclick = () => {
+  drawer.classList.remove("open");
+  overlay.classList.remove("show");
+
+  const message =
+`Sales Report Filters:
+
+ArchiveFilter: ${ArchiveFilter}
+GroupFilter: ${GroupFilter}
+SubgroupFilter: ${SubgroupFilter}
+ItemFilter: ${ItemFilter}`;
+
+  alert(message);
+};
 
 <!-- NEW BOTTLE OVERLAY -->
 <div id="newBottleOverlay" class="overlay"></div>
@@ -703,7 +720,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   <button id="specialtyListBtn">Specialty List</button>
   <button id="reserveListBtn">Reserve List</button>
 
-  <button>Sales Report</button>
+<button id="salesReportBtn">Sales Report</button>
   <button>Dictionary File</button>
   <button id="exportBtn">Export</button>
 </div>
@@ -915,6 +932,24 @@ function buildSourceTabs(){
   });
 }
 
+/* ---------- SALES REPORT DEBUG ---------- */
+const salesReportBtn = document.getElementById("salesReportBtn");
+
+salesReportBtn.onclick = () => {
+  drawer.classList.remove("open");
+  overlay.classList.remove("show");
+
+  const message =
+`Sales Report Filters:
+
+ArchiveFilter: ${ArchiveFilter}
+GroupFilter: ${GroupFilter}
+SubgroupFilter: ${SubgroupFilter}
+ItemFilter: ${ItemFilter}`;
+
+  alert(message);
+};
+ 
 
 /* ---------------- SORT ---------------- */
 function getSortOptions(src){
