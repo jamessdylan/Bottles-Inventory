@@ -892,7 +892,15 @@ const tabsEl=document.getElementById("sourceTabs");
 const drawer = document.getElementById("drawer");
 const overlay = document.getElementById("overlay");
 
-const floatingSuggestionBox = document.createElement("div");
+document.addEventListener("pointerdown", e => {
+  if (
+    !e.target.closest(".specialty-row") &&
+    !e.target.closest("input")
+  ) {
+    floatingSuggestionBox.style.display = "none";
+  }
+});
+
 floatingSuggestionBox.style.position = "fixed";
 floatingSuggestionBox.style.background = "white";
 floatingSuggestionBox.style.borderRadius = "12px";
@@ -1057,14 +1065,6 @@ input.style.fontFamily = "inherit";
 
 addRow.appendChild(input);
 expandContainer.appendChild(addRow);
-
-document.addEventListener("pointerdown", e => {
-  if (
-    !e.target.closest(".specialty-row") ||
-    !e.target.closest("input")
-  ) {
-    suggestionBox.style.display = "none";
-  }
 });
 
 input.oninput = () => {
@@ -1138,20 +1138,19 @@ specialtyBtn.onclick = async () => {
   specialtyOverlay.classList.add("show");
 };
 
-document.getElementById("closeSpecialty").onclick = () => {
-  // close suggestions
-  floatingSuggestionBox.style.display = "none";
+document.getElementById("closeSpecialty").onclick = e => {
+  e.stopPropagation();
 
-  // collapse expanded list
+  floatingSuggestionBox.style.display = "none";
   expandedSpecialtyList = null;
 
   specialtySheet.style.left = "100%";
   specialtyOverlay.classList.remove("show");
 
-  // return to drawer
   drawer.classList.add("open");
   overlay.classList.add("show");
-};
+}; 
+
 specialtyOverlay.onclick = () => {
   specialtySheet.style.left = "100%";
   specialtyOverlay.classList.remove("show");
