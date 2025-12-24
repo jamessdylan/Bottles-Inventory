@@ -1066,12 +1066,14 @@ addRow.appendChild(input);
 addRow.appendChild(suggestionBox);
 expandContainer.appendChild(addRow);
 
-input.onblur = () => {
-  setTimeout(() => {
+document.addEventListener("pointerdown", e => {
+  if (
+    !e.target.closest(".specialty-row") ||
+    !e.target.closest("input")
+  ) {
     suggestionBox.style.display = "none";
-  }, 150);
-};
-
+  }
+});
 
 input.oninput = () => {
   const query = input.value.trim().toLowerCase();
@@ -1152,7 +1154,12 @@ row.addEventListener("pointermove", e => {
 
 
 row.addEventListener("pointerup", e => {
-  if (expandedSpecialtyList === listName) return;  dragging = false;
+  if (expandedSpecialtyList === listName) {
+    row.style.transform = "none";
+    currentX = 0;
+    dragging = false;
+    return;
+  }
 
   // threshold reached → attempt delete
   if (currentX < -80) {
