@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Archive</title></title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1161,29 +1161,99 @@ function updateGlobalFilters() {
   }
 }
 
+function drawDivider(label) {
+  const div = document.createElement("div");
+  div.style.margin = "20px 0 10px";
+  div.style.fontFamily = "Copperplate, serif";
+  div.style.fontSize = "15px";
+  div.style.opacity = "0.7";
+  div.textContent = label;
+  list.appendChild(div);
+}
 
 /* ---------------- RENDER ---------------- */
-function renderItems(){
+async function renderItems() {
   list.innerHTML = "";
 
   const key = `${Source}Complete`;
 
-  // normalize values
+  // normalize
   items.forEach(i => {
     i[Source] = Math.max(0, Number(i[Source]) || 0);
     if (typeof i[key] !== "boolean") i[key] = false;
     if (typeof i.status !== "boolean") i.status = true;
   });
 
-// 🔑 FILTER RULE — ArchiveFilter authoritative
-const visibleItems = items.filter(item =>
-  ArchiveFilter === true || item.status === true
-);
+  // 🔑 ARCHIVE FILTER (authoritative)
+  let visibleItems = items.filter(item =>
+    ArchiveFilter === true || item.status === true
+  );
 
-
+  // base sort stays intact
   visibleItems.sort((a, b) => baseSort(a, b, key));
-  visibleItems.forEach(drawItem);
+
+  /* ---------------- GROUPING ---------------- */
+
+  // ⛔ NONE
+  if (GroupFilter === "None") {
+    visibleItems.forEach(drawItem);
+    return;
+  }
+
+  // 🟦 TIER
+  if (GroupFilter === "Tier") {
+    const house = visibleItems.filter(i => i.tier === "House");
+    const reserve = visibleItems.filter(i => i.tier !== "House");
+
+    if (house.length) {
+      drawDivider("House");
+      house.forEach(drawItem);
+    }
+
+    if (reserve.length) {
+      drawDivider("Reserve");
+      reserve.forEach(drawItem);
+    }
+
+    return;
+  }
+
+  // 🟨 SPECIAL
+  if (GroupFilter === "Special") {
+    let suggestedUUIDs = [];
+
+    try {
+      const res = await fetch(`./${Source}.json`, { cache: "no-store" });
+      suggestedUUIDs = await res.json();
+    } catch (e) {
+      console.warn("Special list not found for", Source);
+    }
+
+    const suggested = [];
+    const other = [];
+
+    visibleItems.forEach(item => {
+      if (suggestedUUIDs.includes(item.UUID)) {
+        suggested.push(item);
+      } else {
+        other.push(item);
+      }
+    });
+
+    if (suggested.length) {
+      drawDivider("Suggested");
+      suggested.forEach(drawItem);
+    }
+
+    if (other.length) {
+      drawDivider("Other");
+      other.forEach(drawItem);
+    }
+
+    return;
+  }
 }
+
 
 
 /* ---------------- DRAW ITEM ---------------- */
