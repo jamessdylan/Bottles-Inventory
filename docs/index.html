@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1169,6 +1169,25 @@ function buildArchiveSuggestionMessage(items){
     .join("\n");
 }
 
+function openArchiveReconcile(items){
+  const win = window.open(
+    "https://jamessdylan.github.io/Bottles-Inventory/reconcile.html",
+    "_blank"
+  );
+
+  // Ensure the window exists before posting
+  const timer = setInterval(() => {
+    if (!win || win.closed) {
+      clearInterval(timer);
+      return;
+    }
+
+    win.postMessage({ items }, "*");
+    clearInterval(timer);
+  }, 50);
+}
+
+
 
 /* ---------------- RENDER ---------------- */
 function renderItems(){
@@ -1399,16 +1418,17 @@ let archiveLongPress = false;
 archiveBtn.onpointerdown = () => {
   archiveLongPress = false;
 
-  archivePressTimer = setTimeout(() => {
-    archiveLongPress = true;
-updateQtyAndArchiveSuggestion(items);
+archivePressTimer = setTimeout(() => {
+  archiveLongPress = true;
 
-const message = buildArchiveSuggestionMessage(items);
+  // 1️⃣ Update qty + archive suggestions
+  updateQtyAndArchiveSuggestion(items);
 
-showArchiveSuggestionOverlay(
-  message || "No archive actions suggested."
-);
-  }, 600); // long-press duration
+  // 2️⃣ Open reconciliation UI
+  openArchiveReconcile(items);
+
+}, 600);
+
 };
 
 archiveBtn.onpointerup = () => {
