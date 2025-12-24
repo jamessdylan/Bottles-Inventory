@@ -1033,20 +1033,6 @@ row.addEventListener("pointerup", () => {
   });
 }
 
-window.addEventListener("message", e => {
-  if (e.data?.type !== "RECONCILE_COMPLETE") return;
-
-  // Replace entire dataset
-  items = structuredClone(e.data.items);
-
-  // Recompute derived values
-  updateQtyAndArchiveSuggestion();
-
-  // Force full UI rebuild
-  hardRefreshItems();
-});
-
-
 
 
 const specialtyBtn = document.getElementById("specialtyListBtn");
@@ -1181,50 +1167,6 @@ function buildArchiveSuggestionMessage(items){
       return `${itemDisplayName(item)} → ${item.archivesuggestion}`;
     })
     .join("\n");
-}
-
-function openReconcile(){
-  updateQtyAndArchiveSuggestion();
-
-  // Persist authoritative items
-  sessionStorage.setItem(
-    "RECONCILE_ITEMS",
-    JSON.stringify(items)
-  );
-
-  window.open("reconcile.html");
-}
-
-
-function openArchiveReconcile(items){
-  const win = window.open(
-    "https://jamessdylan.github.io/Bottles-Inventory/reconcile.html",
-    "_blank"
-  );
-
-  // Ensure the window exists before posting
-  const timer = setInterval(() => {
-    if (!win || win.closed) {
-      clearInterval(timer);
-      return;
-    }
-
-    win.postMessage({ items }, "*");
-    clearInterval(timer);
-  }, 50);
-}
-
-function hardRefreshItems(){
-  // Clear any cached references
-  activeFilters = null;
-  groupedItems = null;
-
-  const list = document.getElementById("itemList");
-  list.innerHTML = "";
-
-  items.forEach(item => {
-    list.appendChild(buildItemRow(item));
-  });
 }
 
 
@@ -1457,17 +1399,16 @@ let archiveLongPress = false;
 archiveBtn.onpointerdown = () => {
   archiveLongPress = false;
 
-archivePressTimer = setTimeout(() => {
-  archiveLongPress = true;
+  archivePressTimer = setTimeout(() => {
+    archiveLongPress = true;
+updateQtyAndArchiveSuggestion(items);
 
-  // 1️⃣ Update qty + archive suggestions
-  updateQtyAndArchiveSuggestion(items);
+const message = buildArchiveSuggestionMessage(items);
 
-  // 2️⃣ Open reconciliation UI
-  openArchiveReconcile(items);
-
-}, 600);
-
+showArchiveSuggestionOverlay(
+  message || "No archive actions suggested."
+);
+  }, 600); // long-press duration
 };
 
 archiveBtn.onpointerup = () => {
@@ -1484,18 +1425,6 @@ archiveBtn.onpointerup = () => {
 archiveBtn.onpointerleave = () => {
   clearTimeout(archivePressTimer);
 };
-
-window.addEventListener("focus", () => {
-  const result = sessionStorage.getItem("RECONCILE_RESULT");
-  if (!result) return;
-
-  items = JSON.parse(result);
-
-  sessionStorage.removeItem("RECONCILE_RESULT");
-
-  updateQtyAndArchiveSuggestion();
-  hardRefreshItems();
-});
 
 
 smartSortBtn.onclick=()=>smartSortBtn.classList.toggle("active");
