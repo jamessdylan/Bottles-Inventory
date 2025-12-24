@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM COLOR Inventory</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1188,6 +1188,20 @@ function applySubgroupSort(arr) {
   return nonRed.concat(red);
 }
 
+function standardItemSort(a, b) {
+  return (
+    naLast(a.brand, b.brand) ||
+    naLast(a.identifier, b.identifier) ||
+    naLast(a.varietal, b.varietal) ||
+    naLast(b.year, a.year)
+  );
+}
+
+function sortSubgroup(arr, { skipSort = false } = {}) {
+  if (skipSort) return arr;
+  return [...arr].sort(standardItemSort);
+}
+
 
 /* ---------------- RENDER ---------------- */
 async function renderItems() {
@@ -1207,77 +1221,100 @@ async function renderItems() {
     ArchiveFilter === true || item.status === true
   );
 
-  // base sort (global)
-  visibleItems.sort((a, b) => baseSort(a, b, key));
+
 
   /* ---------------- GROUPING ---------------- */
 
   // ⛔ NONE
-  if (GroupFilter === "None") {
-    const finalItems = applySubgroupSort(visibleItems); // 🔹
-    finalItems.forEach(drawItem);
-    return;
+if (GroupFilter === "None") {
+  let arr = applySubgroupSort(visibleItems);
+
+  // ItemFilter rules
+  if (ItemFilter === "None") {
+    arr = sortSubgroup(arr);
   }
+
+  arr.forEach(drawItem);
+  return;
+}
+
 
   // 🟦 TIER
-  if (GroupFilter === "Tier") {
-    let house = visibleItems.filter(i => i.tier === "House");
-    let reserve = visibleItems.filter(i => i.tier !== "House");
+ if (GroupFilter === "Tier") {
+  let house = visibleItems.filter(i => i.tier === "House");
+  let reserve = visibleItems.filter(i => i.tier !== "House");
 
-    house = applySubgroupSort(house);     // 🔹
-    reserve = applySubgroupSort(reserve); // 🔹
+  house = applySubgroupSort(house);
+  reserve = applySubgroupSort(reserve);
 
-    if (house.length) {
-      drawDivider("House");
-      house.forEach(drawItem);
-    }
-
-    if (reserve.length) {
-      drawDivider("Reserve");
-      reserve.forEach(drawItem);
-    }
-
-    return;
+  if (ItemFilter === "None") {
+    house = sortSubgroup(house);
+    reserve = sortSubgroup(reserve);
   }
+
+  if (house.length) {
+    drawDivider("House");
+    house.forEach(drawItem);
+  }
+
+  if (reserve.length) {
+    drawDivider("Reserve");
+    reserve.forEach(drawItem);
+  }
+
+  return;
+}
+
 
   // 🟨 SPECIAL
-  if (GroupFilter === "Special") {
-    let suggestedUUIDs = [];
+if (GroupFilter === "Special") {
+  let suggestedUUIDs = [];
 
-    try {
-      const res = await fetch(`./${Source}.json`, { cache: "no-store" });
-      suggestedUUIDs = await res.json();
-    } catch (e) {
-      console.warn("Special list not found for", Source);
-    }
-
-    let suggested = [];
-    let other = [];
-
-    visibleItems.forEach(item => {
-      if (suggestedUUIDs.includes(item.UUID)) {
-        suggested.push(item);
-      } else {
-        other.push(item);
-      }
-    });
-
-    suggested = applySubgroupSort(suggested); // 🔹
-    other = applySubgroupSort(other);         // 🔹
-
-    if (suggested.length) {
-      drawDivider("Suggested");
-      suggested.forEach(drawItem);
-    }
-
-    if (other.length) {
-      drawDivider("Other");
-      other.forEach(drawItem);
-    }
-
-    return;
+  try {
+    const res = await fetch(`./${Source}.json`, { cache: "no-store" });
+    suggestedUUIDs = await res.json();
+  } catch (e) {
+    console.warn("Special list not found for", Source);
   }
+
+  let suggested = [];
+  let other = [];
+
+  visibleItems.forEach(item => {
+    if (suggestedUUIDs.includes(item.UUID)) {
+      suggested.push(item);
+    } else {
+      other.push(item);
+    }
+  });
+
+  suggested = applySubgroupSort(suggested);
+  other = applySubgroupSort(other);
+
+  // 🔑 ITEM FILTER LOGIC
+  if (ItemFilter === "Special") {
+    // Suggested → NO SORT
+    // Other → STANDARD SORT
+    other = sortSubgroup(other);
+  } else {
+    // ItemFilter === "None"
+    suggested = sortSubgroup(suggested);
+    other = sortSubgroup(other);
+  }
+
+  if (suggested.length) {
+    drawDivider("Suggested");
+    suggested.forEach(drawItem);
+  }
+
+  if (other.length) {
+    drawDivider("Other");
+    other.forEach(drawItem);
+  }
+
+  return;
 }
+
 
 
 
