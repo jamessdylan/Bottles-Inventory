@@ -1383,14 +1383,6 @@ function getSelectedAutocompleteItem(){
   return items.find(i => i.UUID === selectedAutocompleteUUID) || null;
 }
 
-function filterRed(items) {
-  return items.filter(item => item.color === "Red");
-}
-
-function filterNotRed(items) {
-  return items.filter(item => item.color !== "Red");
-}
-
 
 async function openSmartSort(){
   if (Source !== "Wine Cellar") return;
@@ -1540,44 +1532,6 @@ function drawDivider(label) {
   list.appendChild(div);
 }
 
-function getSmartSubgroups(items) {
-  // Smart Sort OFF → single subgroup
-  if (Sort !== "Smart") {
-    return [items];
-  }
-
-  // Emporio / Mezzo / Tetto → color-based
-  if (
-    ["Emporio", "Mezzo", "Tetto (L)", "Tetto (R)"].includes(Source)
-  ) {
-    const nonRed = filterNotRed(items);
-    const red = filterRed(items);
-
-    return [
-      nonRed,
-      red
-    ].filter(group => group.length);
-  }
-
-  // Wine Cellar → SmartList-based
-  if (Source === "Wine Cellar") {
-    const list = SmartLists[Source] || [];
-    const smartSet = new Set(list);
-
-    const inSmart = items.filter(i => smartSet.has(i.UUID));
-    const outSmart = items.filter(i => !smartSet.has(i.UUID));
-
-    return [
-      inSmart,
-      outSmart
-    ].filter(group => group.length);
-  }
-
-  // Prep Cooler / Other → no smart subdivision
-  return [items];
-}
-
-
 
 /* ---------------- RENDER ---------------- */
 function renderItems() {
@@ -1585,66 +1539,53 @@ function renderItems() {
 
   const key = `${Source}Complete`;
 
-  // Normalize
+  // normalize values
   items.forEach(i => {
     i[Source] = Math.max(0, Number(i[Source]) || 0);
     if (typeof i[key] !== "boolean") i[key] = false;
     if (typeof i.status !== "boolean") i.status = true;
   });
 
-  // 1️⃣ ARCHIVE FILTER
+  // 1️⃣ ARCHIVE FILTER FIRST
   let visibleItems = items.filter(item =>
     showArchived || item.status === true
   );
 
+  // 2️⃣ BASE SORT (existing behavior)
+  visibleItems.sort((a, b) => baseSort(a, b, key));
+
+  // 3️⃣ GROUP LOGIC
   const canGroup =
     groupEnabled &&
     GROUPABLE_SOURCES.has(Source);
 
-  // 2️⃣ NO GROUPING → flat path
+  // Wine Cellar / Other → never grouped
   if (!canGroup) {
-    const subgroups = getSmartSubgroups(visibleItems);
-
-    subgroups.forEach(group => {
-      group.sort((a, b) => baseSort(a, b, key));
-      group.forEach(drawItem);
-    });
-
+    visibleItems.forEach(drawItem);
     return;
   }
 
-  // 3️⃣ GROUP SPLIT
-  const house = [];
-  const reserve = [];
+  // 4️⃣ SPLIT BY TIER
+  const houseItems = [];
+  const reserveItems = [];
 
   visibleItems.forEach(item => {
-    ((item.tier || "House") === "House"
-      ? house
-      : reserve
-    ).push(item);
+    if ((item.tier || "House") === "House") {
+      houseItems.push(item);
+    } else {
+      reserveItems.push(item);
+    }
   });
 
-  // 4️⃣ RENDER EACH GROUP INDEPENDENTLY
-  if (house.length) {
+  // 5️⃣ RENDER GROUPS (only if they contain items)
+  if (houseItems.length) {
     drawDivider("House");
-
-    const subgroups = getSmartSubgroups(house);
-
-    subgroups.forEach(group => {
-      group.sort((a, b) => baseSort(a, b, key));
-      group.forEach(drawItem);
-    });
+    houseItems.forEach(drawItem);
   }
 
-  if (reserve.length) {
+  if (reserveItems.length) {
     drawDivider("Reserve");
-
-    const subgroups = getSmartSubgroups(reserve);
-
-    subgroups.forEach(group => {
-      group.sort((a, b) => baseSort(a, b, key));
-      group.forEach(drawItem);
-    });
+    reserveItems.forEach(drawItem);
   }
 }
 
