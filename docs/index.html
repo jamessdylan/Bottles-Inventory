@@ -1021,6 +1021,26 @@ tab.onclick = async () => {
   });
 }
 
+async function loadSmartListForSource(source) {
+  const smartKey = `${source}SmartList`;
+  const fileName = `${source}.json`;
+
+  try {
+    const res = await fetch(`./${fileName}`, { cache: "no-store" });
+    if (!res.ok) throw new Error("No file");
+
+    const uuidList = await res.json();
+
+    // Match UUIDs to actual item objects
+    window[smartKey] = items.filter(i =>
+      uuidList.includes(i.UUID)
+    );
+
+  } catch {
+    // No file or error → empty smart list
+    window[smartKey] = [];
+  }
+}
 
 // Function to create items list and return it as a JSON string, formatted like items.json
 function createItemsList() {
@@ -1157,26 +1177,7 @@ const EliminatedList = JSON.stringify(createItemsList, null, 2);
 console.log(“Eliminated:”, EliminatedList);
 }
 
-async function loadSmartListForSource(source) {
-  const smartKey = `${source}SmartList`;
-  const fileName = `${source}.json`;
 
-  try {
-    const res = await fetch(`./${fileName}`, { cache: "no-store" });
-    if (!res.ok) throw new Error("No file");
-
-    const uuidList = await res.json();
-
-    // Match UUIDs to actual item objects
-    window[smartKey] = items.filter(i =>
-      uuidList.includes(i.UUID)
-    );
-
-  } catch {
-    // No file or error → empty smart list
-    window[smartKey] = [];
-  }
-}
 
 const smartListEditor = document.getElementById("smartListEditor");
 const smartListOverlay = document.getElementById("smartListOverlay");
