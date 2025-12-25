@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Drawer</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -932,7 +932,16 @@ const tabsEl=document.getElementById("sourceTabs");
     reserveListBtn.onclick = () => {
       drawer.classList.remove("open");
       overlay.classList.remove("show");
-      alert("Reserve List button clicked!");
+      const itemsPatch = localStorage.getItem("itemsPatch.json");
+
+  if (itemsPatch) {
+    // If itemsPatch exists in localStorage, display it
+    const jsonContent = JSON.stringify(JSON.parse(itemsPatch), null, 2); // Pretty-print JSON
+    alert("Items Patch Loaded: \n\n" + jsonContent); // Display in alert (could be a modal in the future)
+  } else {
+    // If itemsPatch does not exist, show an error message
+    alert("The values could not be loaded.");
+  }
     };
 
     // Handle the "Sales Report" button click
