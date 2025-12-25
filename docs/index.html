@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>SM Test</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -87,35 +87,6 @@ background:rgba(240,233,233,.65);
 
 .tab.active img{
   filter:saturate(1.1);
-}
-
-.smart-row{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  padding:14px 12px;
-  border-radius:12px;
-  background:rgba(0,0,0,.05);
-  margin-bottom:8px;
-  touch-action:pan-y;
-}
-
-.smart-x{
-  width:28px;
-  height:28px;
-  border-radius:50%;
-  background:#b00020;
-  color:white;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-weight:bold;
-  cursor:pointer;
-}
-
-.smart-title{
-  flex:1;
-  font-size:15px;
 }
 
 
@@ -240,59 +211,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 }
 .overlay.show{display:block;}
 
-<!-- SMART LIST EDITOR -->
-<div id="smartListOverlay" class="overlay"></div>
-
-<div id="smartListSheet" style="
-  position:fixed;
-  inset:0;
-  background:rgba(255,255,255,.95);
-  backdrop-filter:blur(16px);
-  padding:calc(20px + env(safe-area-inset-top)) 16px 20px;
-  transform:translateY(100%);
-  transition:.25s ease;
-  z-index:600;
-  overflow-y:auto;
-">
-
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-    <div style="font-family:'Copperplate',serif;font-size:18px;">
-      Smart List Editor
-    </div>
-    <button id="closeSmartList">Done</button>
-  </div>
-
-  <div id="smartListItems"></div>
-
-  <!-- ADD ITEM -->
-  <div style="margin-top:16px;">
-    <input
-      id="smartAddInput"
-      placeholder="Add item…"
-      autocomplete="off"
-      style="
-        width:100%;
-        padding:14px 16px;
-        border-radius:12px;
-        border:none;
-        background:rgba(0,0,0,.06);
-        font-size:16px;
-      "
-    />
-    <div id="smartAddSuggestions"
-      style="
-        display:none;
-        background:white;
-        border-radius:12px;
-        margin-top:6px;
-        box-shadow:0 6px 20px rgba(0,0,0,.15);
-        overflow:hidden;
-      ">
-    </div>
-  </div>
-
-</div>
-
 
 /* ---------- FIXED ACTION BAR ---------- */
 .action-bar{
@@ -388,6 +306,36 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   font-size:16px;
   color:var(--green);
 }
+
+.smart-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:14px 12px;
+  border-radius:12px;
+  background:rgba(0,0,0,.05);
+  margin-bottom:8px;
+  touch-action:pan-y;
+}
+
+.smart-x{
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  background:#b00020;
+  color:white;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.smart-title{
+  flex:1;
+  font-size:15px;
+}
+
 
 </style>
 </head>
@@ -1651,6 +1599,35 @@ smartSortBtn.onclick = () => {
   renderItems();
 };
 
+
+/* ---------- DRAWER ---------- */
+drawerTab.onclick=()=>{
+  drawer.classList.add("open");
+  overlay.classList.add("show");
+};
+overlay.onclick=()=>{
+  drawer.classList.remove("open");
+  overlay.classList.remove("show");
+};
+
+/* ---------- SALES REPORT DEBUG ---------- */
+const salesReportBtn = document.getElementById("salesReportBtn");
+
+salesReportBtn.onclick = () => {
+  drawer.classList.remove("open");
+  overlay.classList.remove("show");
+
+  const message =
+`Sales Report Filters:
+
+ArchiveFilter: ${ArchiveFilter}
+GroupFilter: ${GroupFilter}
+SubgroupFilter: ${SubgroupFilter}
+ItemFilter: ${ItemFilter}`;
+
+  alert(message);
+};
+  
 /* ---------- SMART LIST EDITOR ---------- */
 
 const smartOverlay = document.getElementById("smartListOverlay");
@@ -1787,34 +1764,6 @@ smartInput.oninput = () => {
 };
 
 
-/* ---------- DRAWER ---------- */
-drawerTab.onclick=()=>{
-  drawer.classList.add("open");
-  overlay.classList.add("show");
-};
-overlay.onclick=()=>{
-  drawer.classList.remove("open");
-  overlay.classList.remove("show");
-};
-
-/* ---------- SALES REPORT DEBUG ---------- */
-const salesReportBtn = document.getElementById("salesReportBtn");
-
-salesReportBtn.onclick = () => {
-  drawer.classList.remove("open");
-  overlay.classList.remove("show");
-
-  const message =
-`Sales Report Filters:
-
-ArchiveFilter: ${ArchiveFilter}
-GroupFilter: ${GroupFilter}
-SubgroupFilter: ${SubgroupFilter}
-ItemFilter: ${ItemFilter}`;
-
-  alert(message);
-};
-  
 /* ---------- NEW BOTTLE ---------- */
 const newBottleBtn = document.getElementById("newBottleBtn");
 const newBottleSheet = document.getElementById("newBottleSheet");
@@ -2380,6 +2329,60 @@ ${inactive.map(i => `<li>${wineTitle(i)}</li>`).join("")}
 </ul>
 
 <h2 style="text-align:right;">Grand Total: $${grandTotal}</h2>
+
+
+<!-- SMART LIST EDITOR -->
+<div id="smartListOverlay" class="overlay"></div>
+
+<div id="smartListSheet" style="
+  position:fixed;
+  inset:0;
+  background:rgba(255,255,255,.95);
+  backdrop-filter:blur(16px);
+  padding:calc(20px + env(safe-area-inset-top)) 16px 20px;
+  transform:translateY(100%);
+  transition:.25s ease;
+  z-index:600;
+  overflow-y:auto;
+">
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div style="font-family:'Copperplate',serif;font-size:18px;">
+      Smart List Editor
+    </div>
+    <button id="closeSmartList">Done</button>
+  </div>
+
+  <div id="smartListItems"></div>
+
+  <!-- ADD ITEM -->
+  <div style="margin-top:16px;">
+    <input
+      id="smartAddInput"
+      placeholder="Add item…"
+      autocomplete="off"
+      style="
+        width:100%;
+        padding:14px 16px;
+        border-radius:12px;
+        border:none;
+        background:rgba(0,0,0,.06);
+        font-size:16px;
+      "
+    />
+    <div id="smartAddSuggestions"
+      style="
+        display:none;
+        background:white;
+        border-radius:12px;
+        margin-top:6px;
+        box-shadow:0 6px 20px rgba(0,0,0,.15);
+        overflow:hidden;
+      ">
+    </div>
+  </div>
+
+</div>
 
 </body>
 </html>`;
