@@ -1372,10 +1372,14 @@ else if (GroupFilter === "Special") {
     renderGroup("Other", subgroup2A, subgroup2B, subgroup2C);
   }
 
-  else {
+    else {
     renderGroup(null, subgroup1A, subgroup1B, subgroup1C);
   }
+
+  // ✅ Persist canonical inventory snapshot
+  saveItemsToLocal();
 }
+
 
 
 
