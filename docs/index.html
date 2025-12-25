@@ -715,7 +715,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   <button id="reserveListBtn">Reserve List</button>
 
 <button id="salesReportBtn">Sales Report</button>
-  <button>Dictionary File</button>
+<button id="dictionaryFileBtn">Dictionary File</button>
   <button id="exportBtn">Export</button>
 </div>
 
@@ -823,19 +823,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
 <script>
 /* ---------- PAGE TITLE ---------- */
-
-const STORAGE_KEY = "wineInventoryData";
-
-const saved = localStorage.getItem(STORAGE_KEY);
-
-if (saved) {
-  const data = JSON.parse(saved);
-  pageTitle = data.pageTitle || pageTitle;
-  Source = data.Source || Source;
-  items = data.items || [];
-}
-
-
 const pageTitleEl=document.getElementById("pageTitle");
 
 function defaultTitle(){
@@ -927,21 +914,39 @@ const overlay = document.getElementById("overlay");
 
 
 /* ---------------- LOAD ---------------- */
-
 async function loadItems(){
   const res=await fetch("./items.json",{cache:"no-store"});
   items=await res.json();
   renderItems();
 }
 
-function saveToLocal() {
-  const payload = {
-    pageTitle,
-    Source,
-    items
+function openDictionaryFile() {
+  const dictionary = {
+    [pageTitle]: items
   };
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  const json = JSON.stringify(dictionary, null, 2);
+
+  const win = window.open("", "_blank");
+  win.document.open();
+  win.document.write(`
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Dictionary File</title>
+<style>
+body {
+  font-family: Menlo, Consolas, monospace;
+  padding: 20px;
+  white-space: pre;
+}
+</style>
+</head>
+<body>${json.replace(/</g, "&lt;")}</body>
+</html>
+  `);
+  win.document.close();
 }
 
 /* ---------------- TABS ---------------- */
@@ -2279,6 +2284,13 @@ confirmNewBottle.onclick = () => {
   closeNewBottle();
 };
 
+const dictionaryFileBtn = document.getElementById("dictionaryFileBtn");
+
+dictionaryFileBtn.onclick = () => {
+  drawer.classList.remove("open");
+  overlay.classList.remove("show");
+  openDictionaryFile();
+};
 
 
 
