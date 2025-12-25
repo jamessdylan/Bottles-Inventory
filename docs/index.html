@@ -299,34 +299,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   transform: translateY(-50%);
 }
 
-/* ---------- SMART LIST EDITOR ---------- */
-#smartListEditor{
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-
-  max-height: calc(100vh - 80px);
-  overflow-y: auto;
-
-  background: rgba(255,255,255,.92);
-  backdrop-filter: blur(16px);
-
-  padding:
-    calc(20px + env(safe-area-inset-top))
-    16px
-    calc(20px + env(safe-area-inset-bottom));
-
-  transform: translateY(100%);
-  transition: transform .25s ease;
-  z-index: 500;
-}
-
-/* shown state */
-#smartListEditor.show{
-  transform: translateY(0);
-}
-
 
 #datePicker button{
   background:none;
@@ -769,7 +741,18 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
 <!-- SMART LIST EDITOR OVERLAY -->
 <div id="smartListOverlay" class="overlay"></div>
-<div id="smartListEditor">
+
+<div id="smartListEditor" style="
+  position:fixed;
+  inset:0;
+  background:rgba(255,255,255,.94);
+  backdrop-filter:blur(18px);
+  padding:calc(20px + env(safe-area-inset-top)) 16px 20px;
+  transform:translateY(100%);
+  transition:.25s ease;
+  z-index:550;
+  overflow-y:auto;
+">
 
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
     <div style="font-family:'Copperplate',serif;font-size:18px;">
@@ -778,49 +761,47 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
     <button id="closeSmartList">Done</button>
   </div>
 
-  <!-- ✅ ROWS ONLY -->
-  <div id="smartListContainer"></div>
+  <div id="smartListContainer"></div>’
 
-  <!-- ✅ INPUT LIVES OUTSIDE -->
-  <div style="margin-top:18px;">
-    <div style="position:relative;">
+<!-- SMART LIST ADD INPUT -->
+<div id="smartListAddWrap" style="
+  position:sticky;
+  bottom:0;
+  margin-top:16px;
+  background:rgba(255,255,255,.94);
+  backdrop-filter:blur(14px);
+  padding:12px 0 env(safe-area-inset-bottom);
+">
+
   <input
     id="smartListAddInput"
+    type="text"
     placeholder="Add item…"
     autocomplete="off"
     style="
       width:100%;
       padding:14px 16px;
-      font-size:15px;
       border-radius:14px;
-      border:1px solid rgba(0,0,0,.15);
-      background:rgba(255,255,255,.9);
+      border:none;
+      background:rgba(0,0,0,.06);
+      font-size:16px;
+      outline:none;
     "
   />
 
   <div
-    id="smartListSuggestions"
+    id="smartListAddSuggestions"
     style="
       display:none;
-      position:absolute;
-      bottom:100%;
-      left:0;
-      right:0;
+      flex-direction:column;
       background:white;
       border-radius:14px;
-      box-shadow:0 8px 24px rgba(0,0,0,.2);
+      margin-top:8px;
+      box-shadow:0 6px 20px rgba(0,0,0,.18);
       overflow:hidden;
-      z-index:600;
-      max-height:240px;
-      overflow-y:auto;
     "
   ></div>
 </div>
-
-  </div>
-
-</div>
-
 
 </div>
 
@@ -861,8 +842,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   </button>
 
   <div id="specialtyListContainer"></div>
-
-
 </div>
 
 <header><img src="SiennaTransparent.png"></header>
@@ -1238,35 +1217,32 @@ const closeSmartList = document.getElementById("closeSmartList");
 let activeSmartKey = null;
 let dragIndex = null;
 
-async function openSmartListEditor() {
-  if (!items.length) {
-    await loadItems();
-  }
-
+function openSmartListEditor() {
   const smartKey = `${Source}SmartList`;
   const smartItems = window[smartKey];
 
   if (!Array.isArray(smartItems)) return;
 
   activeSmartKey = smartKey;
+
   smartListAddInput.value = "";
+  smartListSelectedItem = null;
+  smartListAddSuggestions.style.display = "none";
 
   renderSmartListEditor();
 
-  smartListEditor.classList.add("show");
+  smartListEditor.style.transform = "translateY(0)";
   smartListOverlay.classList.add("show");
 }
 
 
-
 function closeSmartListEditorFn() {
-  smartListEditor.classList.remove("show");
+  smartListEditor.style.transform = "translateY(100%)";
   smartListOverlay.classList.remove("show");
 
   activeSmartKey = null;
   dragIndex = null;
 }
-
 
 closeSmartList.onclick = closeSmartListEditorFn;
 smartListOverlay.onclick = closeSmartListEditorFn;
@@ -1325,119 +1301,7 @@ function renderSmartListEditor() {
 
     smartListContainer.appendChild(row);
   });
-populateSmartListSuggestions();
 }
-
-const smartListAddInput = document.getElementById("smartListAddInput");
-const smartListSuggestions = document.getElementById("smartListSuggestions");
-
-smartListAddInput.oninput = () => {
-  const query = smartListAddInput.value.trim().toLowerCase();
-  smartListSuggestions.innerHTML = "";
-
-  if (!query) {
-    smartListSuggestions.style.display = "none";
-    return;
-  }
-
-  const candidates = getSmartListSuggestions()
-    .map(item => ({
-      item,
-      label: [item.brand, item.identifier, item.varietal, item.year]
-        .filter(v => v && v !== "N/A")
-        .join(" ")
-    }))
-    .filter(o => o.label.toLowerCase().includes(query));
-
-  if (!candidates.length) {
-    smartListSuggestions.style.display = "none";
-    return;
-  }
-
-  candidates.forEach(({ item, label }) => {
-    const row = document.createElement("div");
-    row.textContent = label;
-    row.style.padding = "12px 16px";
-    row.style.cursor = "pointer";
-
-    row.onmouseenter = () =>
-      row.style.background = "rgba(31,94,59,.08)";
-    row.onmouseleave = () =>
-      row.style.background = "";
-
-    row.onclick = () => {
-      window[activeSmartKey].push(item);
-      smartListAddInput.value = "";
-      smartListSuggestions.style.display = "none";
-      renderSmartListEditor();
-      renderItems();
-    };
-
-    smartListSuggestions.appendChild(row);
-  });
-
-  smartListSuggestions.style.display = "block";
-};
-
-document.addEventListener("click", e => {
-  if (!e.target.closest("#smartListAddInput")) {
-    smartListSuggestions.style.display = "none";
-  }
-});
-
-
-function getSmartListSuggestions() {
-  const smartList = window[activeSmartKey] || [];
-  const smartUUIDs = new Set(smartList.map(i => i.UUID));
-
-  return items.filter(i =>
-    i.source === Source &&
-    !smartUUIDs.has(i.UUID)
-  );
-}
-
-function populateSmartListSuggestions() {
-  smartListSuggestions.innerHTML = "";
-
-  getSmartListSuggestions().forEach(item => {
-    const label = [item.brand, item.identifier, item.varietal, item.year]
-      .filter(v => v && v !== "N/A")
-      .join(" ");
-
-    const option = document.createElement("option");
-    option.value = label;
-    option.dataset.uuid = item.UUID;
-
-    smartListSuggestions.appendChild(option);
-  });
-}
-
-smartListAddInput.onchange = () => {
-  const value = smartListAddInput.value.trim();
-  if (!value) return;
-
-  const options = [...smartListSuggestions.children];
-  const matchedOption = options.find(o => o.value === value);
-
-  // ❌ Must be a suggestion
-  if (!matchedOption) {
-    smartListAddInput.value = "";
-    return;
-  }
-
-  const uuid = matchedOption.dataset.uuid;
-  const itemToAdd = items.find(i => i.UUID === uuid);
-  if (!itemToAdd) return;
-
-  const list = window[activeSmartKey];
-
-  list.push(itemToAdd); // ⬇️ append to bottom
-
-  smartListAddInput.value = "";
-
-  renderSmartListEditor();
-  renderItems();
-};
 
 
 /* ---------------- HELPERS ---------------- */
@@ -1880,6 +1744,13 @@ row.onpointerleave = () => clearTimeout(rowHoldTimer);
   list.appendChild(row);
 }
 
+function smartItemTitle(item){
+  return [item.brand, item.identifier, item.varietal, item.year]
+    .filter(v => v && v !== "N/A")
+    .join(" ");
+}
+
+
 /* ---------- INIT ---------- */
 buildSourceTabs();
 updateSort(Source);
@@ -1939,6 +1810,75 @@ smartSortBtn.onclick = () => {
   renderItems();
 };
 
+const smartListAddInput = document.getElementById("smartListAddInput");
+const smartListAddSuggestions = document.getElementById("smartListAddSuggestions");
+
+let smartListSelectedItem = null;
+
+smartListAddInput.oninput = () => {
+  const value = smartListAddInput.value.trim().toLowerCase();
+  smartListAddSuggestions.innerHTML = "";
+  smartListSelectedItem = null;
+
+  if (!value || !activeSmartKey) {
+    smartListAddSuggestions.style.display = "none";
+    return;
+  }
+
+  const currentList = window[activeSmartKey] || [];
+  const currentUUIDs = new Set(currentList.map(i => i.UUID));
+
+  // Eligible items: exist in inventory, NOT already in smart list
+  const candidates = items.filter(i =>
+    !currentUUIDs.has(i.UUID)
+  );
+
+  const matches = candidates.filter(i =>
+    smartItemTitle(i).toLowerCase().includes(value)
+  );
+
+  if (!matches.length) {
+    smartListAddSuggestions.style.display = "none";
+    return;
+  }
+
+  matches.forEach(item => {
+    const div = document.createElement("div");
+    div.textContent = smartItemTitle(item);
+    div.style.padding = "12px 16px";
+    div.style.cursor = "pointer";
+
+    div.onclick = () => {
+      smartListAddInput.value = smartItemTitle(item);
+      smartListSelectedItem = item;
+      smartListAddSuggestions.style.display = "none";
+    };
+
+    smartListAddSuggestions.appendChild(div);
+  });
+
+  smartListAddSuggestions.style.display = "flex";
+};
+
+smartListAddInput.onkeydown = e => {
+  if (e.key !== "Enter") return;
+
+  // 🚫 Only allow confirmed autocomplete items
+  if (!smartListSelectedItem || !activeSmartKey) return;
+
+  const list = window[activeSmartKey];
+
+  list.push(smartListSelectedItem);
+
+  // reset UI
+  smartListAddInput.value = "";
+  smartListSelectedItem = null;
+  smartListAddSuggestions.style.display = "none";
+
+  renderSmartListEditor();
+  renderItems(); // reflect immediately
+};
+
 
 /* ---------- DRAWER ---------- */
 drawerTab.onclick=()=>{
@@ -1949,6 +1889,8 @@ overlay.onclick=()=>{
   drawer.classList.remove("open");
   overlay.classList.remove("show");
 };
+
+
 
 /* ---------- SALES REPORT DEBUG ---------- */
 const salesReportBtn = document.getElementById("salesReportBtn");
@@ -1967,6 +1909,7 @@ ItemFilter: ${ItemFilter}`;
 
   alert(message);
 };
+
   
 /* ---------- NEW BOTTLE ---------- */
 const newBottleBtn = document.getElementById("newBottleBtn");
