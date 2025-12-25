@@ -715,7 +715,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   <button id="reserveListBtn">Reserve List</button>
 
 <button id="salesReportBtn">Sales Report</button>
-<button id="dictionaryFileBtn">Dictionary File</button>
+  <button>Dictionary File</button>
   <button id="exportBtn">Export</button>
 </div>
 
@@ -822,35 +822,27 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
 
 <script>
+/* ---------- PAGE TITLE ---------- */
 
-const STORAGE_KEY = "SM_WINE_INVENTORY_V1";
+/* ---------- LOCAL STORAGE ---------- */
+const STORAGE_KEY = "SM_WINE_ITEMS_V1";
 
-function saveToLocal() {
-  const payload = {
-    pageTitle,
-    Source,
-    items
-  };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+function saveItemsToLocal() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
 }
 
-function loadFromLocal() {
+function loadItemsFromLocal() {
   const saved = localStorage.getItem(STORAGE_KEY);
-  if (!saved) return;
+  if (!saved) return false;
 
   try {
-    const data = JSON.parse(saved);
-    pageTitle = data.pageTitle || pageTitle;
-    Source = data.Source || Source;
-    items = Array.isArray(data.items) ? data.items : [];
-    pageTitleEl.textContent = pageTitle;
+    items = JSON.parse(saved);
+    return true;
   } catch {
-    console.warn("Failed to load local data");
+    return false;
   }
 }
 
-
-/* ---------- PAGE TITLE ---------- */
 const pageTitleEl=document.getElementById("pageTitle");
 
 function defaultTitle(){
@@ -943,45 +935,21 @@ const overlay = document.getElementById("overlay");
 
 /* ---------------- LOAD ---------------- */
 async function loadItems(){
-  const res=await fetch("./items.json",{cache:"no-store"});
-  items=await res.json();
+  // 1️⃣ Try localStorage first
+  if (loadItemsFromLocal()) {
+    renderItems();
+    return;
+  }
+
+  // 2️⃣ Fallback to items.json once
+  const res = await fetch("./items.json", { cache: "no-store" });
+  items = await res.json();
+
+  // 3️⃣ Persist initial data
+  saveItemsToLocal();
   renderItems();
 }
 
-function loadItems(){
-  loadFromLocal();
-  renderItems();
-}
-
-
-function openDictionaryFile() {
-  const dictionary = {
-    [pageTitle]: items
-  };
-
-  const json = JSON.stringify(dictionary, null, 2);
-
-  const win = window.open("", "_blank");
-  win.document.open();
-  win.document.write(`
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Dictionary File</title>
-<style>
-body {
-  font-family: Menlo, Consolas, monospace;
-  padding: 20px;
-  white-space: pre;
-}
-</style>
-</head>
-<body>${json.replace(/</g, "&lt;")}</body>
-</html>
-  `);
-  win.document.close();
-}
 
 /* ---------------- TABS ---------------- */
 function buildSourceTabs(){
@@ -1306,9 +1274,8 @@ const ARCHIVE_ACTIONS = [
 
 /* ---------------- RENDER ---------------- */
 async function renderItems() {
-saveToLocal();
   list.innerHTML = "";
-
+saveItemsToLocal();
   const completeKey = `${Source}Complete`;
 
   // ---------- NORMALIZE ----------
@@ -1407,7 +1374,6 @@ else if (GroupFilter === "Special") {
   else {
     renderGroup(null, subgroup1A, subgroup1B, subgroup1C);
   }
-
 }
 
 
@@ -1613,7 +1579,6 @@ function smartItemTitle(item){
 /* ---------- INIT ---------- */
 buildSourceTabs();
 loadItems();
-
 
 /* ---------- ACTION STATES ---------- */
 let showArchived = false;
@@ -2321,13 +2286,6 @@ confirmNewBottle.onclick = () => {
   closeNewBottle();
 };
 
-const dictionaryFileBtn = document.getElementById("dictionaryFileBtn");
-
-dictionaryFileBtn.onclick = () => {
-  drawer.classList.remove("open");
-  overlay.classList.remove("show");
-  openDictionaryFile();
-};
 
 
 
