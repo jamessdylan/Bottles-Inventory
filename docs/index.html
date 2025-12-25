@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>SM Wine nee Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -893,6 +893,7 @@ const SOURCE_ICONS = {
 };
 
 let items=[];
+let current = [];
 let Source="Emporio";
 
 // ---------- GLOBAL FILTERS ----------
@@ -944,19 +945,25 @@ const tabsEl=document.getElementById("sourceTabs");
   }
     };
 
-
-// Example usage for handling the "Sales Report" button click
+    // Handle the "Sales Report" button click
+    salesReportBtn.onclick = () => {
+      drawer.classList.remove("open");
+      overlay.classList.remove("show");
 salesReportBtn.onclick = () => {
   drawer.classList.remove("open");
   overlay.classList.remove("show");
 
-  // Generate the list of items in the proper format
-  const itemsListJson = createItemsList();
- let message = itemsListJson
-  // Show the items in an alert (this could be adapted to save to a file, send to a server, etc.)
+  const message =
+`Sales Report Filters:
+
+ArchiveFilter: ${ArchiveFilter}
+GroupFilter: ${GroupFilter}
+SubgroupFilter: ${SubgroupFilter}
+ItemFilter: ${ItemFilter}`;
+
   alert(message);
 };
-
+    };
 
     // Handle the "Dictionary File" button click
     dictionaryFileBtn.onclick = () => {
@@ -979,10 +986,18 @@ salesReportBtn.onclick = () => {
 
 
 /* ---------------- LOAD ---------------- */
-async function loadItems(){
-  const res=await fetch("./items.json",{cache:"no-store"});
-  items=await res.json();
-  renderItems();
+let templateItems = []; // Global variable to store the dictionary from items.json
+
+// Modified loadItems function to load and store data in templateItems
+async function loadItems() {
+  try {
+    const res = await fetch("./items.json", { cache: "no-store" });
+    templateItems = await res.json(); // Store the fetched data in templateItems
+    items = [...templateItems]; // Copy the data to the items array for use in rendering
+    renderItems();
+  } catch (error) {
+    console.error("Failed to load items:", error);
+  }
 }
 
 /* ---------------- TABS ---------------- */
@@ -1019,6 +1034,9 @@ tab.onclick = async () => {
     tabsEl.appendChild(tab);
   });
 }
+
+
+
 
 
 async function loadSmartListForSource(source) {
@@ -1141,6 +1159,54 @@ function renderSmartListEditor() {
 
 
 /* ---------------- HELPERS ---------------- */
+function filterItemsByUUID() {
+  // Create a Set of UUIDs from currentItems for quick lookup
+  const currentUUIDs = new Set(currentItems.map(item => item.UUID));
+
+  // Filter templateItems and return only those whose UUID matches one in currentItems
+  const filteredItems = templateItems.filter(item => currentUUIDs.has(item.UUID));
+
+  // Return the filtered list of items
+  return filteredItems;
+}
+
+function filterCurrentItems() {
+  // Get filtered template items
+  const filteredTemplateItems = filterItemsByUUID();
+
+  // Iterate through currentItems and compare each item with the filteredTemplateItems
+  currentItems.forEach(currentItem => {
+    // Find the matching item in filteredTemplateItems by UUID
+    const matchedItem = filteredTemplateItems.find(item => item.UUID === currentItem.UUID);
+
+    // If a match is found, proceed with key comparison
+    if (matchedItem) {
+      // Iterate through the keys of the matched item (except UUID)
+      Object.keys(matchedItem).forEach(key => {
+        if (key !== "UUID" && currentItem.hasOwnProperty(key)) {
+          // If the key value is the same, delete the key from currentItem
+          if (currentItem[key] === matchedItem[key]) {
+            delete currentItem[key];
+          }
+        }
+      });
+    }
+  });
+
+  // Return the filtered currentItems
+  return currentItems;
+}
+
+function rebuildCurrentItems() {
+  currentItems = items.map(item => {
+    const obj = {};
+    Object.keys(item).forEach(key => {
+      obj[key] = item[key];
+    });
+    return obj;
+  });
+}
+
 const round=v=>Math.round(v*10)/10;
 const naLast=(a,b)=>a==="N/A"?1:b==="N/A"?-1:a.localeCompare(b);
 function baseSort(a,b,key){
@@ -1150,87 +1216,6 @@ function baseSort(a,b,key){
     ||naLast(a.varietal,b.varietal)
     ||naLast(b.year,a.year);
 }
-
-// Function to create items list and return it as a JSON string, formatted like items.json
-function createItemsList() {
-  const itemsList = [];
-
-  // Loop through all items and format them similarly to items.json
-  items.forEach(item => {
-    // Create a new object for each item without base keys
-    const currentItem = {};
-
-    // Dynamically copy all keys from the item (including 'UUID' key explicitly)
-    Object.keys(item).forEach(key => {
-      if (key !== 'UUID') {  // We will ensure 'UUID' is included
-        currentItem[key] = item[key] || (key.includes('color') ? "White" : "N/A"); // Default values for missing properties
-      }
-    });
-
-    // Ensure the properties for the SOURCES and their 'Complete' versions are added dynamically
-    SOURCES.forEach(source => {
-      currentItem[source] = item[source] || 0;
-      currentItem[`${source}Complete`] = item[`${source}Complete`] || false;
-    });
-
-    // Add the base64 and icon properties directly from the item
-    currentItem.base64 = item.base64 || false;  // Default to false if base64 is not defined
-    currentItem.icon = item.icon || null;      // Default to null if icon is not defined
-
-    // Add UUID explicitly to each item
-    currentItem.UUID = item.UUID;
-
-    // Add the formatted item to the list
-    itemsList.push(currentItem);
-  });
-
-  // Convert the items list to a JSON string and return it
-  return JSON.stringify(itemsList, null, 2);
-}
-
-// Function to retrieve UUID values from the items list
-function getUUIDsFromItemsList() {
-  // Get the current items list as a JSON string from the createItemsList function
-  const itemsListJson = createItemsList();
-  
-  // Parse the JSON string into an array of item objects
-  const itemsList = JSON.parse(itemsListJson);
-
-  // Extract the UUID values from each item in the list and return them as an array
-  const uuidList = itemsList.map(item => item.UUID);
-
-  return uuidList;
-}
-
-async function cleanItemsFile() {
-  // Retrieve the current list of UUIDs from createItemsList
-  const validUUIDs = getUUIDsFromItemsList();
-
-  // Fetch the items.json file (this assumes it's in the same directory or accessible)
-  const response = await fetch('./items.json');
-  const itemsJson = await response.json();
-
-  // Filter out any items whose UUID is not in the validUUIDs list
-  const cleanedItems = itemsJson.filter(item => validUUIDs.includes(item.UUID));
-
-  // Optional: Print the cleaned list for debugging purposes
-  console.log("Cleaned Items List:", cleanedItems);
-
-  // Now save the cleaned items back into items.json (this part depends on your environment)
-  // In a real environment, this would be done on the server-side.
-  // Here we'll simulate saving it to a file by converting it back to JSON
-  const cleanedItemsJson = JSON.stringify(cleanedItems, null, 2);
-
-  // Simulate saving to localStorage or send the updated data to a server
-  // Example: localStorage.setItem('items.json', cleanedItemsJson); 
-
-  // In this browser-based context, we'll log the updated list to the console.
-  console.log("Updated items.json content:", cleanedItemsJson);
-
-}
-
-
-
 
 function updateGlobalFilters() {
   /* ---------- ARCHIVE ---------- */
@@ -1399,8 +1384,15 @@ function persistSmartListUUIDs() {
 }
 
 
-/* ---------------- RENDER ---------------- */
+// Declare the "current" variable globally
+
+
+// Updated renderItems function to modify the global "current" variable
+
 async function renderItems() {
+  // Update the global "current" variable by making a deep copy of "items"
+  currentItems = JSON.parse(JSON.stringify(items)); // Deep copy to match items.json format
+
   list.innerHTML = "";
 
   const completeKey = `${Source}Complete`;
@@ -1431,15 +1423,15 @@ async function renderItems() {
     group2items = [];
   }
 
-else if (GroupFilter === "Special") {
-  const smartKey = `${Source}SmartList`;
-  const smartItems = window[smartKey] || [];
+  else if (GroupFilter === "Special") {
+    const smartKey = `${Source}SmartList`;
+    const smartItems = window[smartKey] || [];
 
-  const smartSet = new Set(smartItems.map(i => i.UUID));
+    const smartSet = new Set(smartItems.map(i => i.UUID));
 
-  group1items = allItems.filter(i => smartSet.has(i.UUID));
-  group2items = allItems.filter(i => !smartSet.has(i.UUID));
-}
+    group1items = allItems.filter(i => smartSet.has(i.UUID));
+    group2items = allItems.filter(i => !smartSet.has(i.UUID));
+  }
 
   // ---------- COMPLETE / INCOMPLETE ----------
   const group1incomplete = group1items.filter(i => i[completeKey] === false);
@@ -1501,7 +1493,24 @@ else if (GroupFilter === "Special") {
   else {
     renderGroup(null, subgroup1A, subgroup1B, subgroup1C);
   }
+
+// ---------- PATCH GENERATION ----------
+rebuildCurrentItems();
+
+// Remove keys that match templateItems
+const filteredCurrentItems = filterCurrentItems();
+
+// Save to localStorage as patchItems
+localStorage.setItem(
+  "patchItems",
+  JSON.stringify(filteredCurrentItems, null, 2)
+);
+
+// Debug output
+console.log("patchItems:");
+console.log(filteredCurrentItems);
 }
+
 
 
 
