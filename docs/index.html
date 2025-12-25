@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>SM clean Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1224,6 +1224,50 @@ function createItemsList() {
   // Convert the items list to a JSON string and return it
   return JSON.stringify(itemsList, null, 2);
 }
+
+// Function to retrieve UUID values from the items list
+function getUUIDsFromItemsList() {
+  // Get the current items list as a JSON string from the createItemsList function
+  const itemsListJson = createItemsList();
+  
+  // Parse the JSON string into an array of item objects
+  const itemsList = JSON.parse(itemsListJson);
+
+  // Extract the UUID values from each item in the list and return them as an array
+  const uuidList = itemsList.map(item => item.UUID);
+
+  return uuidList;
+}
+
+async function cleanItemsFile() {
+  // Retrieve the current list of UUIDs from createItemsList
+  const validUUIDs = getUUIDsFromItemsList();
+
+  // Fetch the items.json file (this assumes it's in the same directory or accessible)
+  const response = await fetch('./items.json');
+  const itemsJson = await response.json();
+
+  // Filter out any items whose UUID is not in the validUUIDs list
+  const cleanedItems = itemsJson.filter(item => validUUIDs.includes(item.UUID));
+
+  // Optional: Print the cleaned list for debugging purposes
+  console.log("Cleaned Items List:", cleanedItems);
+
+  // Now save the cleaned items back into items.json (this part depends on your environment)
+  // In a real environment, this would be done on the server-side.
+  // Here we'll simulate saving it to a file by converting it back to JSON
+  const cleanedItemsJson = JSON.stringify(cleanedItems, null, 2);
+
+  // Simulate saving to localStorage or send the updated data to a server
+  // Example: localStorage.setItem('items.json', cleanedItemsJson); 
+
+  // In this browser-based context, we'll log the updated list to the console.
+  console.log("Updated items.json content:", cleanedItemsJson);
+
+}
+
+
+
 
 function updateGlobalFilters() {
   /* ---------- ARCHIVE ---------- */
