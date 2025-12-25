@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>SM Wine </title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -743,7 +743,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
     <button id="closeSmartList">Done</button>
   </div>
 
-  <div id="smartListContainer"></div>
+  <div id="smartListContainer"></div>’
 
 <!-- SMART LIST ADD INPUT -->
 <div id="smartListAddWrap" style="
@@ -944,13 +944,24 @@ const tabsEl=document.getElementById("sourceTabs");
   }
     };
 
-
+    // Handle the "Sales Report" button click
+    salesReportBtn.onclick = () => {
+      drawer.classList.remove("open");
+      overlay.classList.remove("show");
 salesReportBtn.onclick = () => {
-createItemsList();
-  alert(“You did it”);
-};  
-}
+  drawer.classList.remove("open");
+  overlay.classList.remove("show");
 
+  const message =
+`Sales Report Filters:
+
+ArchiveFilter: ${ArchiveFilter}
+GroupFilter: ${GroupFilter}
+SubgroupFilter: ${SubgroupFilter}
+ItemFilter: ${ItemFilter}`;
+
+  alert(message);
+};
     };
 
     // Handle the "Dictionary File" button click
