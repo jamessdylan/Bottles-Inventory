@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine </title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -973,7 +973,7 @@ salesReportBtn.onclick = () => {
     exportBtn.onclick = () => {
       drawer.classList.remove("open");
       overlay.classList.remove("show");
-compareAndCleanItems();
+CleanItemsFile();
       alert("Export button clicked!");
     };
 
@@ -1021,26 +1021,6 @@ tab.onclick = async () => {
   });
 }
 
-async function loadSmartListForSource(source) {
-  const smartKey = `${source}SmartList`;
-  const fileName = `${source}.json`;
-
-  try {
-    const res = await fetch(`./${fileName}`, { cache: "no-store" });
-    if (!res.ok) throw new Error("No file");
-
-    const uuidList = await res.json();
-
-    // Match UUIDs to actual item objects
-    window[smartKey] = items.filter(i =>
-      uuidList.includes(i.UUID)
-    );
-
-  } catch {
-    // No file or error → empty smart list
-    window[smartKey] = [];
-  }
-}
 
 // Function to create items list and return it as a JSON string, formatted like items.json
 function createItemsList() {
@@ -1142,41 +1122,6 @@ async function cleanItemsFile() {
 
   return cleanedItemsJson;
 }
-
-// Function to compare and clean the createItemsList based on the cleanItemsFile
-function compareAndCleanItems(createItemsListJson, cleanItemsJson) {
-  const createItemsList = JSON.parse(createItemsListJson); // Convert JSON string to object
-console.log(“Comparing Full List:", createItemsList);
-  const cleanItems = JSON.parse(cleanItemsJson);           // Convert JSON string to object
-console.log(“With Template:”, cleanItems);
-
-  // Iterate through each item in the createItemsList
-  createItemsList.forEach(item => {
-    const matchingItem = cleanItems.find(cleanItem => cleanItem.UUID === item.UUID);
-    
-    if (matchingItem) {
-      // Iterate through each key in the current create item
-      Object.keys(item).forEach(key => {
-        // Check if the key exists in the clean item and if the value matches
-        if (
-          !matchingItem.hasOwnProperty(key) || // Key does not exist in clean item
-          matchingItem[key] !== item[key]     // Value doesn't match
-        ) {
-          // Keep the key-value pair in createItemsList (do nothing)
-        } else {
-          // Delete the key from createItemsList if the value matches in cleanItems
-          delete item[key];
-        }
-      });
-    }
-  });
-
-  // Return the updated createItemsList as a JSON string
-const EliminatedList = JSON.stringify(createItemsList, null, 2);
-  return JSON.stringify(createItemsList, null, 2);
-console.log(“Eliminated:”, EliminatedList);
-}
-
 
 
 const smartListEditor = document.getElementById("smartListEditor");
