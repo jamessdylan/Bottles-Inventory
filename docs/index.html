@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>SM  Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1570,11 +1570,59 @@ archiveBtn.onclick = () => {
   renderItems();
 };
 
-groupBtn.onclick = () => {
+let groupHoldTimer = null;
+let groupLongPressFired = false;
+
+groupBtn.onpointerdown = e => {
+  e.preventDefault(); // iOS safety
+  groupLongPressFired = false;
+
+  groupHoldTimer = setTimeout(() => {
+    groupLongPressFired = true;
+
+    const smartKey = `${Source}SmartList`;
+    const smartItems = window[smartKey];
+
+    if (!Array.isArray(smartItems) || smartItems.length === 0) {
+      alert("Error");
+      return;
+    }
+
+    const message = smartItems
+      .map(i =>
+        [i.brand, i.identifier, i.varietal, i.year]
+          .filter(v => v && v !== "N/A")
+          .join(" ")
+      )
+      .join("\n");
+
+    alert(message);
+
+  }, 700); // long-press threshold
+};
+
+groupBtn.onpointerup = () => {
+  clearTimeout(groupHoldTimer);
+};
+
+groupBtn.onpointerleave = () => {
+  clearTimeout(groupHoldTimer);
+};
+
+groupBtn.onclick = e => {
+  // 🚫 suppress click if long-press fired
+  if (groupLongPressFired) {
+    e.preventDefault();
+    e.stopPropagation();
+    return;
+  }
+
+  // ✅ normal toggle behavior
   groupBtn.classList.toggle("active");
   updateGlobalFilters();
   renderItems();
 };
+
 
 smartSortBtn.onclick = () => {
   smartSortBtn.classList.toggle("active");
