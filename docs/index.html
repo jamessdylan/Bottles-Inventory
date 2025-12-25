@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine</title>
+<title>SM Wine LongPress</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -42,6 +42,23 @@ body::before{
   inset:0;
   background:url("IMG_6048.jpeg") no-repeat right center / 1200px auto;
   opacity:.65;
+  z-index:-1;
+}
+
+body::after{
+  content:"";
+  position:fixed;
+  top:0;
+  left:0;
+  right:0;
+  height:500px; /* adjust height as needed */
+  background:linear-gradient(
+    to bottom,
+    rgba(255,255,255,.85),
+    rgba(255,255,255,.55),
+    rgba(255,255,255,0)
+  );
+  pointer-events:none;
   z-index:-1;
 }
 
@@ -311,6 +328,30 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 </head>
 <body>
 
+<!-- ARCHIVE RECONCILE OVERLAY -->
+<div id="archiveOverlay" class="overlay"></div>
+
+<div id="archiveSheet" style="
+  position:fixed;
+  inset:0;
+  background:rgba(255,255,255,.92);
+  backdrop-filter:blur(16px);
+  padding:calc(20px + env(safe-area-inset-top)) 16px 20px;
+  transform:translateY(100%);
+  transition:.25s ease;
+  z-index:500;
+  overflow-y:auto;
+">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div style="font-family:'Copperplate',serif;font-size:18px;">
+      Archive Reconciliation
+    </div>
+    <button id="confirmArchive">Confirm</button>
+  </div>
+
+  <div id="archiveList"></div>
+</div>
+
 
   <!-- MONTH / YEAR PICKER -->
 <div id="datePickerOverlay" class="overlay"></div>
@@ -340,6 +381,49 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
     <select id="yearPicker" style="font-size:18px;"></select>
   </div>
 </div>
+
+<!-- SMART SORT OVERLAY -->
+<div id="smartOverlay" class="overlay"></div>
+
+<div id="smartSheet" style="
+  position:fixed;
+  inset:0;
+  background:rgba(255,255,255,.95);
+  backdrop-filter:blur(16px);
+  padding:calc(20px + env(safe-area-inset-top)) 16px 20px;
+  transform:translateY(100%);
+  transition:.25s ease;
+  z-index:600;
+  overflow-y:auto;
+">
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+    <div style="font-family:'Copperplate',serif;">Smart Sort – Wine Cellar</div>
+    <button onclick="closeSmartSort()">Done</button>
+  </div>
+
+  <div id="smartList"></div>
+
+  <!-- ADD ROW -->
+  <div style="margin-top:16px;">
+    <input
+      id="itemAutocomplete"
+      placeholder="Add item…"
+      autocomplete="off"
+      style="width:100%;padding:12px;border-radius:10px;border:1px solid #ccc;"
+    />
+    <div id="autocompleteList" style="
+      position:relative;
+      background:white;
+      border:1px solid #ddd;
+      border-radius:10px;
+      max-height:220px;
+      overflow-y:auto;
+      display:none;
+    "></div>
+  </div>
+</div>
+
 
 <!-- NEW BOTTLE OVERLAY -->
 <div id="newBottleOverlay" class="overlay"></div>
@@ -702,7 +786,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   <button id="specialtyListBtn">Specialty List</button>
   <button id="reserveListBtn">Reserve List</button>
 
-<button id="salesReportBtn">Sales Report</button>
+  <button>Sales Report</button>
   <button>Dictionary File</button>
   <button id="exportBtn">Export</button>
 </div>
@@ -860,13 +944,7 @@ let Sort="Standard";
 let specialtyLists = [];
 let selectedSpecialtyList = null;
 let expandedSpecialtyList = null;
-
-// ---------- GLOBAL FILTERS ----------
-let ArchiveFilter = false;   // true | false
-let GroupFilter   = "None";  // None | Tier | Special
-let SubgroupFilter = "None"; // None | Color
-let ItemFilter    = "None";  // None | Special
-
+let archiveRows = [];
 
 
 const list=document.getElementById("list");
@@ -901,7 +979,6 @@ function buildSourceTabs(){
 
     tab.onclick = () => {
       Source = src;
-      updateGlobalFilters();
       document.querySelectorAll(".tab").forEach(t =>
         t.classList.remove("active")
       );
@@ -914,8 +991,6 @@ function buildSourceTabs(){
   });
 }
 
-
- 
 
 /* ---------------- SORT ---------------- */
 function getSortOptions(src){
@@ -1083,6 +1158,7 @@ document.getElementById("addSpecialtyList").onclick = () => {
   renderSpecialtyLists();
 };
 
+let smartSortItems = []; // ordered array of item objects
 
 
 /* ---------------- HELPERS ---------------- */
@@ -1096,244 +1172,337 @@ function baseSort(a,b,key){
     ||naLast(b.year,a.year);
 }
 
-function updateGlobalFilters() {
-  /* ---------- ARCHIVE ---------- */
-  ArchiveFilter = archiveBtn.classList.contains("active");
-
-  /* ---------- GROUP ---------- */
-  if (groupBtn.classList.contains("active")) {
-    if (
-      Source === "Emporio" ||
-      Source === "Mezzo" ||
-      Source === "Tetto (L)" ||
-      Source === "Tetto (R)" ||
-      Source === "Prep Cooler"
-    ) {
-      GroupFilter = "Tier";
-    } else if (
-      Source === "Liquor Closet" ||
-      Source === "Wine Cellar"
-    ) {
-      GroupFilter = "Special";
-    } else {
-      GroupFilter = "None";
-    }
-  } else {
-    GroupFilter = "None";
-  }
-
-  /* ---------- SUBGROUP ---------- */
-  if (smartSortBtn.classList.contains("active")) {
-    if (
-      Source === "Other" ||
-      Source === "Emporio" ||
-      Source === "Mezzo" ||
-      Source === "Tetto (L)" ||
-      Source === "Tetto (R)"
-    ) {
-      SubgroupFilter = "Color";
-    } else {
-      SubgroupFilter = "None";
-    }
-  } else {
-    SubgroupFilter = "None";
-  }
-
-  /* ---------- ITEM ---------- */
-  if (smartSortBtn.classList.contains("active")) {
-    if (
-      Source === "Other" ||
-      Source === "Emporio" ||
-      Source === "Mezzo" ||
-      Source === "Tetto (L)" ||
-      Source === "Tetto (R)" ||
-      Source === "Liquor Closet" ||
-      Source === "Prep Cooler"
-    ) {
-      ItemFilter = "None";
-    } else if (Source === "Wine Cellar") {
-      ItemFilter = "Special";
-    } else {
-      ItemFilter = "None";
-    }
-  } else {
-    ItemFilter = "None";
-  }
+function wineTitle(item){
+  return [item.brand,item.identifier,item.varietal,item.year]
+    .filter(v => v && v !== "N/A")
+    .join(" ");
 }
 
-function drawDivider(label) {
-  const div = document.createElement("div");
-  div.style.margin = "20px 0 10px";
-  div.style.fontFamily = "Copperplate, serif";
-  div.style.fontSize = "15px";
-  div.style.opacity = "0.7";
-  div.textContent = label;
-  list.appendChild(div);
+function totalQty(item){
+  return SOURCES.reduce((sum, src) =>
+    sum + Number(item[src] || 0), 0
+  );
 }
 
-function applySubgroupSort(arr) {
-  if (SubgroupFilter !== "Color") return arr;
+function defaultArchiveAction(item){
+  const qty = totalQty(item);
 
-  const nonRed = [];
-  const red = [];
+  if (qty > 0 && item.status === false) return "Make Active";
+  if (qty === 0 && item.status === false) return "Delete Item";
+  if (qty === 0 && item.status === true) return "Make Inactive";
+  return "None";
+}
 
-  arr.forEach(item => {
-    if ((item.color || "").toLowerCase() === "red") {
-      red.push(item);
-    } else {
-      nonRed.push(item);
-    }
+function openArchiveReconcile(){
+  // recompute qtys implicitly
+  archiveRows = items
+    .filter(item => !(totalQty(item) > 0 && item.status === true))
+    .sort((a,b)=>wineTitle(a).localeCompare(wineTitle(b)))
+    .map(item => ({
+      item,
+      suggested: defaultArchiveAction(item),
+      value: "None",
+      initialized: false
+    }));
+
+  const container = document.getElementById("archiveList");
+  container.innerHTML = "";
+
+  archiveRows.forEach(row => {
+    const div = document.createElement("div");
+    div.style.padding = "14px";
+    div.style.borderBottom = "1px solid #ddd";
+
+    const action = document.createElement("div");
+    action.textContent = row.suggested;
+    action.style.color = "#aaa";
+    action.style.cursor = "pointer";
+    action.style.marginTop = "6px";
+
+    action.onclick = () => {
+      if (!row.initialized){
+        row.value = row.suggested;
+        row.initialized = true;
+      } else {
+        const opts = ["Make Active","Make Inactive","Delete Item","None"];
+        row.value = opts[(opts.indexOf(row.value)+1)%opts.length];
+      }
+      action.textContent = row.value;
+      action.style.color = "#000";
+    };
+
+    div.innerHTML = `<div>${wineTitle(row.item)}</div>`;
+    div.appendChild(action);
+    container.appendChild(div);
   });
 
-  return nonRed.concat(red);
+  archiveSheet.style.transform = "translateY(0)";
+  archiveOverlay.classList.add("show");
 }
 
-function standardSort(arr) {
-  const na = v => (v === undefined || v === null || v === "" ? "N/A" : v);
+async function fetchSourceJSON(source){
+  const fileName = `${source}.json`;
 
-  return [...arr].sort((a, b) => {
-    const brandA = na(a.brand);
-    const brandB = na(b.brand);
-    if (brandA !== brandB) {
-      if (brandA === "N/A") return 1;
-      if (brandB === "N/A") return -1;
-      return brandA.localeCompare(brandB);
+  const url = `./${fileName}`; 
+  // or `./data/${fileName}` if they live in a folder
+
+  try {
+    const response = await fetch(url, { cache: "no-store" });
+
+    if (!response.ok) {
+      throw new Error(`Failed to load ${fileName}`);
     }
 
-    const idA = na(a.identifier);
-    const idB = na(b.identifier);
-    if (idA !== idB) {
-      if (idA === "N/A") return 1;
-      if (idB === "N/A") return -1;
-      return idA.localeCompare(idB);
+    return await response.json();
+  } catch (err) {
+    console.error(err);
+    alert(`Could not load ${fileName}`);
+    return null;
+  }
+}
+
+async function fetchSourceValues(source){
+  const data = await fetchSourceJSON(source);
+
+  if (!data) return [];
+
+  if (!Array.isArray(data)) {
+    console.error("Source JSON is not an array:", data);
+    return [];
+  }
+
+  return data;
+}
+
+async function getItemsForSource(source){
+  const uuids = await fetchSourceValues(source);
+  if (!uuids.length) return [];
+
+  const uuidSet = new Set(uuids);
+
+  return items.filter(item => uuidSet.has(item.UUID));
+}
+
+function itemTitle(item){
+  return [item.brand, item.identifier, item.varietal, item.year]
+    .filter(v => v && v !== "N/A")
+    .join(" ");
+}
+
+async function getAutocompleteCandidates(source){
+  const sourceItems = await getItemsForSource(source);
+  const sourceUUIDs = new Set(sourceItems.map(i => i.UUID));
+
+  return items
+    .filter(item => !sourceUUIDs.has(item.UUID))
+    .map(item => ({
+      title: itemTitle(item),
+      UUID: item.UUID
+    }))
+    .sort((a,b)=>a.title.localeCompare(b.title));
+}
+
+let autocompleteOptions = [];
+let selectedAutocompleteUUID = null;
+
+async function initAutocomplete(source){
+  autocompleteOptions = await getAutocompleteCandidates(source);
+  selectedAutocompleteUUID = null;
+
+  const input = document.getElementById("itemAutocomplete");
+  const list = document.getElementById("autocompleteList");
+
+  input.value = "";
+  list.innerHTML = "";
+  list.style.display = "none";
+
+  input.oninput = () => {
+    const query = input.value.toLowerCase().trim();
+    list.innerHTML = "";
+    selectedAutocompleteUUID = null;
+
+    if (!query){
+      list.style.display = "none";
+      return;
     }
 
-    const varA = na(a.varietal);
-    const varB = na(b.varietal);
-    if (varA !== varB) {
-      if (varA === "N/A") return 1;
-      if (varB === "N/A") return -1;
-      return varA.localeCompare(varB);
+    const matches = autocompleteOptions.filter(opt =>
+      opt.title.toLowerCase().includes(query)
+    );
+
+    if (!matches.length){
+      list.style.display = "none";
+      return;
     }
 
-    const yearA = na(a.year);
-    const yearB = na(b.year);
-    if (yearA !== yearB) {
-      if (yearA === "N/A") return 1;
-      if (yearB === "N/A") return -1;
-      return Number(yearB) - Number(yearA); // Z-A
-    }
+    matches.forEach(opt => {
+      const div = document.createElement("div");
+      div.textContent = opt.title;
+      div.style.padding = "10px";
+      div.style.cursor = "pointer";
 
-    return 0;
-  });
+      div.onmousedown = () => {
+        input.value = opt.title;
+        selectedAutocompleteUUID = opt.UUID;
+        list.style.display = "none";
+      };
+
+      list.appendChild(div);
+    });
+
+    list.style.display = "block";
+  };
+
+  // Enforce strict validity on blur
+  input.onblur = () => {
+    setTimeout(() => {
+      if (!selectedAutocompleteUUID){
+        input.value = "";
+      }
+      list.style.display = "none";
+    }, 150);
+  };
+}
+
+function getSelectedAutocompleteItem(){
+  if (!selectedAutocompleteUUID) return null;
+  return items.find(i => i.UUID === selectedAutocompleteUUID) || null;
 }
 
 
-/* ---------------- RENDER ---------------- */
-async function renderItems() {
+async function openSmartSort(){
+if (Source !== "Wine Cellar") return;
+
+  const uuids = await fetchSourceValues("Wine Cellar");
+  const uuidSet = new Set(uuids);
+
+  smartSortItems = items.filter(i => uuidSet.has(i.UUID));
+
+  renderSmartSortList();
+  initAutocompleteForSmartSort();
+
+  smartSheet.style.transform = "translateY(0)";
+  smartOverlay.classList.add("show");
+}
+
+function renderSmartSortList(){
+  const list = document.getElementById("smartList");
   list.innerHTML = "";
 
-  const completeKey = `${Source}Complete`;
+  smartSortItems.forEach((item, index) => {
+    const row = document.createElement("div");
+    row.className = "row";
+    row.draggable = true;
 
-  // ---------- NORMALIZE ----------
+    row.ondragstart = e => {
+      e.dataTransfer.setData("text/plain", index);
+    };
+
+    row.ondragover = e => e.preventDefault();
+
+    row.ondrop = e => {
+      const from = Number(e.dataTransfer.getData("text/plain"));
+      const to = index;
+      const moved = smartSortItems.splice(from,1)[0];
+      smartSortItems.splice(to,0,moved);
+      renderSmartSortList();
+    };
+
+    const remove = document.createElement("div");
+    remove.textContent = "×";
+    remove.style.cursor = "pointer";
+    remove.style.fontSize = "18px";
+    remove.onclick = () => {
+      smartSortItems = smartSortItems.filter(i => i !== item);
+      renderSmartSortList();
+      initAutocompleteForSmartSort();
+    };
+
+    const title = document.createElement("div");
+    title.textContent = itemTitle(item);
+    title.style.flex = "1";
+
+    row.appendChild(remove);
+    row.appendChild(title);
+    list.appendChild(row);
+  });
+}
+
+async function initAutocompleteForSmartSort(){
+  const usedUUIDs = new Set(smartSortItems.map(i => i.UUID));
+
+  autocompleteOptions = items
+    .filter(i => !usedUUIDs.has(i.UUID))
+    .map(i => ({
+      title: itemTitle(i),
+      UUID: i.UUID
+    }))
+    .sort((a,b)=>a.title.localeCompare(b.title));
+
+  selectedAutocompleteUUID = null;
+
+  const input = document.getElementById("itemAutocomplete");
+  const list = document.getElementById("autocompleteList");
+
+  input.value = "";
+  list.innerHTML = "";
+  list.style.display = "none";
+
+  input.oninput = () => {
+    const q = input.value.toLowerCase().trim();
+    list.innerHTML = "";
+    selectedAutocompleteUUID = null;
+
+    if (!q) return;
+
+    autocompleteOptions
+      .filter(o => o.title.toLowerCase().includes(q))
+      .forEach(o => {
+        const div = document.createElement("div");
+        div.textContent = o.title;
+        div.style.padding = "10px";
+        div.onclick = () => {
+          const item = items.find(i => i.UUID === o.UUID);
+          if (!item) return;
+
+          smartSortItems.push(item);
+          renderSmartSortList();
+          initAutocompleteForSmartSort();
+        };
+        list.appendChild(div);
+      });
+
+    list.style.display = "block";
+  };
+}
+
+
+function closeSmartSort(){
+  smartSheet.style.transform = "translateY(100%)";
+  smartOverlay.classList.remove("show");
+}
+
+/* ---------------- RENDER ---------------- */
+function renderItems(){
+  list.innerHTML = "";
+
+  const key = `${Source}Complete`;
+
+  // normalize values
   items.forEach(i => {
     i[Source] = Math.max(0, Number(i[Source]) || 0);
-    if (typeof i[completeKey] !== "boolean") i[completeKey] = false;
+    if (typeof i[key] !== "boolean") i[key] = false;
     if (typeof i.status !== "boolean") i.status = true;
   });
 
-  // ---------- ARCHIVE ----------
-  let allItems = ArchiveFilter
-    ? [...items]
-    : items.filter(i => i.status === true);
+  // 🔑 FILTER RULE
+  const visibleItems = items.filter(item =>
+    showArchived || item.status === true
+  );
 
-  // ---------- GROUPING ----------
-  let group1items = [];
-  let group2items = [];
-
-  if (GroupFilter === "Tier") {
-    group1items = allItems.filter(i => i.tier === "House");
-    group2items = allItems.filter(i => i.tier === "Reserve");
-  }
-
-  else if (GroupFilter === "None") {
-    group1items = [...allItems];
-    group2items = [];
-  }
-
-  else if (GroupFilter === "Special") {
-    let uuidList = [];
-    try {
-      const res = await fetch(`./${Source}.json`, { cache: "no-store" });
-      uuidList = await res.json();
-    } catch {}
-
-    group1items = allItems.filter(i => uuidList.includes(i.UUID));
-    group2items = allItems.filter(i => !uuidList.includes(i.UUID));
-  }
-
-  // ---------- COMPLETE / INCOMPLETE ----------
-  const group1incomplete = group1items.filter(i => i[completeKey] === false);
-  const group1complete   = group1items.filter(i => i[completeKey] === true);
-
-  const group2incomplete = group2items.filter(i => i[completeKey] === false);
-  const group2complete   = group2items.filter(i => i[completeKey] === true);
-
-  // ---------- SUBGROUP ----------
-  let subgroup1A = [], subgroup1B = [], subgroup1C = [];
-  let subgroup2A = [], subgroup2B = [], subgroup2C = [];
-
-  if (SubgroupFilter === "Color") {
-    subgroup1A = group1incomplete.filter(i => i.color !== "Red");
-    subgroup1B = group1incomplete.filter(i => i.color === "Red");
-
-    subgroup2A = group2incomplete.filter(i => i.color !== "Red");
-    subgroup2B = group2incomplete.filter(i => i.color === "Red");
-
-    if (ItemFilter === "None") {
-      subgroup1A = standardSort(subgroup1A);
-      subgroup1B = standardSort(subgroup1B);
-      subgroup2A = standardSort(subgroup2A);
-      subgroup2B = standardSort(subgroup2B);
-    }
-  }
-
-  else {
-    subgroup1A = ItemFilter === "None"
-      ? standardSort(group1incomplete)
-      : [...group1incomplete];
-
-    subgroup2A = ItemFilter === "None"
-      ? standardSort(group2incomplete)
-      : [...group2incomplete];
-  }
-
-  subgroup1C = standardSort(group1complete);
-  subgroup2C = standardSort(group2complete);
-
-  // ---------- RENDER ----------
-  function renderGroup(label, a, b, c) {
-    if (label) drawDivider(label);
-    a.forEach(drawItem);
-    b.forEach(drawItem);
-    c.forEach(drawItem);
-  }
-
-  if (GroupFilter === "Tier") {
-    renderGroup("House", subgroup1A, subgroup1B, subgroup1C);
-    renderGroup("Reserve", subgroup2A, subgroup2B, subgroup2C);
-  }
-
-  else if (GroupFilter === "Special") {
-    renderGroup("Suggested", subgroup1A, subgroup1B, subgroup1C);
-    renderGroup("Other", subgroup2A, subgroup2B, subgroup2C);
-  }
-
-  else {
-    renderGroup(null, subgroup1A, subgroup1B, subgroup1C);
-  }
+  visibleItems.sort((a, b) => baseSort(a, b, key));
+  visibleItems.forEach(drawItem);
 }
-
 
 
 /* ---------------- DRAW ITEM ---------------- */
@@ -1539,21 +1708,25 @@ let groupEnabled = false;
 archiveBtn.onclick = () => {
   showArchived = !showArchived;
   archiveBtn.classList.toggle("active", showArchived);
-  updateGlobalFilters();
   renderItems();
 };
 
-groupBtn.onclick = () => {
-  groupBtn.classList.toggle("active");
-  updateGlobalFilters();
-  renderItems();
+
+
+let smartPressTimer;
+
+smartSortBtn.onpointerdown = () => {
+  smartPressTimer = setTimeout(openSmartSort, 600);
 };
 
-smartSortBtn.onclick = () => {
-  smartSortBtn.classList.toggle("active");
-  updateGlobalFilters();
-  renderItems();
-};
+smartSortBtn.onpointerup =
+smartSortBtn.onpointerleave = () =>
+  clearTimeout(smartPressTimer);
+
+
+smartSortBtn.onclick=()=>smartSortBtn.classList.toggle("active");
+
+groupBtn.onclick=()=>groupBtn.classList.toggle("active");
 
 
 /* ---------- DRAWER ---------- */
@@ -1564,24 +1737,6 @@ drawerTab.onclick=()=>{
 overlay.onclick=()=>{
   drawer.classList.remove("open");
   overlay.classList.remove("show");
-};
-
-/* ---------- SALES REPORT DEBUG ---------- */
-const salesReportBtn = document.getElementById("salesReportBtn");
-
-salesReportBtn.onclick = () => {
-  drawer.classList.remove("open");
-  overlay.classList.remove("show");
-
-  const message =
-`Sales Report Filters:
-
-ArchiveFilter: ${ArchiveFilter}
-GroupFilter: ${GroupFilter}
-SubgroupFilter: ${SubgroupFilter}
-ItemFilter: ${ItemFilter}`;
-
-  alert(message);
 };
   
 /* ---------- NEW BOTTLE ---------- */
@@ -2014,6 +2169,51 @@ confirmNewBottle.onclick = () => {
   closeNewBottle();
 };
 
+let archivePressTimer;
+
+archiveBtn.onpointerdown = () => {
+  archivePressTimer = setTimeout(() => {
+    openArchiveReconcile();
+  }, 600);
+};
+
+archiveBtn.onpointerup =
+archiveBtn.onpointerleave = () =>
+  clearTimeout(archivePressTimer);
+
+archiveBtn.onclick = () => {
+  showArchived = !showArchived;
+  archiveBtn.classList.toggle("active", showArchived);
+  renderItems();
+};
+
+
+document.getElementById("confirmArchive").onclick = () => {
+  let updated = [...items];
+
+  archiveRows.forEach(r => {
+    if (!r.initialized || r.value === "None") return;
+
+    if (r.value === "Delete Item"){
+      updated = updated.filter(i => i !== r.item);
+    }
+    if (r.value === "Make Active"){
+      r.item.status = true;
+    }
+    if (r.value === "Make Inactive"){
+      r.item.status = false;
+    }
+  });
+
+  items = updated;
+  showArchived = false;
+  archiveBtn.classList.remove("active");
+
+  archiveSheet.style.transform = "translateY(100%)";
+  archiveOverlay.classList.remove("show");
+
+  renderItems();
+};
 
 
 
