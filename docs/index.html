@@ -743,7 +743,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
     <button id="closeSmartList">Done</button>
   </div>
 
-  <div id="smartListContainer"></div>
+  <div id="smartListContainer"></div>’
 
 <!-- SMART LIST ADD INPUT -->
 <div id="smartListAddWrap" style="
@@ -908,39 +908,16 @@ let ItemFilter    = "None";  // None | Special
 const list=document.getElementById("list");
 const tabsEl=document.getElementById("sourceTabs");
 
-/* ---------- LOCAL STORAGE ---------- */
-const STORAGE_KEY_ITEMS = "SM_ITEMS";
-
-function saveItems() {
-  localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(items));
-}
-
-function loadItemsFromStorage() {
-  const raw = localStorage.getItem(STORAGE_KEY_ITEMS);
-  return raw ? JSON.parse(raw) : null;
-}
-
-
 const drawer = document.getElementById("drawer");
 const overlay = document.getElementById("overlay");
 
 
 /* ---------------- LOAD ---------------- */
 async function loadItems(){
-  const stored = loadItemsFromStorage();
-
-  if (Array.isArray(stored) && stored.length > 0) {
-    items = stored;
-  } else {
-    const res = await fetch("./items.json", { cache:"no-store" });
-    items = await res.json();
-    saveItems(); // seed once
-  }
-
+  const res=await fetch("./items.json",{cache:"no-store"});
+  items=await res.json();
   renderItems();
 }
-
-
 
 /* ---------------- TABS ---------------- */
 function buildSourceTabs(){
@@ -1454,7 +1431,6 @@ function drawItem(item){
       const v=prompt("Enter value:",item[Source]);
       if(v!==null&&!isNaN(v)){
         item[Source]=Math.max(0,round(Number(v)));
-saveItems();
         renderItems();
       }
     },450);
@@ -1470,7 +1446,6 @@ saveItems();
   /* ----- MINUS ----- */
   minusBtn.onclick = () => {
     item[Source] = Math.max(0, round(item[Source] - 1));
-saveItems();
     renderItems();
   };
 
@@ -1482,7 +1457,6 @@ saveItems();
           0,
           round(item[Source] - Number(v))
         );
-saveItems();
         renderItems();
       }
     }, 450);
@@ -1494,7 +1468,6 @@ saveItems();
   /* ----- PLUS ----- */
   plusBtn.onclick = () => {
     item[Source] = round(item[Source] + 1);
-saveItems();
     renderItems();
   };
 
@@ -1503,7 +1476,6 @@ saveItems();
       const v = prompt("Add how many?", 0);
       if (v !== null && !isNaN(v)) {
         item[Source] = round(item[Source] + Number(v));
-saveItems();
         renderItems();
       }
     }, 450);
@@ -1513,9 +1485,7 @@ saveItems();
   plusBtn.onpointerleave = () => clearTimeout(holdTimerBtn);
 
 
-  row.querySelector(".toggle").onclick=()=>{item[key]=!item[key];
-saveItems();
-renderItems();}
+  row.querySelector(".toggle").onclick=()=>{item[key]=!item[key];renderItems();}
 
 let rowHoldTimer;
 
@@ -1794,9 +1764,6 @@ confirmArchiveCleanup.onclick = () => {
     if (obj.action === "Make Inactive") {
       obj.item.status = false;
     }
-saveItems();
-renderItems();
-
   });
 
   archiveCleanupSheet.style.transform = "translateY(100%)";
@@ -2014,7 +1981,6 @@ identifierInput.oninput = () => {
 const varietalInput = document.getElementById("varietalInput");
 const varietalSuggestions = document.getElementById("varietalSuggestions");
 
-
 varietalInput.oninput = () => {
   const value = varietalInput.value.trim().toLowerCase();
   varietalSuggestions.innerHTML = "";
@@ -2198,7 +2164,7 @@ deleteBottleBtn.onclick = () => {
 
   items = items.filter(i => i !== editingItem);
   editingItem = null;
-saveItems();
+
   renderItems();
   closeNewBottle();
 };
@@ -2236,11 +2202,10 @@ confirmNewBottle.onclick = () => {
     });
     items.push(target);
   }
-  editingItem = null;
-saveItems();
-renderItems();
-closeNewBottle();
 
+  editingItem = null;
+  renderItems();
+  closeNewBottle();
 };
 
 
