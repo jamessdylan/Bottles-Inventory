@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>SM Best Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -89,6 +89,21 @@ background:rgba(240,233,233,.65);
   filter:saturate(1.1);
 }
 
+
+/* ---------- SORT ---------- */
+.section{
+  display:flex;
+  justify-content:center;
+  padding:12px;
+}
+select{
+  font-family:"Copperplate",serif;
+  font-size:18px;
+  background:rgba(0,0,0,.1);
+  border:none;
+  border-radius:6px;
+  padding:8px 16px;
+}
 
 /* ---------- LIST ---------- */
 .list{padding:8px 16px 140px;}
@@ -887,6 +902,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 <header><img src="SiennaTransparent.png"></header>
 
 <div class="tabs" id="sourceTabs"></div>
+<section class="section"><select id="sortSelect"></select></section>
 <div class="list" id="list"></div>
 <nav class="action-bar">
 
@@ -991,6 +1007,7 @@ const SOURCE_ICONS = {
 
 let items=[];
 let Source="Emporio";
+let Sort="Standard";
 let specialtyLists = [];
 let selectedSpecialtyList = null;
 let expandedSpecialtyList = null;
@@ -1004,6 +1021,7 @@ let ItemFilter    = "None";  // None | Special
 
 
 const list=document.getElementById("list");
+const sortSelect=document.getElementById("sortSelect");
 const tabsEl=document.getElementById("sourceTabs");
 
 const drawer = document.getElementById("drawer");
@@ -1044,6 +1062,7 @@ tab.onclick = async () => {
   );
   tab.classList.add("active");
 
+  updateSort(Source);
   renderItems();
 };
 
@@ -1053,6 +1072,22 @@ tab.onclick = async () => {
 }
 
 
+ 
+
+/* ---------------- SORT ---------------- */
+function getSortOptions(src){
+  if(src==="Prep Cooler") return["Standard","Tier"];
+  return["Standard","Smart","Tier"];
+}
+function updateSort(src){
+  sortSelect.innerHTML="";
+  getSortOptions(src).forEach(o=>{
+    const opt=document.createElement("option");
+    opt.value=o;opt.textContent=o;
+    sortSelect.appendChild(opt);
+  });
+  Sort=sortSelect.value="Standard";
+}
 
 async function loadSpecialtyLists(){
   const res = await fetch("./SpecialtyList.json", { cache:"no-store" });
@@ -1797,6 +1832,7 @@ function smartItemTitle(item){
 
 /* ---------- INIT ---------- */
 buildSourceTabs();
+updateSort(Source);
 loadItems();
 
 /* ---------- ACTION STATES ---------- */
