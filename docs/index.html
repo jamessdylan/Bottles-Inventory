@@ -1860,26 +1860,31 @@ archiveCleanupItems = items
 }
 
 confirmArchiveCleanup.onclick = () => {
+  // Update the items based on the selected action
   archiveCleanupItems.forEach(obj => {
     if (obj.action === "Delete Item") {
+      // Remove item from items array
       const i = items.indexOf(obj.item);
       if (i > -1) items.splice(i, 1);
     }
 
     if (obj.action === "Make Active") {
-      obj.item.status = true;
+      obj.item.status = true; // Activate the item
     }
 
     if (obj.action === "Make Inactive") {
-      obj.item.status = false;
+      obj.item.status = false; // Deactivate the item
     }
   });
 
+  // Close the archive cleanup modal
   archiveCleanupSheet.style.transform = "translateY(100%)";
   archiveCleanupOverlay.classList.remove("show");
 
-  renderItems();
+  // Force the page to re-render the updated items list
+  renderItems(); // This will update the UI immediately with the modified items
 };
+
 
 archiveCleanupOverlay.onclick = () => {
   archiveCleanupSheet.style.transform = "translateY(100%)";
