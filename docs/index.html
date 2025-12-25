@@ -933,7 +933,7 @@ const tabsEl=document.getElementById("sourceTabs");
     reserveListBtn.onclick = () => {
       drawer.classList.remove("open");
       overlay.classList.remove("show");
-      const itemsPatch = localStorage.getItem("itemsPatch.json");
+      const itemsPatch = localStorage.getItem("patchItems");
 
   if (itemsPatch) {
     // If itemsPatch exists in localStorage, display it
