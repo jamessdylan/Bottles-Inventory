@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine </title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -997,6 +997,73 @@ async function loadItems(){
   renderItems();
 }
 
+async function compareAndUpdateItem(item) {
+  const itemUUID = item.UUID;
+
+  try {
+    // Fetch the local items.json file
+    const response = await fetch("./items.json", { cache: "no-store" });
+    const itemsJSON = await response.json();
+
+    // Find the original item in items.json based on UUID
+    const originalItem = itemsJSON.find(i => i.UUID === itemUUID);
+
+    if (!originalItem) {
+      console.error("Item not found in items.json.");
+      return;
+    }
+
+    // Create a dictionary for differences
+    const diffDictionary = {};
+
+    // If the item is from the original file, add the entire item (excluding UUID) to the patch
+    if (JSON.stringify(originalItem) === JSON.stringify(item)) {
+      // Exclude the UUID from the dictionary
+      for (let key in item) {
+        if (key !== "UUID") {
+          diffDictionary[key] = item[key];
+        }
+      }
+      
+      // Add the diffDictionary to itemsPatch in localStorage
+      let itemsPatch = JSON.parse(localStorage.getItem("itemsPatch")) || {};
+      itemsPatch[itemUUID] = diffDictionary;
+
+      // Save the updated itemsPatch back to localStorage
+      localStorage.setItem("itemsPatch", JSON.stringify(itemsPatch));
+
+      // Show a message indicating that the dictionary has been saved
+      alert(`Original item dictionary for UUID ${itemUUID} has been saved in itemsPatch.`);
+    } else {
+      // Compare each key in the item and find differences
+      for (let key in item) {
+        // Skip the UUID field since it's used for identification
+        if (key === "UUID") continue;
+
+        // If the values are different, add the key and its new value to the diff dictionary
+        if (originalItem[key] !== item[key]) {
+          diffDictionary[key] = item[key];
+        }
+      }
+
+      // If there are differences, update the itemsPatch in localStorage
+      if (Object.keys(diffDictionary).length > 0) {
+        let itemsPatch = JSON.parse(localStorage.getItem("itemsPatch")) || {};
+        itemsPatch[itemUUID] = diffDictionary;
+
+        // Save the updated itemsPatch back to localStorage
+        localStorage.setItem("itemsPatch", JSON.stringify(itemsPatch));
+
+        // Show a message indicating that the dictionary has been saved
+        alert(`Dictionary for item with UUID ${itemUUID} has been saved in itemsPatch.`);
+      }
+    }
+  } catch (error) {
+    console.error("Error fetching items.json or updating itemsPatch:", error);
+  }
+}
+
+
 /* ---------------- TABS ---------------- */
 function buildSourceTabs(){
   tabsEl.innerHTML = "";
@@ -1553,6 +1620,7 @@ function drawItem(item){
       const v=prompt("Enter value:",item[Source]);
       if(v!==null&&!isNaN(v)){
         item[Source]=Math.max(0,round(Number(v)));
+compareAndUpdateItem();
         renderItems();
       }
     },450);
@@ -1568,6 +1636,7 @@ function drawItem(item){
   /* ----- MINUS ----- */
   minusBtn.onclick = () => {
     item[Source] = Math.max(0, round(item[Source] - 1));
+compareAndUpdateItem();
     renderItems();
   };
 
@@ -1579,6 +1648,7 @@ function drawItem(item){
           0,
           round(item[Source] - Number(v))
         );
+compareAndUpdateItem();
         renderItems();
       }
     }, 450);
@@ -1590,6 +1660,7 @@ function drawItem(item){
   /* ----- PLUS ----- */
   plusBtn.onclick = () => {
     item[Source] = round(item[Source] + 1);
+compareAndUpdateItem();
     renderItems();
   };
 
@@ -1598,6 +1669,7 @@ function drawItem(item){
       const v = prompt("Add how many?", 0);
       if (v !== null && !isNaN(v)) {
         item[Source] = round(item[Source] + Number(v));
+compareAndUpdateItem();
         renderItems();
       }
     }, 450);
