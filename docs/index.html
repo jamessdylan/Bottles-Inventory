@@ -821,6 +821,22 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
 
 <script>
+const STORAGE_KEY = "SM_Items_v1";
+
+function loadItemsFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveItemsToStorage() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+}
+
+
 /* ---------- PAGE TITLE ---------- */
 const pageTitleEl=document.getElementById("pageTitle");
 
@@ -894,7 +910,6 @@ const SOURCE_ICONS = {
   "Other": "OtherTransparent.png"
 };
 
-let items=[];
 let Source="Emporio";;
 
 // ---------- GLOBAL FILTERS ----------
@@ -912,12 +927,24 @@ const drawer = document.getElementById("drawer");
 const overlay = document.getElementById("overlay");
 
 
-/* ---------------- LOAD ---------------- */
-async function loadItems(){
-  const res=await fetch("./items.json",{cache:"no-store"});
-  items=await res.json();
+async function loadItems() {
+  const stored = loadItemsFromStorage();
+
+  // ✅ Use localStorage if available
+  if (Array.isArray(stored) && stored.length) {
+    items = stored;
+    renderItems();
+    return;
+  }
+
+  // ⬇️ First-ever load from items.json
+  const res = await fetch("./items.json", { cache: "no-store" });
+  items = await res.json();
+
+  saveItemsToStorage(); // seed storage
   renderItems();
 }
+
 
 /* ---------------- TABS ---------------- */
 function buildSourceTabs(){
@@ -1420,7 +1447,7 @@ function drawItem(item){
     <div class="toggle">
       ${item[key]?`<span class="toggle-check">✔</span>`:`<div class="toggle-circle"></div>`}
     </div>
-  `;
+;
 
   /* 🔹 RESTORED LONG-PRESS EDIT 🔹 */
   let pressTimer;
@@ -1431,6 +1458,7 @@ function drawItem(item){
       const v=prompt("Enter value:",item[Source]);
       if(v!==null&&!isNaN(v)){
         item[Source]=Math.max(0,round(Number(v)));
+saveItemsToStorage();
         renderItems();
       }
     },450);
@@ -1446,6 +1474,7 @@ function drawItem(item){
   /* ----- MINUS ----- */
   minusBtn.onclick = () => {
     item[Source] = Math.max(0, round(item[Source] - 1));
+saveItemsToStorage();
     renderItems();
   };
 
@@ -1457,6 +1486,7 @@ function drawItem(item){
           0,
           round(item[Source] - Number(v))
         );
+saveItemsToStorage();
         renderItems();
       }
     }, 450);
@@ -1468,6 +1498,7 @@ function drawItem(item){
   /* ----- PLUS ----- */
   plusBtn.onclick = () => {
     item[Source] = round(item[Source] + 1);
+saveItemsToStorage();
     renderItems();
   };
 
@@ -1476,6 +1507,7 @@ function drawItem(item){
       const v = prompt("Add how many?", 0);
       if (v !== null && !isNaN(v)) {
         item[Source] = round(item[Source] + Number(v));
+saveItemsToStorage();
         renderItems();
       }
     }, 450);
@@ -1768,7 +1800,7 @@ confirmArchiveCleanup.onclick = () => {
 
   archiveCleanupSheet.style.transform = "translateY(100%)";
   archiveCleanupOverlay.classList.remove("show");
-
+saveItemsToStorage();
   renderItems();
 };
 
@@ -2164,6 +2196,7 @@ deleteBottleBtn.onclick = () => {
 
   items = items.filter(i => i !== editingItem);
   editingItem = null;
+saveItemsToStorage();
 
   renderItems();
   closeNewBottle();
@@ -2204,6 +2237,7 @@ confirmNewBottle.onclick = () => {
   }
 
   editingItem = null;
+saveItemsToStorage();
   renderItems();
   closeNewBottle();
 };
