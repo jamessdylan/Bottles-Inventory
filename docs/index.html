@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine </title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1728,6 +1728,10 @@ smartListAddInput.onkeydown = e => {
   renderItems(); // reflect immediately
 };
 
+const archiveBtn   = document.getElementById("archiveBtn");
+const groupBtn     = document.getElementById("groupBtn");
+const smartSortBtn = document.getElementById("smartSortBtn");
+
 
 /* ---------- DRAWER ---------- */
 drawerTab.onclick=()=>{
@@ -2013,37 +2017,28 @@ brandInput.oninput = () => {
 
   if (!value) {
     brandSuggestions.style.display = "none";
-    newBottleBrand = "";
     return;
   }
 
-  newBottleBrand = brandInput.value;
+  const brands = [...new Set(items.map(i => i.brand).filter(Boolean))];
 
-  /* 🔑 Compute brands AFTER items have loaded */
-  const existingBrands = [...new Set(
-    items
-      .map(i => i.brand)
-      .filter(b => b && b.trim() !== "")
-  )];
-
-  const matches = existingBrands.filter(b =>
+  const matches = brands.filter(b =>
     b.toLowerCase().includes(value)
   );
 
-  if (matches.length === 0) {
+  if (!matches.length) {
     brandSuggestions.style.display = "none";
     return;
   }
 
-  matches.forEach(match => {
+  matches.forEach(brand => {
     const div = document.createElement("div");
-    div.textContent = match;
-    div.style.padding = "12px 16px";
+    div.textContent = brand;
+    div.style.padding = "10px 14px";
     div.style.cursor = "pointer";
 
     div.onclick = () => {
-      brandInput.value = match;
-      newBottleBrand = match;
+      brandInput.value = brand;
       brandSuggestions.style.display = "none";
     };
 
