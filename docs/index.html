@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM drawer Inventory</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1027,7 +1027,41 @@ tab.onclick = async () => {
 }
 
 
+function createItemsList() {
+  const itemsList = [];
 
+  // Loop through all items and format them similarly to items.json
+  items.forEach(item => {
+    // Create a new object for each item without base keys
+    const currentItem = {};
+
+    // Dynamically copy all keys from the item (including 'UUID' key explicitly)
+    Object.keys(item).forEach(key => {
+      if (key !== 'UUID') {  // We will ensure 'UUID' is included
+        currentItem[key] = item[key] || (key.includes('color') ? "White" : "N/A"); // Default values for missing properties
+      }
+    });
+
+    // Ensure the properties for the SOURCES and their 'Complete' versions are added dynamically
+    SOURCES.forEach(source => {
+      currentItem[source] = item[source] || 0;
+      currentItem[`${source}Complete`] = item[`${source}Complete`] || false;
+    });
+
+    // Add the base64 and icon properties directly from the item
+    currentItem.base64 = item.base64 || false;  // Default to false if base64 is not defined
+    currentItem.icon = item.icon || null;      // Default to null if icon is not defined
+
+    // Add UUID explicitly to each item
+    currentItem.UUID = item.UUID;
+
+    // Add the formatted item to the list
+    itemsList.push(currentItem);
+  });
+
+  // Convert the items list to a JSON string and return it
+  return JSON.stringify(itemsList, null, 2);
+}
 
 
 async function loadSmartListForSource(source) {
