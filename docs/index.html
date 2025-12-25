@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>Drawer</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -705,24 +705,21 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
 </div>
 
-<div class="drawer-tab" id="drawerTab"><span>•••</span></div>
+  <!-- Drawer Tab -->
+  <div class="drawer-tab" id="drawerTab"><span>•••</span></div>
 
-<div class="drawer" id="drawer">
-  <div class="drawer-title" id="pageTitle"></div>
+  <!-- Drawer Content -->
+  <div class="drawer" id="drawer">
+    <div class="drawer-title" id="pageTitle"></div>
+    <button>New Project</button>
+    <button id="reserveListBtn">Reserve List</button>
+    <button id="salesReportBtn">Sales Report</button>
+    <!-- Fixing the ID for dictionaryFileBtn -->
+    <button id="dictionaryFileBtn">Dictionary File</button>
+    <button id="exportBtn">Export</button>
+  </div>
 
-  <button>New Project</button>
-
-  <button id="reserveListBtn">Reserve List</button>
-
-<button id="salesReportBtn">Sales Report</button>
-
-<button id=“dictionaryFileBtn">Dictionary File</button>
-
-  <button id="exportBtn">Export</button>
-</div>
-
-
-<div class="overlay" id="overlay"></div>
+  <div class="overlay" id="overlay"></div>
 
 <!-- SMART LIST EDITOR OVERLAY -->
 <div id="smartListOverlay" class="overlay"></div>
@@ -909,8 +906,72 @@ let ItemFilter    = "None";  // None | Special
 const list=document.getElementById("list");
 const tabsEl=document.getElementById("sourceTabs");
 
-const drawer = document.getElementById("drawer");
-const overlay = document.getElementById("overlay");
+    const drawerTab = document.getElementById("drawerTab");
+    const drawer = document.getElementById("drawer");
+    const overlay = document.getElementById("overlay");
+
+    // Open the drawer when the drawer tab is clicked
+    drawerTab.onclick = () => {
+      drawer.classList.add("open");
+      overlay.classList.add("show");
+    };
+
+    // Close the drawer when the overlay is clicked
+    overlay.onclick = () => {
+      drawer.classList.remove("open");
+      overlay.classList.remove("show");
+    };
+
+    /* Drawer Button Functions */
+    const reserveListBtn = document.getElementById("reserveListBtn");
+    const salesReportBtn = document.getElementById("salesReportBtn");
+    const dictionaryFileBtn = document.getElementById("dictionaryFileBtn");
+    const exportBtn = document.getElementById("exportBtn");
+
+    // Handle the "Reserve List" button click
+    reserveListBtn.onclick = () => {
+      drawer.classList.remove("open");
+      overlay.classList.remove("show");
+      alert("Reserve List button clicked!");
+    };
+
+    // Handle the "Sales Report" button click
+    salesReportBtn.onclick = () => {
+      drawer.classList.remove("open");
+      overlay.classList.remove("show");
+salesReportBtn.onclick = () => {
+  drawer.classList.remove("open");
+  overlay.classList.remove("show");
+
+  const message =
+`Sales Report Filters:
+
+ArchiveFilter: ${ArchiveFilter}
+GroupFilter: ${GroupFilter}
+SubgroupFilter: ${SubgroupFilter}
+ItemFilter: ${ItemFilter}`;
+
+  alert(message);
+};
+    };
+
+    // Handle the "Dictionary File" button click
+    dictionaryFileBtn.onclick = () => {
+      drawer.classList.remove("open");
+      overlay.classList.remove("show");
+      // Stringify the 'items' array and open a new window to display it
+      const jsonContent = JSON.stringify(items, null, 2); // Pretty-print JSON with indentation
+      const jsonWindow = window.open('', '_blank');
+      jsonWindow.document.write('<pre>' + jsonContent + '</pre>');
+      jsonWindow.document.close();
+    };
+
+    // Handle the "Export" button click
+    exportBtn.onclick = () => {
+      drawer.classList.remove("open");
+      overlay.classList.remove("show");
+      alert("Export button clicked!");
+    };
 
 
 
@@ -1710,15 +1771,6 @@ smartListAddInput.onkeydown = e => {
 };
 
 
-/* ---------- DRAWER ---------- */
-drawerTab.onclick=()=>{
-  drawer.classList.add("open");
-  overlay.classList.add("show");
-};
-overlay.onclick=()=>{
-  drawer.classList.remove("open");
-  overlay.classList.remove("show");
-};
 
 function resetNewBottleDefaults() {
   editingItem = null;
@@ -1769,55 +1821,6 @@ function resetNewBottleDefaults() {
   // delete button
   deleteBottleBtn.style.display = "none";
 }
-
-// For the "Dictionary File" button: Display the items as a JSON string
-const dictionaryFileBtn = document.getElementById("dictionaryFileBtn");
-
-dictionaryFileBtn.onclick = () => {
-  // Stringify the 'items' array and open a new window to display it
-  const jsonContent = JSON.stringify(items, null, 2); // Pretty-print JSON with indentation
-  const jsonWindow = window.open('', '_blank');
-  jsonWindow.document.write('<pre>' + jsonContent + '</pre>');
-  jsonWindow.document.close();
-};
-
-// For the "Reserve List" button: Check localStorage for itemsPatch.json
-const reserveListBtn = document.getElementById("reserveListBtn");
-
-reserveListBtn.onclick = () => {
-  drawer.classList.remove("open");
-  overlay.classList.remove("show");
-
-  // Try to load "itemsPatch.json" from localStorage
-  const itemsPatch = localStorage.getItem("itemsPatch.json");
-
-  if (itemsPatch) {
-    // If itemsPatch exists in localStorage, display it
-    const message = `Items Patch (JSON):\n\n${itemsPatch}`;
-    alert(message); // Show it as an alert for debugging
-  } else {
-    // If itemsPatch does not exist, show an error message
-    alert("The values could not be loaded.");
-  }
-};
-
-/* ---------- SALES REPORT DEBUG ---------- */
-const salesReportBtn = document.getElementById("salesReportBtn");
-
-salesReportBtn.onclick = () => {
-  drawer.classList.remove("open");
-  overlay.classList.remove("show");
-
-  const message =
-`Sales Report Filters:
-
-ArchiveFilter: ${ArchiveFilter}
-GroupFilter: ${GroupFilter}
-SubgroupFilter: ${SubgroupFilter}
-ItemFilter: ${ItemFilter}`;
-
-  alert(message);
-};
 
 const archiveCleanupSheet = document.getElementById("archiveCleanupSheet");
 const archiveCleanupOverlay = document.getElementById("archiveCleanupOverlay");
@@ -2360,17 +2363,6 @@ confirmNewBottle.onclick = () => {
 };
 
 
-
-const exportBtn = document.getElementById("exportBtn");
-
-exportBtn.onclick = () => {
-  const html = generateExportHTML(items, pageTitle);
-
-  const win = window.open("", "_blank");
-  win.document.open();
-  win.document.write(html);
-  win.document.close();
-};
 
 </script>
 
