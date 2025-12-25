@@ -2255,7 +2255,7 @@ confirmNewBottle.onclick = () => {
   closeNewBottle();
 };
 
-
+localStorage.setItem("exportItems", JSON.stringify(items));
 
 const exportBtn = document.getElementById("exportBtn");
 
