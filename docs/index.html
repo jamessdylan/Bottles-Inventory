@@ -956,6 +956,7 @@ tab.onclick = async () => {
 
 
 
+
 async function loadSmartListForSource(source) {
   const smartKey = `${source}SmartList`;
   const fileName = `${source}.json`;
@@ -1005,6 +1006,9 @@ function openSmartListEditor() {
 
 
 function closeSmartListEditorFn() {
+  // ✅ Persist UUIDs on confirm
+  persistSmartListUUIDs();
+
   smartListEditor.style.transform = "translateY(100%)";
   smartListOverlay.classList.remove("show");
 
@@ -1238,6 +1242,16 @@ const ARCHIVE_ACTIONS = [
   null
 ];
 
+function persistSmartListUUIDs() {
+  if (!activeSmartKey) return;
+
+  const list = window[activeSmartKey];
+  if (!Array.isArray(list)) return;
+
+  const uuidKey = `${Source}SmartListUUIDs`;
+
+  window[uuidKey] = list.map(item => item.UUID);
+}
 
 /* ---------------- RENDER ---------------- */
 async function renderItems() {
