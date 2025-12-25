@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <title>Wine Export</title>
@@ -35,12 +35,12 @@ th,td{padding:8px;border-bottom:1px solid #ddd;}
   <img src="SiennaTransparent.png">
 </div>
 
-<div class="title" id="pageTitle">Wine Inventory Export</div>
+<div class="title">Wine Inventory Export</div>
 
 <div id="content"></div>
 
 <script>
-/* ========= helpers ========= */
+/* ================= HELPERS ================= */
 
 function wineTitle(item){
   return [item.brand, item.identifier, item.varietal, item.year]
@@ -48,7 +48,7 @@ function wineTitle(item){
     .join(" ");
 }
 
-/* ========= receive items ========= */
+/* ================= LOAD ITEMS ================= */
 
 const items = JSON.parse(
   localStorage.getItem("exportItems") || "[]"
@@ -56,7 +56,12 @@ const items = JSON.parse(
 
 const content = document.getElementById("content");
 
-/* ========= build tiers ========= */
+if (!items.length) {
+  content.innerHTML = "<p>No items received.</p>";
+  throw new Error("No exportItems found in localStorage");
+}
+
+/* ================= GROUP ITEMS ================= */
 
 const tiers = {};
 const inactive = [];
@@ -74,13 +79,13 @@ items.forEach(item => {
   if (!tiers[tier][color]) tiers[tier][color] = [];
 
   tiers[tier][color].push({
-    ...item,
     qty: Number(item.qty || 0),
-    price: Number(item.price || 0)
+    price: Number(item.price || 0),
+    ...item
   });
 });
 
-/* ========= render ========= */
+/* ================= RENDER ================= */
 
 let grandTotal = 0;
 
@@ -100,24 +105,26 @@ let grandTotal = 0;
 
     const table = document.createElement("table");
     table.innerHTML = `
-<tr>
-  <th>Qty</th>
-  <th>Wine</th>
-  <th class="money">Price</th>
-  <th class="money">Total</th>
-</tr>`;
+      <tr>
+        <th>Qty</th>
+        <th>Wine</th>
+        <th class="money">Price</th>
+        <th class="money">Total</th>
+      </tr>
+    `;
 
     tiers[tier][color].forEach(item => {
       const value = item.qty * item.price;
       tierTotal += value;
 
-      table.innerHTML += `
-<tr>
-  <td class="qty">${item.qty}</td>
-  <td>${wineTitle(item)}</td>
-  <td class="money">$${item.price.toFixed(2)}</td>
-  <td class="money">$${value.toFixed(2)}</td>
-</tr>`;
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td class="qty">${item.qty}</td>
+        <td>${wineTitle(item)}</td>
+        <td class="money">$${item.price.toFixed(2)}</td>
+        <td class="money">$${value.toFixed(2)}</td>
+      `;
+      table.appendChild(row);
     });
 
     content.appendChild(table);
@@ -127,14 +134,15 @@ let grandTotal = 0;
 
   const subtotal = document.createElement("table");
   subtotal.innerHTML = `
-<tr class="subtotal">
-  <td colspan="3">${tier} Subtotal</td>
-  <td class="money">$${tierTotal.toFixed(2)}</td>
-</tr>`;
+    <tr class="subtotal">
+      <td colspan="3">${tier} Subtotal</td>
+      <td class="money">$${tierTotal.toFixed(2)}</td>
+    </tr>
+  `;
   content.appendChild(subtotal);
 });
 
-/* ========= inactive ========= */
+/* ================= INACTIVE ================= */
 
 if (inactive.length) {
   const h2 = document.createElement("h2");
@@ -150,7 +158,7 @@ if (inactive.length) {
   content.appendChild(ul);
 }
 
-/* ========= grand total ========= */
+/* ================= GRAND TOTAL ================= */
 
 const total = document.createElement("h2");
 total.style.textAlign = "right";
@@ -160,4 +168,3 @@ content.appendChild(total);
 
 </body>
 </html>
-
