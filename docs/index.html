@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Test</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -87,6 +87,35 @@ background:rgba(240,233,233,.65);
 
 .tab.active img{
   filter:saturate(1.1);
+}
+
+.smart-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:14px 12px;
+  border-radius:12px;
+  background:rgba(0,0,0,.05);
+  margin-bottom:8px;
+  touch-action:pan-y;
+}
+
+.smart-x{
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  background:#b00020;
+  color:white;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.smart-title{
+  flex:1;
+  font-size:15px;
 }
 
 
@@ -210,6 +239,59 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   z-index:300;
 }
 .overlay.show{display:block;}
+
+<!-- SMART LIST EDITOR -->
+<div id="smartListOverlay" class="overlay"></div>
+
+<div id="smartListSheet" style="
+  position:fixed;
+  inset:0;
+  background:rgba(255,255,255,.95);
+  backdrop-filter:blur(16px);
+  padding:calc(20px + env(safe-area-inset-top)) 16px 20px;
+  transform:translateY(100%);
+  transition:.25s ease;
+  z-index:600;
+  overflow-y:auto;
+">
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div style="font-family:'Copperplate',serif;font-size:18px;">
+      Smart List Editor
+    </div>
+    <button id="closeSmartList">Done</button>
+  </div>
+
+  <div id="smartListItems"></div>
+
+  <!-- ADD ITEM -->
+  <div style="margin-top:16px;">
+    <input
+      id="smartAddInput"
+      placeholder="Add item…"
+      autocomplete="off"
+      style="
+        width:100%;
+        padding:14px 16px;
+        border-radius:12px;
+        border:none;
+        background:rgba(0,0,0,.06);
+        font-size:16px;
+      "
+    />
+    <div id="smartAddSuggestions"
+      style="
+        display:none;
+        background:white;
+        border-radius:12px;
+        margin-top:6px;
+        box-shadow:0 6px 20px rgba(0,0,0,.15);
+        overflow:hidden;
+      ">
+    </div>
+  </div>
+
+</div>
 
 
 /* ---------- FIXED ACTION BAR ---------- */
@@ -1567,6 +1649,141 @@ smartSortBtn.onclick = () => {
   smartSortBtn.classList.toggle("active");
   updateGlobalFilters();
   renderItems();
+};
+
+/* ---------- SMART LIST EDITOR ---------- */
+
+const smartOverlay = document.getElementById("smartListOverlay");
+const smartSheet   = document.getElementById("smartListSheet");
+const smartListEl  = document.getElementById("smartListItems");
+const smartInput   = document.getElementById("smartAddInput");
+const smartSuggest = document.getElementById("smartAddSuggestions");
+const closeSmart   = document.getElementById("closeSmartList");
+
+let smartUUIDs = [];
+
+/* ---------- OPEN (LONG PRESS) ---------- */
+let smartHold;
+smartSortBtn.onpointerdown = () => {
+  smartHold = setTimeout(openSmartEditor, 700);
+};
+smartSortBtn.onpointerup =
+smartSortBtn.onpointerleave = () => clearTimeout(smartHold);
+
+/* ---------- LOAD SOURCE ---------- */
+async function loadSmartList() {
+  const key = `${Source}SmartList`;
+
+  if (Array.isArray(window[key])) {
+    smartUUIDs = [...window[key]];
+  } else {
+    try {
+      const res = await fetch(`./${Source}.json`, { cache:"no-store" });
+      smartUUIDs = await res.json();
+    } catch {
+      smartUUIDs = [];
+    }
+  }
+}
+
+/* ---------- OPEN UI ---------- */
+async function openSmartEditor() {
+  await loadSmartList();
+  renderSmartList();
+
+  smartSheet.style.transform = "translateY(0)";
+  smartOverlay.classList.add("show");
+}
+
+/* ---------- CLOSE + SAVE ---------- */
+function closeSmartEditor() {
+  window[`${Source}SmartList`] = [...smartUUIDs];
+  smartSheet.style.transform = "translateY(100%)";
+  smartOverlay.classList.remove("show");
+  renderItems();
+}
+
+closeSmart.onclick = closeSmartEditor;
+smartOverlay.onclick = closeSmartEditor;
+
+/* ---------- RENDER LIST ---------- */
+function renderSmartList() {
+  smartListEl.innerHTML = "";
+
+  smartUUIDs.forEach((uuid, idx) => {
+    const item = items.find(i => i.UUID === uuid);
+    if (!item) return;
+
+    const row = document.createElement("div");
+    row.className = "smart-row";
+    row.draggable = true;
+
+    row.innerHTML = `
+      <div class="smart-x">×</div>
+      <div class="smart-title">
+        ${[item.brand,item.identifier,item.varietal,item.year]
+          .filter(v=>v && v!=="N/A").join(" ")}
+      </div>
+    `;
+
+    // delete
+    row.querySelector(".smart-x").onclick = () => {
+      smartUUIDs.splice(idx, 1);
+      renderSmartList();
+    };
+
+    // reorder
+    row.ondragstart = e => e.dataTransfer.setData("i", idx);
+    row.ondragover  = e => e.preventDefault();
+    row.ondrop = e => {
+      const from = Number(e.dataTransfer.getData("i"));
+      const to = idx;
+      const moved = smartUUIDs.splice(from, 1)[0];
+      smartUUIDs.splice(to, 0, moved);
+      renderSmartList();
+    };
+
+    smartListEl.appendChild(row);
+  });
+}
+
+/* ---------- AUTOCOMPLETE ADD ---------- */
+smartInput.oninput = () => {
+  const q = smartInput.value.toLowerCase();
+  smartSuggest.innerHTML = "";
+
+  if (!q) return smartSuggest.style.display = "none";
+
+  const available = items.filter(
+    i => !smartUUIDs.includes(i.UUID)
+  );
+
+  const matches = available.filter(i =>
+    `${i.brand} ${i.identifier} ${i.varietal} ${i.year}`
+      .toLowerCase().includes(q)
+  );
+
+  if (!matches.length) return smartSuggest.style.display = "none";
+
+  matches.forEach(item => {
+    const div = document.createElement("div");
+    div.textContent =
+      [item.brand,item.identifier,item.varietal,item.year]
+      .filter(v=>v && v!=="N/A").join(" ");
+    div.style.padding = "12px 16px";
+    div.style.cursor = "pointer";
+
+    div.onclick = () => {
+      smartUUIDs.push(item.UUID);
+      smartInput.value = "";
+      smartSuggest.style.display = "none";
+      renderSmartList();
+    };
+
+    smartSuggest.appendChild(div);
+  });
+
+  smartSuggest.style.display = "block";
 };
 
 
