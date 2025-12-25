@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>SM Bestm</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -854,6 +854,30 @@ const SOURCE_ICONS = {
   "Other": "OtherTransparent.png"
 };
 
+/* ---------- SMART LIST INIT ---------- */
+async function initializeSmartLists() {
+  for (const src of SOURCES) {
+    const smartKey = `${src}SmartList`;
+    window[smartKey] = []; // default
+
+    try {
+      const res = await fetch(`./${src}.json`, { cache: "no-store" });
+      if (!res.ok) continue;
+
+      const uuidList = await res.json();
+      if (!Array.isArray(uuidList)) continue;
+
+      // Match UUIDs to actual items
+      window[smartKey] = items.filter(i =>
+        uuidList.includes(i.UUID)
+      );
+    } catch {
+      // silent fail → empty list
+    }
+  }
+}
+
+
 let items=[];
 let Source="Emporio";
 let Sort="Standard";
@@ -879,10 +903,14 @@ const overlay = document.getElementById("overlay");
 
 /* ---------------- LOAD ---------------- */
 async function loadItems(){
-  const res=await fetch("./items.json",{cache:"no-store"});
-  items=await res.json();
+  const res = await fetch("./items.json", { cache:"no-store" });
+  items = await res.json();
+
+  await initializeSmartLists(); // 🔑 NEW
+
   renderItems();
 }
+
 
 /* ---------------- TABS ---------------- */
 function buildSourceTabs(){
@@ -1261,28 +1289,12 @@ async function renderItems() {
     group2items = [];
   }
 
-else if (GroupFilter === "Special") {
-  let uuidList = [];
-
-  // 🔑 1. Attempt global Smart List first
+ else if (GroupFilter === "Special") {
   const smartKey = `${Source}SmartList`;
-  const smartList = window[smartKey];
+  const smartItems = window[smartKey] || [];
 
-  if (Array.isArray(smartList) && smartList.length > 0) {
-    uuidList = smartList;
-  } 
-  // 🔄 2. Fallback to file-based list
-  else {
-    try {
-      const res = await fetch(`./${Source}.json`, { cache: "no-store" });
-      uuidList = await res.json();
-    } catch {
-      uuidList = [];
-    }
-  }
-
-  group1items = allItems.filter(i => uuidList.includes(i.UUID));
-  group2items = allItems.filter(i => !uuidList.includes(i.UUID));
+  group1items = allItems.filter(i => smartItems.includes(i));
+  group2items = allItems.filter(i => !smartItems.includes(i));
 }
 
 
