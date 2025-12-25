@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine LongPress</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -977,15 +977,17 @@ function buildSourceTabs(){
 
     tab.appendChild(img);
 
-    tab.onclick = () => {
-      Source = src;
-      document.querySelectorAll(".tab").forEach(t =>
-        t.classList.remove("active")
-      );
-      tab.classList.add("active");
-      updateSort(Source);
-      renderItems();
-    };
+tab.onclick = () => {
+  Source = src;
+  document.querySelectorAll(".tab").forEach(t =>
+    t.classList.remove("active")
+  );
+  tab.classList.add("active");
+  updateSort(Source);
+  updateGlobalFilters();
+  renderItems();
+};
+
 
     tabsEl.appendChild(tab);
   });
@@ -1482,6 +1484,55 @@ function closeSmartSort(){
   smartOverlay.classList.remove("show");
 }
 
+function updateGlobalFilters() {
+  /* ---------- ARCHIVE ---------- */
+  ArchiveFilter = archiveBtn.classList.contains("active");
+
+  /* ---------- GROUP ---------- */
+  if (groupBtn.classList.contains("active")) {
+    if (
+      ["Emporio", "Mezzo", "Tetto (L)", "Tetto (R)", "Prep Cooler"]
+        .includes(Source)
+    ) {
+      GroupFilter = "Tier";
+    } else if (
+      ["Liquor Closet", "Wine Cellar"]
+        .includes(Source)
+    ) {
+      GroupFilter = "Special";
+    } else {
+      GroupFilter = "None";
+    }
+  } else {
+    GroupFilter = "None";
+  }
+
+  /* ---------- SUBGROUP ---------- */
+  if (
+    smartSortBtn.classList.contains("active") &&
+    ["Other", "Emporio", "Mezzo", "Tetto (L)", "Tetto (R)"]
+      .includes(Source)
+  ) {
+    SubgroupFilter = "Color";
+  } else {
+    SubgroupFilter = "None";
+  }
+
+  /* ---------- ITEM ---------- */
+  if (!smartSortBtn.classList.contains("active")) {
+    ItemFilter = "None";
+  } else if (
+    ["Other", "Emporio", "Mezzo", "Tetto (L)", "Tetto (R)", "Liquor Closet", "Prep Cooler"]
+      .includes(Source)
+  ) {
+    ItemFilter = "None";
+  } else if (Source === "Wine Cellar") {
+    ItemFilter = "Special";
+  } else {
+    ItemFilter = "None";
+  }
+}
+
 /* ---------------- RENDER ---------------- */
 function renderItems(){
   list.innerHTML = "";
@@ -1705,13 +1756,31 @@ loadItems();
 let showArchived = false;
 let groupEnabled = false;
 
+// ---------- GLOBAL FILTER STATE ----------
+let ArchiveFilter = false;   // true | false
+let GroupFilter   = "None";  // "Tier" | "Special" | "None"
+let SubgroupFilter = "None"; // "Color" | "None"
+let ItemFilter    = "None";  // "Special" | "None"
+
+
 archiveBtn.onclick = () => {
-  showArchived = !showArchived;
-  archiveBtn.classList.toggle("active", showArchived);
+  archiveBtn.classList.toggle("active");
+  updateGlobalFilters();
   renderItems();
 };
 
 
+groupBtn.onclick = () => {
+  groupBtn.classList.toggle("active");
+  updateGlobalFilters();
+  renderItems();
+};
+
+smartSortBtn.onclick = () => {
+  smartSortBtn.classList.toggle("active");
+  updateGlobalFilters();
+  renderItems();
+};
 
 let smartPressTimer;
 
@@ -1726,7 +1795,7 @@ smartSortBtn.onpointerleave = () =>
 
 smartSortBtn.onclick=()=>smartSortBtn.classList.toggle("active");
 
-groupBtn.onclick=()=>groupBtn.classList.toggle("active");
+
 
 
 /* ---------- DRAWER ---------- */
