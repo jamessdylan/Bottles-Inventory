@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine </title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -932,6 +932,7 @@ const tabsEl=document.getElementById("sourceTabs");
     reserveListBtn.onclick = () => {
       drawer.classList.remove("open");
       overlay.classList.remove("show");
+function debugCurrentItemsList();
       const itemsPatch = localStorage.getItem("itemsPatch.json");
 
   if (itemsPatch) {
@@ -2405,7 +2406,16 @@ confirmNewBottle.onclick = () => {
   closeNewBottle();
 };
 
+function debugCurrentItemsList() {
+  // Call createItemsList function to get the current items formatted as a JSON string
+  const itemsListJson = createItemsList();
 
+  // Print the items list to the console for debugging purposes
+  console.log("Current Items List:\n", itemsListJson);
+
+  // Optional: If you want to show it as a readable object in the console:
+  console.log("Current Items List (Parsed):\n", JSON.parse(itemsListJson));
+}
 
 </script>
 
