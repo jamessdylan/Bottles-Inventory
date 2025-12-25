@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Sort 2</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1868,7 +1868,9 @@ row.onpointerleave = () => clearTimeout(rowHoldTimer);
 /* ---------- INIT ---------- */
 buildSourceTabs();
 updateSort(Source);
+updateGlobalFilters();   // ✅ ADD THIS
 loadItems();
+
 
 /* ---------- ACTION STATES ---------- */
 let showArchived = false;
@@ -1910,8 +1912,6 @@ smartSortBtn.onpointerup =
 smartSortBtn.onpointerleave = () =>
   clearTimeout(smartPressTimer);
 
-
-smartSortBtn.onclick=()=>smartSortBtn.classList.toggle("active");
 
 
 
