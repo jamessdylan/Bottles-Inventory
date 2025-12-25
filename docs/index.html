@@ -822,7 +822,12 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
 <script>
 /* ---------- PAGE TITLE ---------- */
-const pageTitleEl=document.getElementById("pageTitle");
+const storedTitle = loadTitle();
+if (storedTitle) {
+  pageTitle = storedTitle;
+  pageTitleEl.textContent = pageTitle;
+}
+
 
 function defaultTitle(){
   const d=new Date();
@@ -870,12 +875,14 @@ cancelDate.onclick=()=>{
   pickerOverlay.classList.remove("show");
 };
 
-confirmDate.onclick=()=>{
-  pageTitle=`${monthPicker.value} ${yearPicker.value} Wine Inventory`;
-  pageTitleEl.textContent=pageTitle;
+confirmDate.onclick = () => {
+  pageTitle = `${monthPicker.value} ${yearPicker.value} Wine Inventory`;
+  pageTitleEl.textContent = pageTitle;
+  saveTitle();
   cancelDate.onclick();
 };
-;
+
+
 
 /* ---------------- STATE ---------------- */
 const SOURCES=[
@@ -903,10 +910,52 @@ let GroupFilter   = "None";  // None | Tier | Special
 let SubgroupFilter = "None"; // None | Color
 let ItemFilter    = "None";  // None | Special
 
+/* ---------- PERSISTENCE ---------- */
+const STORAGE_KEYS = {
+  ITEMS: "SM_ITEMS",
+  SMART: src => `SM_SMART_${src}`,
+  TITLE: "SM_TITLE"
+};
+
+function saveItems() {
+  localStorage.setItem(
+    STORAGE_KEYS.ITEMS,
+    JSON.stringify(items)
+  );
+}
+
+function loadItemsFromStorage() {
+  const raw = localStorage.getItem(STORAGE_KEYS.ITEMS);
+  return raw ? JSON.parse(raw) : null;
+}
+
+function saveSmartList(source, list) {
+  const uuids = list.map(i => i.UUID);
+  localStorage.setItem(
+    STORAGE_KEYS.SMART(source),
+    JSON.stringify(uuids)
+  );
+}
+
+function loadSmartList(source) {
+  const raw = localStorage.getItem(STORAGE_KEYS.SMART(source));
+  return raw ? JSON.parse(raw) : [];
+}
+
+function saveTitle() {
+  localStorage.setItem(STORAGE_KEYS.TITLE, pageTitle);
+}
+
+function loadTitle() {
+  return localStorage.getItem(STORAGE_KEYS.TITLE);
+}
+
+
 
 
 const list=document.getElementById("list");
 const tabsEl=document.getElementById("sourceTabs");
+
 
 const drawer = document.getElementById("drawer");
 const overlay = document.getElementById("overlay");
@@ -914,10 +963,19 @@ const overlay = document.getElementById("overlay");
 
 /* ---------------- LOAD ---------------- */
 async function loadItems(){
-  const res=await fetch("./items.json",{cache:"no-store"});
-  items=await res.json();
+  const stored = loadItemsFromStorage();
+
+  if (stored) {
+    items = stored;
+  } else {
+    const res = await fetch("./items.json", { cache:"no-store" });
+    items = await res.json();
+    saveItems(); // seed storage
+  }
+
   renderItems();
 }
+
 
 /* ---------------- TABS ---------------- */
 function buildSourceTabs(){
@@ -956,24 +1014,13 @@ tab.onclick = async () => {
 
 async function loadSmartListForSource(source) {
   const smartKey = `${source}SmartList`;
-  const fileName = `${source}.json`;
 
-  try {
-    const res = await fetch(`./${fileName}`, { cache: "no-store" });
-    if (!res.ok) throw new Error("No file");
-
-    const uuidList = await res.json();
-
-    // Match UUIDs to actual item objects
-    window[smartKey] = items.filter(i =>
-      uuidList.includes(i.UUID)
-    );
-
-  } catch {
-    // No file or error → empty smart list
-    window[smartKey] = [];
-  }
+  const uuidList = loadSmartList(source);
+  window[smartKey] = items.filter(i =>
+    uuidList.includes(i.UUID)
+  );
 }
+
 
 const smartListEditor = document.getElementById("smartListEditor");
 const smartListOverlay = document.getElementById("smartListOverlay");
@@ -1036,7 +1083,9 @@ function renderSmartListEditor() {
     row.querySelector(".smart-delete").onclick = e => {
       e.stopPropagation();
       list.splice(index, 1);
+saveSmartList(Source, window[activeSmartKey]);
       renderSmartListEditor();
+
       renderItems(); // reflect immediately
     };
 
@@ -1061,7 +1110,9 @@ function renderSmartListEditor() {
       const moved = list.splice(dragIndex, 1)[0];
       list.splice(index, 0, moved);
 
+saveSmartList(Source, window[activeSmartKey]);
       renderSmartListEditor();
+
       renderItems();
     });
 
@@ -1431,6 +1482,7 @@ function drawItem(item){
       const v=prompt("Enter value:",item[Source]);
       if(v!==null&&!isNaN(v)){
         item[Source]=Math.max(0,round(Number(v)));
+saveItems();
         renderItems();
       }
     },450);
@@ -1446,6 +1498,7 @@ function drawItem(item){
   /* ----- MINUS ----- */
   minusBtn.onclick = () => {
     item[Source] = Math.max(0, round(item[Source] - 1));
+saveItems();
     renderItems();
   };
 
@@ -1457,7 +1510,9 @@ function drawItem(item){
           0,
           round(item[Source] - Number(v))
         );
+saveItems();
         renderItems();
+
       }
     }, 450);
   };
@@ -1468,6 +1523,7 @@ function drawItem(item){
   /* ----- PLUS ----- */
   plusBtn.onclick = () => {
     item[Source] = round(item[Source] + 1);
+saveItems();
     renderItems();
   };
 
@@ -1476,6 +1532,7 @@ function drawItem(item){
       const v = prompt("Add how many?", 0);
       if (v !== null && !isNaN(v)) {
         item[Source] = round(item[Source] + Number(v));
+saveItems();
         renderItems();
       }
     }, 450);
@@ -1485,7 +1542,9 @@ function drawItem(item){
   plusBtn.onpointerleave = () => clearTimeout(holdTimerBtn);
 
 
-  row.querySelector(".toggle").onclick=()=>{item[key]=!item[key];renderItems();}
+  row.querySelector(".toggle").onclick=()=>{item[key]=!item[key];
+saveItems();
+renderItems();}
 
 let rowHoldTimer;
 
@@ -1658,7 +1717,7 @@ smartListAddInput.onkeydown = e => {
   smartListAddInput.value = "";
   smartListSelectedItem = null;
   smartListAddSuggestions.style.display = "none";
-
+saveSmartList(Source, list);
   renderSmartListEditor();
   renderItems(); // reflect immediately
 };
@@ -1768,6 +1827,7 @@ confirmArchiveCleanup.onclick = () => {
 
   archiveCleanupSheet.style.transform = "translateY(100%)";
   archiveCleanupOverlay.classList.remove("show");
+saveItems();
 
   renderItems();
 };
@@ -2164,6 +2224,7 @@ deleteBottleBtn.onclick = () => {
 
   items = items.filter(i => i !== editingItem);
   editingItem = null;
+saveItems();
 
   renderItems();
   closeNewBottle();
@@ -2204,6 +2265,8 @@ confirmNewBottle.onclick = () => {
   }
 
   editingItem = null;
+saveItems();
+
   renderItems();
   closeNewBottle();
 };
