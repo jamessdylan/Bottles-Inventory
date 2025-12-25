@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM  Inventory</title>
+<title>SM sdaf Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -929,16 +929,17 @@ const overlay = document.getElementById("overlay");
 async function loadItems(){
   const stored = loadItemsFromStorage();
 
-  if (stored && Array.isArray(stored)) {
+  if (Array.isArray(stored) && stored.length > 0) {
     items = stored;
   } else {
     const res = await fetch("./items.json", { cache:"no-store" });
     items = await res.json();
-    saveItems(); // seed localStorage once
+    saveItems(); // seed once
   }
 
   renderItems();
 }
+
 
 
 /* ---------------- TABS ---------------- */
