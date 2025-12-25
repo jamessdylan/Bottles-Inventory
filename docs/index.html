@@ -1337,6 +1337,19 @@ else if (GroupFilter === "Special") {
   subgroup1C = standardSort(group1complete);
   subgroup2C = standardSort(group2complete);
 
+
+function openSmartListEditor() {
+  // open the existing Specialty List sheet
+  drawer.classList.remove("open");
+  overlay.classList.remove("show");
+
+  loadSpecialtyLists().then(() => {
+    specialtySheet.style.transform = "translateX(0)";
+    specialtyOverlay.classList.add("show");
+  });
+}
+
+
   // ---------- RENDER ----------
   function renderGroup(label, a, b, c) {
     if (label) drawDivider(label);
@@ -1604,13 +1617,6 @@ groupBtn.addEventListener("click", e => {
   renderItems();
 });
 
-
-groupBtn.onclick = () => {
-  clearTimeout(groupHoldTimer);
-  groupBtn.classList.toggle("active");
-  updateGlobalFilters();
-  renderItems();
-};
 
 
 smartSortBtn.onclick = () => {
