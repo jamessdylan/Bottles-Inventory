@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine2 Inventory</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -913,7 +913,7 @@ const overlay = document.getElementById("overlay");
 
 /* ---------------- LOAD ---------------- */
 async function loadItems() {
-  const local = localStorage.getItem("items.json");
+  const local = localStorage.getItem("CurrentItems");
 
   if (local) {
     try {
@@ -921,14 +921,18 @@ async function loadItems() {
       renderItems();
       return;
     } catch (e) {
-      console.warn("Corrupt local items.json, falling back to GitHub file");
-      localStorage.removeItem("items.json");
+      console.warn("Invalid CurrentItems in localStorage, refetching.", e);
+      localStorage.removeItem("CurrentItems");
     }
   }
 
-  // Fallback to GitHub file
+  // Fallback → GitHub items.json
   const res = await fetch("./items.json", { cache: "no-store" });
   items = await res.json();
+
+  // Seed localStorage for next load
+  localStorage.setItem("CurrentItems", JSON.stringify(items));
+
   renderItems();
 }
 
@@ -1092,10 +1096,6 @@ function renderSmartListEditor() {
 
 
 /* ---------------- HELPERS ---------------- */
-function saveItemsToLocal() {
-  localStorage.setItem("items.json", JSON.stringify(items));
-}
-
 const round=v=>Math.round(v*10)/10;
 const naLast=(a,b)=>a==="N/A"?1:b==="N/A"?-1:a.localeCompare(b);
 function baseSort(a,b,key){
@@ -1372,14 +1372,11 @@ else if (GroupFilter === "Special") {
     renderGroup("Other", subgroup2A, subgroup2B, subgroup2C);
   }
 
-    else {
+  else {
     renderGroup(null, subgroup1A, subgroup1B, subgroup1C);
   }
-
-  // ✅ Persist canonical inventory snapshot
-  saveItemsToLocal();
+localStorage.setItem("CurrentItems", JSON.stringify(items));
 }
-
 
 
 
