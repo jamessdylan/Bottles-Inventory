@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Parse Inventory</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -227,62 +227,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 }
 .action-bar img{filter:brightness(0) invert(1);}
 
-/* ---------- SPECIALTY LIST ROW ---------- */
-.specialty-row{
-  position:relative;
-  background:rgba(255,255,255,.6);
-  padding:16px;
-  border-radius:14px;
-  margin-bottom:12px;
-  overflow:hidden;
-}
-
-.specialty-row select{
-  width:100%;
-  font-size:16px;
-  padding:10px;
-  border-radius:10px;
-}
-
-/* swipe delete */
-.specialty-delete{
-  position:absolute;
-  right:0;
-  top:0;
-  bottom:0;
-  width:80px;
-  background:#b00020;
-  color:white;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-weight:bold;
-}
-.specialty-row {
-  position: relative;
-  padding: 14px 16px;
-  background: #fff;
-  transition: transform 0.25s ease, opacity 0.25s ease;
-  touch-action: pan-y;
-}
-
-.specialty-row.deleting {
-  transform: translateX(-120%);
-  opacity: 0;
-}
-
-.specialty-row.locked {
-  opacity: 0.55;
-}
-.specialty-row.locked::after {
-  content: "Locked";
-  font-size: 12px;
-  color: #999;
-  position: absolute;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-}
 
 
 #datePicker button{
@@ -768,7 +712,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
   <button>New Project</button>
 
-  <button id="specialtyListBtn">Specialty List</button>
   <button id="reserveListBtn">Reserve List</button>
 
 <button id="salesReportBtn">Sales Report</button>
@@ -846,43 +789,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 </div>
 
 
-<!-- SPECIALTY LIST OVERLAY -->
-<div id="specialtyOverlay" class="overlay"></div>
-
-<div id="specialtySheet" style="
-  position:fixed;
-  inset:0;
-  background:rgba(255,255,255,.92);
-  backdrop-filter:blur(16px);
-  padding:calc(20px + env(safe-area-inset-top)) 16px 20px;
-  transform:translateX(100%);
-  transition:.25s ease;
-  z-index:500;
-  overflow-y:auto;
-">
-
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-    <div style="font-family:'Copperplate',serif;font-size:18px;">
-      Select List to Edit
-    </div>
-    <button id="closeSpecialty">Done</button>
-  </div>
-
-  <button id="addSpecialtyList" style="
-    width:100%;
-    padding:14px;
-    border-radius:14px;
-    border:none;
-    background:#1f5e3b;
-    color:white;
-    font-size:16px;
-    margin-bottom:16px;
-  ">
-    + Create New List
-  </button>
-
-  <div id="specialtyListContainer"></div>
-</div>
 
 <header><img src="SiennaTransparent.png"></header>
 
@@ -990,10 +896,7 @@ const SOURCE_ICONS = {
 };
 
 let items=[];
-let Source="Emporio";
-let specialtyLists = [];
-let selectedSpecialtyList = null;
-let expandedSpecialtyList = null;
+let Source="Emporio";;
 
 // ---------- GLOBAL FILTERS ----------
 let ArchiveFilter = false;   // true | false
@@ -1051,162 +954,6 @@ tab.onclick = async () => {
     tabsEl.appendChild(tab);
   });
 }
-
-
-
-async function loadSpecialtyLists(){
-  const res = await fetch("./SpecialtyList.json", { cache:"no-store" });
-  const data = await res.json();
-
-  // Extract keys from dictionary
-  specialtyLists = Object.keys(data)
-    .sort((a, b) => a.localeCompare(b));
-
-  renderSpecialtyLists();
-}
-
-function renderSpecialtyLists(){
-  const container = document.getElementById("specialtyListContainer");
-  container.innerHTML = "";
-
-
-  // --- Existing Lists ---
-  specialtyLists.forEach((listName, index) => {
-    const row = document.createElement("div");
-    row.className = "specialty-row";
-    row.textContent = listName;
-    row.style.cursor = "pointer";
-    row.style.fontSize = "16px";
-
-    // select list
-let startX = 0;
-let currentX = 0;
-let dragging = false;
-let didSwipe = false;
-row.onclick = () => {
-if (didSwipe) return;
-  expandedSpecialtyList =
-    expandedSpecialtyList === listName ? null : listName;
-
-
-  renderSpecialtyLists();
-};
-
-
-const expandContainer = document.createElement("div");
-expandContainer.style.marginTop = "10px";
-expandContainer.style.paddingLeft = "12px";
-expandContainer.style.display =
-  expandedSpecialtyList === listName ? "block" : "none";
-expandContainer.style.fontSize = "14px";
-expandContainer.style.color = "#333";
-expandContainer.textContent = "Items for this specialty list will appear here.";
-row.appendChild(expandContainer);
-
-
-const lockedNames = ["Wine Cellar", "Prep Cooler"];
-
-
-
-row.addEventListener("pointerdown", e => {
-  didSwipe = false;
-  startX = e.clientX;
-  dragging = true;
-  row.setPointerCapture(e.pointerId);
-});
-
-row.addEventListener("pointermove", e => {
-  if (!dragging) return;
-
-  currentX = e.clientX - startX;
-
-  if (currentX < -10) didSwipe = true;
-
-  if (currentX < 0) {
-    row.style.transform = `translateX(${currentX}px)`;
-  }
-});
-
-
-row.addEventListener("pointerup", () => {
-  dragging = false;
-
-  // threshold reached → attempt delete
-  if (currentX < -80) {
-
-    // 🔒 locked list names
-    if (lockedNames.includes(listName)) {
-      row.style.transform = "translateX(0)";
-      return;
-    }
-
-    // animate out
-    row.classList.add("deleting");
-
-    setTimeout(() => {
-      const index = specialtyLists.indexOf(listName);
-      if (index > -1) {
-        specialtyLists.splice(index, 1);
-        renderSpecialtyLists();
-      }
-    }, 250);
-
-  } else {
-    // snap back
-    row.style.transform = "translateX(0)";
-  }
-
-  currentX = 0;
-});
-
-
-    container.appendChild(row);
-  });
-}
-
-
-
-const specialtyBtn = document.getElementById("specialtyListBtn");
-const specialtySheet = document.getElementById("specialtySheet");
-const specialtyOverlay = document.getElementById("specialtyOverlay");
-
-specialtyBtn.onclick = async () => {
-  drawer.classList.remove("open");
-  overlay.classList.remove("show");
-
-  await loadSpecialtyLists();
-
-  specialtySheet.style.transform = "translateX(0)";
-  specialtyOverlay.classList.add("show");
-};
-
-document.getElementById("closeSpecialty").onclick = () => {
-  specialtySheet.style.transform = "translateX(100%)";
-  specialtyOverlay.classList.remove("show");
-};
-
-specialtyOverlay.onclick = () => {
-  specialtySheet.style.transform = "translateX(100%)";
-  specialtyOverlay.classList.remove("show");
-};
-
-
-document.getElementById("addSpecialtyList").onclick = () => {
-  const name = prompt("New list name:");
-  if (!name) return;
-
-  if (specialtyLists.includes(name)) {
-    alert("List already exists");
-    return;
-  }
-
-  specialtyLists.push(name);
-  specialtyLists.sort((a,b)=>a.localeCompare(b));
-  renderSpecialtyLists();
-};
-
-
-
 
 async function loadSmartListForSource(source) {
   const smartKey = `${source}SmartList`;
@@ -2566,83 +2313,7 @@ function sortAlphabetically(a, b) {
     Object.values(colors).forEach(arr => arr.sort(sortAlphabetically))
   );
 
-  let html = `
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>${pageTitle}</title>
-<style>
-body{font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;padding:24px;}
-.logo{text-align:center;margin-bottom:12px;}
-.logo img{max-width:260px;}
-.title{background:#1f5e3b;color:white;padding:14px;text-align:center;border-radius:8px;margin-bottom:24px;}
-h2{margin-top:32px;border-bottom:2px solid #1f5e3b;}
-h3{margin-top:16px;color:#555;}
-table{width:100%;border-collapse:collapse;margin-bottom:12px;}
-th,td{padding:8px;border-bottom:1px solid #ddd;}
-.qty{text-align:center;font-weight:bold;}
-.money{text-align:right;}
-.subtotal{font-weight:bold;background:#fafafa;}
-</style>
-</head>
-<body>
-
-<div class="logo">
-  <img src="SiennaTransparent.png">
-</div>
-
-<div class="title">${pageTitle}</div>
-`;
-
-  let grandTotal = 0;
-
-  ["House", "Reserve"].forEach(tier => {
-    if (!tiers[tier] || Object.keys(tiers[tier]).length === 0) return;
-
-    let tierTotal = 0;
-    html += `<h2>${tier} Wines</h2>`;
-
-    Object.keys(tiers[tier]).forEach(color => {
-      html += `<h3>${color}</h3>
-<table>
-<tr><th>Qty</th><th>Wine</th><th class="money">Price</th><th class="money">Total</th></tr>`;
-
-      tiers[tier][color].forEach(item => {
-        const value = item.qty * (item.price || 0);
-        tierTotal += value;
-        html += `
-<tr>
-  <td class="qty">${item.qty}</td>
-  <td>${wineTitle(item)}</td>
-  <td class="money">$${item.price || 0}</td>
-  <td class="money">$${value}</td>
-</tr>`;
-      });
-
-      html += `</table>`;
-    });
-
-    grandTotal += tierTotal;
-    html += `
-<table>
-<tr class="subtotal">
-<td colspan="3">${tier} Subtotal</td>
-<td class="money">$${tierTotal}</td>
-</tr>
-</table>`;
-  });
-
-  html += `
-<h2>Inactive Wines</h2>
-<ul>
-${inactive.map(i => `<li>${wineTitle(i)}</li>`).join("")}
-</ul>
-
-<h2 style="text-align:right;">Grand Total: $${grandTotal}</h2>
-
-</body>
-</html>`;
+  let html = `;
 
   return html;
 }
