@@ -90,6 +90,21 @@ background:rgba(240,233,233,.65);
 }
 
 
+/* ---------- SORT ---------- */
+.section{
+  display:flex;
+  justify-content:center;
+  padding:12px;
+}
+select{
+  font-family:"Copperplate",serif;
+  font-size:18px;
+  background:rgba(0,0,0,.1);
+  border:none;
+  border-radius:6px;
+  padding:8px 16px;
+}
+
 /* ---------- LIST ---------- */
 .list{padding:8px 16px 140px;}
 
@@ -101,9 +116,19 @@ background:rgba(240,233,233,.65);
   margin-bottom:14px;
   padding:16px 18px;
   border-radius:16px;
-  background:rgba(255,255,255,.35);
+.item-row{
+  background: rgba(255,255,255,.6);
+}
+
+/* Override base background with tint */
+.item-row.tint-red,
+.item-row.tint-rose,
+.item-row.tint-white{
+  background-clip: padding-box;
+}
   backdrop-filter:blur(6px);
 }
+
 
 /* LEFT */
 .left{display:flex;gap:16px;flex:1;align-items:center;}
@@ -124,6 +149,29 @@ background:rgba(240,233,233,.65);
   background:currentColor;
   transform:translateX(-50%);
 }
+
+/* ===== ITEM ROW COLOR TINTS ===== */
+
+.item-row{
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* Red wine */
+.item-row.tint-red{
+  background: rgba(255, 144, 132, 0.25);
+}
+
+/* Rose / Sparkling */
+.item-row.tint-rose{
+  background: rgba(255, 206, 211, 0.25);
+}
+
+/* White wine */
+.item-row.tint-white{
+  background: rgba(240, 233, 233, 0.35);
+}
+
 
 .text-stack{display:flex;flex-direction:column;gap:6px;flex:1;}
 .title{font-family:"Copperplate",serif;font-size:17px;}
@@ -1093,6 +1141,14 @@ function renderSpecialtyLists(){
   // --- Existing Lists ---
   specialtyLists.forEach((listName, index) => {
     const row = document.createElement("div");
+if (item.color === "Red") row.classList.add("tint-red");
+
+if (item.color === "Rose" || item.color === "Sparkling") {
+  row.classList.add("tint-rose");
+}
+
+if (item.color === "White") row.classList.add("tint-white");
+
     row.className = "specialty-row";
     row.textContent = listName;
     row.style.cursor = "pointer";
