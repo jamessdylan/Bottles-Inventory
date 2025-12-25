@@ -1253,6 +1253,7 @@ function persistSmartListUUIDs() {
   window[uuidKey] = list.map(item => item.UUID);
 }
 
+
 /* ---------------- RENDER ---------------- */
 async function renderItems() {
   list.innerHTML = "";
@@ -1716,6 +1717,55 @@ overlay.onclick=()=>{
   overlay.classList.remove("show");
 };
 
+function resetNewBottleDefaults() {
+  editingItem = null;
+
+  // ----- state -----
+  newBottleStatus = true;
+  newBottleTier = "House";
+  newBottleColor = "White";
+  newBottleBrand = "";
+  newBottleIdentifier = "N/A";
+  newBottleVarietal = "";
+  newBottleYear = "N/A";
+  newBottlePrice = null;
+  newBottleFeatured = [];
+  newBottleBase64 = false;
+  newBottleIcon = null;
+  newBottleNote = "";
+
+  // ----- UI -----
+  statusValue.textContent = "Active";
+  statusValue.style.color = "green";
+
+  // tier UI
+  tierIcon.textContent = "🏠";
+  tierValue.lastElementChild.textContent = "House";
+  tierValue.style.color = "#1f5e3b";
+
+  // color UI
+  updateColorUI();
+
+  // inputs
+  brandInput.value = "";
+  identifierInput.value = "";
+  varietalInput.value = "";
+  yearInput.value = "";
+  priceInput.value = "";
+  noteInput.value = "";
+
+  // featured buttons
+  document.querySelectorAll(".featured-btn").forEach(btn =>
+    btn.classList.remove("active")
+  );
+
+  // image
+  newBottleImageInput.value = "";
+  newBottleImageBox.textContent = "Insert Image";
+
+  // delete button
+  deleteBottleBtn.style.display = "none";
+}
 
 
 /* ---------- SALES REPORT DEBUG ---------- */
@@ -1837,6 +1887,8 @@ archiveCleanupOverlay.onclick = () => {
 };
   
 
+
+
 /* ---------- NEW BOTTLE ---------- */
 const newBottleBtn = document.getElementById("newBottleBtn");
 const newBottleSheet = document.getElementById("newBottleSheet");
@@ -1862,6 +1914,7 @@ let newBottleIcon = null;
 let newBottleNote = "";
 
 newBottleBtn.onclick = () => {
+resetNewBottleDefaults();
 document.body.style.overflow = "hidden";
 newBottleSheet.style.opacity = "1";
 newBottleSheet.style.pointerEvents = "auto";
@@ -2263,6 +2316,7 @@ confirmNewBottle.onclick = () => {
   }
 
   editingItem = null;
+  resetNewBottleDefaults();
   renderItems();
   closeNewBottle();
 };
