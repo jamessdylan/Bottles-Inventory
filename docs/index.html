@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine </title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1367,14 +1367,6 @@ async function renderItems() {
   }
 }
 
-const smartOverlay = document.getElementById("smartListOverlay");
-const smartSheet   = document.getElementById("smartListSheet");
-const smartListEl  = document.getElementById("smartListItems");
-const addInput     = document.getElementById("smartListAddInput");
-const addSuggest   = document.getElementById("smartListSuggestions");
-
-let workingSmartList = [];
-let dragItem = null;
 
 function openSmartListEditor(){
   drawer.classList.remove("open");
@@ -1394,46 +1386,7 @@ function closeSmartListEditor(){
   addSuggest.style.display = "none";
 }
 
-function renderSmartListEditor(){
-  smartListEl.innerHTML = "";
 
-  workingSmartList.forEach((item, index) => {
-    const row = document.createElement("div");
-    row.style.cssText = `
-      padding:14px 16px;
-      margin-bottom:10px;
-      border-radius:12px;
-      background:rgba(0,0,0,.06);
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      cursor:grab;
-    `;
-    row.draggable = true;
-
-    row.innerHTML = `
-      <div>${itemTitle(item)}</div>
-      <div style="font-size:18px;cursor:pointer;">✕</div>
-    `;
-
-    // remove
-    row.lastElementChild.onclick = () => {
-      workingSmartList.splice(index,1);
-      renderSmartListEditor();
-    };
-
-    // drag reorder
-    row.ondragstart = () => dragItem = index;
-    row.ondragover = e => e.preventDefault();
-    row.ondrop = () => {
-      const moved = workingSmartList.splice(dragItem,1)[0];
-      workingSmartList.splice(index,0,moved);
-      renderSmartListEditor();
-    };
-
-    smartListEl.appendChild(row);
-  });
-}
 
 addInput.oninput = () => {
   const v = addInput.value.toLowerCase().trim();
@@ -1480,7 +1433,6 @@ document.getElementById("confirmSmartList").onclick = () => {
   renderItems();
 };
 
-smartOverlay.onclick = closeSmartListEditor;
 
 
 /* ---------------- DRAW ITEM ---------------- */
