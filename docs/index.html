@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM  Inventory</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -714,6 +714,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
   <button id="reserveListBtn">Reserve List</button>
 
+<button id="salesReportBtn">Sales Report</button>
   <button>Dictionary File</button>
   <button id="exportBtn">Export</button>
 </div>
@@ -743,7 +744,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
     <button id="closeSmartList">Done</button>
   </div>
 
-  <div id="smartListContainer"></div>
+  <div id="smartListContainer"></div>’
 
 <!-- SMART LIST ADD INPUT -->
 <div id="smartListAddWrap" style="
@@ -786,8 +787,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 </div>
 
 </div>
-
-
 
 <header><img src="SiennaTransparent.png"></header>
 
@@ -895,7 +894,7 @@ const SOURCE_ICONS = {
 };
 
 let items=[];
-let Source="Emporio";;
+let Source="Emporio";
 
 // ---------- GLOBAL FILTERS ----------
 let ArchiveFilter = false;   // true | false
@@ -913,43 +912,11 @@ const overlay = document.getElementById("overlay");
 
 
 /* ---------------- LOAD ---------------- */
-async function loadItems() {
-  let loadedFromStorage = false;
-
-  try {
-    const stored = localStorage.getItem("SMInventoryItems");
-
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed) && parsed.length >= 0) {
-        items = parsed;
-        loadedFromStorage = true;
-      }
-    }
-  } catch (e) {
-    console.warn("Failed to load from localStorage, falling back to JSON", e);
-  }
-
-  // ⬇️ First run / empty storage fallback
-  if (!loadedFromStorage) {
-    const res = await fetch("./items.json", { cache: "no-store" });
-    items = await res.json();
-
-    // seed storage immediately
-    try {
-      localStorage.setItem(
-        "SMInventoryItems",
-        JSON.stringify(items)
-      );
-    } catch (e) {
-      console.warn("Failed to seed localStorage", e);
-    }
-  }
-
+async function loadItems(){
+  const res=await fetch("./items.json",{cache:"no-store"});
+  items=await res.json();
   renderItems();
 }
-
-
 
 /* ---------------- TABS ---------------- */
 function buildSourceTabs(){
@@ -985,6 +952,9 @@ tab.onclick = async () => {
     tabsEl.appendChild(tab);
   });
 }
+
+
+
 
 async function loadSmartListForSource(source) {
   const smartKey = `${source}SmartList`;
@@ -1103,6 +1073,16 @@ function renderSmartListEditor() {
 
 
 /* ---------------- HELPERS ---------------- */
+const round=v=>Math.round(v*10)/10;
+const naLast=(a,b)=>a==="N/A"?1:b==="N/A"?-1:a.localeCompare(b);
+function baseSort(a,b,key){
+  if(a[key]!==b[key]) return a[key]?1:-1;
+  return naLast(a.brand,b.brand)
+    ||naLast(a.identifier,b.identifier)
+    ||naLast(a.varietal,b.varietal)
+    ||naLast(b.year,a.year);
+}
+
 function updateGlobalFilters() {
   /* ---------- ARCHIVE ---------- */
   ArchiveFilter = archiveBtn.classList.contains("active");
@@ -1178,6 +1158,22 @@ function drawDivider(label) {
   list.appendChild(div);
 }
 
+function applySubgroupSort(arr) {
+  if (SubgroupFilter !== "Color") return arr;
+
+  const nonRed = [];
+  const red = [];
+
+  arr.forEach(item => {
+    if ((item.color || "").toLowerCase() === "red") {
+      red.push(item);
+    } else {
+      nonRed.push(item);
+    }
+  });
+
+  return nonRed.concat(red);
+}
 
 function standardSort(arr) {
   const na = v => (v === undefined || v === null || v === "" ? "N/A" : v);
@@ -1244,19 +1240,8 @@ const ARCHIVE_ACTIONS = [
 
 
 /* ---------------- RENDER ---------------- */
-
 async function renderItems() {
   list.innerHTML = "";
-
-  // ---------- PERSIST ALL ITEMS ----------
-  try {
-    localStorage.setItem(
-      "SMInventoryItems",
-      JSON.stringify(items)
-    );
-  } catch (e) {
-    console.warn("Failed to save inventory to localStorage", e);
-  }
 
   const completeKey = `${Source}Complete`;
 
@@ -1557,47 +1542,10 @@ function smartItemTitle(item){
     .join(" ");
 }
 
+
 /* ---------- INIT ---------- */
 buildSourceTabs();
 loadItems();
-showWelcomeMessage();
-
-function showWelcomeMessage() {
-  const hasLocalData = localStorage.length > 0;
-
-  const message = hasLocalData ? "Welcome Back" : "Welcome";
-
-  // simple, non-blocking message
-  const banner = document.createElement("div");
-  banner.textContent = message;
-
-  banner.style.position = "fixed";
-  banner.style.top = "calc(16px + env(safe-area-inset-top))";
-  banner.style.left = "50%";
-  banner.style.transform = "translateX(-50%)";
-  banner.style.padding = "10px 16px";
-  banner.style.borderRadius = "14px";
-  banner.style.background = "rgba(31,94,59,.9)";
-  banner.style.color = "white";
-  banner.style.fontSize = "14px";
-  banner.style.zIndex = "1000";
-  banner.style.opacity = "0";
-  banner.style.transition = "opacity .25s ease";
-
-  document.body.appendChild(banner);
-
-  // fade in
-  requestAnimationFrame(() => {
-    banner.style.opacity = "1";
-  });
-
-  // auto-remove
-  setTimeout(() => {
-    banner.style.opacity = "0";
-    setTimeout(() => banner.remove(), 300);
-  }, 1800);
-}
-
 
 /* ---------- ACTION STATES ---------- */
 let showArchived = false;
@@ -1756,6 +1704,23 @@ overlay.onclick=()=>{
 
 
 
+/* ---------- SALES REPORT DEBUG ---------- */
+const salesReportBtn = document.getElementById("salesReportBtn");
+
+salesReportBtn.onclick = () => {
+  drawer.classList.remove("open");
+  overlay.classList.remove("show");
+
+  const message =
+`Sales Report Filters:
+
+ArchiveFilter: ${ArchiveFilter}
+GroupFilter: ${GroupFilter}
+SubgroupFilter: ${SubgroupFilter}
+ItemFilter: ${ItemFilter}`;
+
+  alert(message);
+};
 
 const archiveCleanupSheet = document.getElementById("archiveCleanupSheet");
 const archiveCleanupOverlay = document.getElementById("archiveCleanupOverlay");
@@ -2287,7 +2252,6 @@ confirmNewBottle.onclick = () => {
   renderItems();
   closeNewBottle();
 };
-
 
 
 const exportBtn = document.getElementById("exportBtn");
