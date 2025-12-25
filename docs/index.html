@@ -138,7 +138,7 @@ const smartSortBtn = document.getElementById("smartSortBtn");
   display:flex;
   gap:16px;
   margin-bottom:14px;
-  padding:16px 18px;
+  padding:16px 44px 16px 18px;
   border-radius:16px;
   background:rgba(255,255,255,.35);
   backdrop-filter:blur(6px);
@@ -173,10 +173,20 @@ const smartSortBtn = document.getElementById("smartSortBtn");
 button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px;font-size:16px;}
 .value{min-width:48px;text-align:center;font-weight:bold;cursor:pointer;}
 
-/* COMPLETE */
-.toggle{position:absolute;top:10px;right:12px;cursor:pointer;}
-.toggle-circle{width:14px;height:14px;border-radius:50%;border:2px solid black;}
-.toggle-check{font-size:16px;color:green;}
+/* COMPLETE TOGGLE – FIX */
+.toggle{
+  position:absolute;
+  top:10px;
+  right:12px;
+  width:28px;
+  height:28px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:5;
+  cursor:pointer;
+}
+
 
 /* ---------- DRAWER TAB ---------- */
 .drawer-tab{
@@ -1758,6 +1768,14 @@ deleteBottleBtn.style.display = "block";
 
 function drawItem(item){
   const key=`${Source}Complete`;
+const toggleEl = row.querySelector(".toggle");
+
+toggleEl.onclick = e => {
+  e.stopPropagation();
+  item[key] = !item[key];
+  renderItems();
+};
+
   const iconHTML=item.base64
     ? `<img src="data:image/png;base64,${item.icon}" width="40">`
     : `<div class="wine" style="color:${item.icon}"></div>`;
@@ -1785,6 +1803,8 @@ function drawItem(item){
       ${item[key]?`<span class="toggle-check">✔</span>`:`<div class="toggle-circle"></div>`}
     </div>
   `;
+
+
 
   /* 🔹 RESTORED LONG-PRESS EDIT 🔹 */
   let pressTimer;
