@@ -1,9 +1,8 @@
-This is my file items aren’t loading:
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>New Wine Inventory</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -228,6 +227,62 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 }
 .action-bar img{filter:brightness(0) invert(1);}
 
+/* ---------- SPECIALTY LIST ROW ---------- */
+.specialty-row{
+  position:relative;
+  background:rgba(255,255,255,.6);
+  padding:16px;
+  border-radius:14px;
+  margin-bottom:12px;
+  overflow:hidden;
+}
+
+.specialty-row select{
+  width:100%;
+  font-size:16px;
+  padding:10px;
+  border-radius:10px;
+}
+
+/* swipe delete */
+.specialty-delete{
+  position:absolute;
+  right:0;
+  top:0;
+  bottom:0;
+  width:80px;
+  background:#b00020;
+  color:white;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:bold;
+}
+.specialty-row {
+  position: relative;
+  padding: 14px 16px;
+  background: #fff;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+  touch-action: pan-y;
+}
+
+.specialty-row.deleting {
+  transform: translateX(-120%);
+  opacity: 0;
+}
+
+.specialty-row.locked {
+  opacity: 0.55;
+}
+.specialty-row.locked::after {
+  content: "Locked";
+  font-size: 12px;
+  color: #999;
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+}
 
 
 #datePicker button{
@@ -713,6 +768,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
   <button>New Project</button>
 
+  <button id="specialtyListBtn">Specialty List</button>
   <button id="reserveListBtn">Reserve List</button>
 
 <button id="salesReportBtn">Sales Report</button>
@@ -745,7 +801,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
     <button id="closeSmartList">Done</button>
   </div>
 
-  <div id="smartListContainer"></div>
+  <div id="smartListContainer"></div>’
 
 <!-- SMART LIST ADD INPUT -->
 <div id="smartListAddWrap" style="
@@ -790,6 +846,43 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 </div>
 
 
+<!-- SPECIALTY LIST OVERLAY -->
+<div id="specialtyOverlay" class="overlay"></div>
+
+<div id="specialtySheet" style="
+  position:fixed;
+  inset:0;
+  background:rgba(255,255,255,.92);
+  backdrop-filter:blur(16px);
+  padding:calc(20px + env(safe-area-inset-top)) 16px 20px;
+  transform:translateX(100%);
+  transition:.25s ease;
+  z-index:500;
+  overflow-y:auto;
+">
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div style="font-family:'Copperplate',serif;font-size:18px;">
+      Select List to Edit
+    </div>
+    <button id="closeSpecialty">Done</button>
+  </div>
+
+  <button id="addSpecialtyList" style="
+    width:100%;
+    padding:14px;
+    border-radius:14px;
+    border:none;
+    background:#1f5e3b;
+    color:white;
+    font-size:16px;
+    margin-bottom:16px;
+  ">
+    + Create New List
+  </button>
+
+  <div id="specialtyListContainer"></div>
+</div>
 
 <header><img src="SiennaTransparent.png"></header>
 
@@ -824,7 +917,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
 <script>
 /* ---------- PAGE TITLE ---------- */
-
 const pageTitleEl=document.getElementById("pageTitle");
 
 function defaultTitle(){
@@ -881,10 +973,6 @@ confirmDate.onclick=()=>{
 ;
 
 /* ---------------- STATE ---------------- */
-const STORAGE_KEY = "sm-wine-items-v1";
-
-
-
 const SOURCES=[
   "Emporio","Mezzo","Tetto (L)","Tetto (R)",
   "Wine Cellar","Liquor Closet","Prep Cooler","Other"
@@ -903,6 +991,9 @@ const SOURCE_ICONS = {
 
 let items=[];
 let Source="Emporio";
+let specialtyLists = [];
+let selectedSpecialtyList = null;
+let expandedSpecialtyList = null;
 
 // ---------- GLOBAL FILTERS ----------
 let ArchiveFilter = false;   // true | false
@@ -914,43 +1005,17 @@ let ItemFilter    = "None";  // None | Special
 
 const list=document.getElementById("list");
 const tabsEl=document.getElementById("sourceTabs");
-const archiveBtn   = document.getElementById("archiveBtn");
-const groupBtn     = document.getElementById("groupBtn");
-const smartSortBtn = document.getElementById("smartSortBtn");
 
 const drawer = document.getElementById("drawer");
 const overlay = document.getElementById("overlay");
 
 
 /* ---------------- LOAD ---------------- */
-function loadItems() {
-  const stored = localStorage.getItem(STORAGE_KEY);
-
-  if (stored) {
-    try {
-      items = JSON.parse(stored);
-      renderItems();
-      return;
-    } catch (e) {
-      console.warn("Local data corrupted, reloading from file.");
-      localStorage.removeItem(STORAGE_KEY);
-    }
-  }
-
-  // fallback only once
-  fetch("./items.json", { cache: "no-store" })
-    .then(res => res.json())
-    .then(data => {
-      items = data;
-      saveItems();
-      renderItems();
-    });
+async function loadItems(){
+  const res=await fetch("./items.json",{cache:"no-store"});
+  items=await res.json();
+  renderItems();
 }
-
-function saveItems() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-}
-
 
 /* ---------------- TABS ---------------- */
 function buildSourceTabs(){
@@ -962,1493 +1027,3 @@ function buildSourceTabs(){
 
     const img = document.createElement("img");
     img.src = SOURCE_ICONS[src];
-    img.alt = src;
-    img.title = src;
-
-    tab.appendChild(img);
-
-tab.onclick = async () => {
-  Source = src;
-
-  await loadSmartListForSource(Source);
-
-  updateGlobalFilters();
-
-  document.querySelectorAll(".tab").forEach(t =>
-    t.classList.remove("active")
-  );
-  tab.classList.add("active");
-
-  renderItems();
-};
-
-
-    tabsEl.appendChild(tab);
-  });
-}
-
-
-
-
-async function loadSmartListForSource(source) {
-  const smartKey = `${source}SmartList`;
-  const fileName = `${source}.json`;
-
-  try {
-    const res = await fetch(`./${fileName}`, { cache: "no-store" });
-    if (!res.ok) throw new Error("No file");
-
-    const uuidList = await res.json();
-
-    // Match UUIDs to actual item objects
-    window[smartKey] = items.filter(i =>
-      uuidList.includes(i.UUID)
-    );
-
-  } catch {
-    // No file or error → empty smart list
-    window[smartKey] = [];
-  }
-}
-
-const smartListEditor = document.getElementById("smartListEditor");
-const smartListOverlay = document.getElementById("smartListOverlay");
-const smartListContainer = document.getElementById("smartListContainer");
-const closeSmartList = document.getElementById("closeSmartList");
-
-let activeSmartKey = null;
-let dragIndex = null;
-
-function openSmartListEditor() {
-  const smartKey = `${Source}SmartList`;
-  const smartItems = window[smartKey];
-
-  if (!Array.isArray(smartItems)) return;
-
-  activeSmartKey = smartKey;
-
-  smartListAddInput.value = "";
-  smartListSelectedItem = null;
-  smartListAddSuggestions.style.display = "none";
-
-  renderSmartListEditor();
-
-  smartListEditor.style.transform = "translateY(0)";
-  smartListOverlay.classList.add("show");
-}
-
-
-function closeSmartListEditorFn() {
-  smartListEditor.style.transform = "translateY(100%)";
-  smartListOverlay.classList.remove("show");
-
-  activeSmartKey = null;
-  dragIndex = null;
-}
-
-closeSmartList.onclick = closeSmartListEditorFn;
-smartListOverlay.onclick = closeSmartListEditorFn;
-
-function renderSmartListEditor() {
-  smartListContainer.innerHTML = "";
-
-  const list = window[activeSmartKey];
-
-  list.forEach((item, index) => {
-    const row = document.createElement("div");
-    row.className = "smart-row";
-    row.draggable = true;
-
-    row.innerHTML = `
-      <div class="smart-label">
-        ${[item.brand, item.identifier, item.varietal, item.year]
-          .filter(v => v && v !== "N/A")
-          .join(" ")}
-      </div>
-      <div class="smart-delete">✕</div>
-    `;
-
-    /* ❌ DELETE */
-    row.querySelector(".smart-delete").onclick = e => {
-      e.stopPropagation();
-      list.splice(index, 1);
-      renderSmartListEditor();
-      renderItems(); // reflect immediately
-    };
-
-    /* ☰ DRAG REORDER */
-    row.addEventListener("dragstart", () => {
-      dragIndex = index;
-      row.classList.add("dragging");
-    });
-
-    row.addEventListener("dragend", () => {
-      dragIndex = null;
-      row.classList.remove("dragging");
-    });
-
-    row.addEventListener("dragover", e => {
-      e.preventDefault();
-    });
-
-    row.addEventListener("drop", () => {
-      if (dragIndex === null || dragIndex === index) return;
-
-      const moved = list.splice(dragIndex, 1)[0];
-      list.splice(index, 0, moved);
-
-      renderSmartListEditor();
-      renderItems();
-    });
-
-    smartListContainer.appendChild(row);
-  });
-}
-
-
-/* ---------------- HELPERS ---------------- */
-const round=v=>Math.round(v*10)/10;
-const naLast=(a,b)=>a==="N/A"?1:b==="N/A"?-1:a.localeCompare(b);
-function baseSort(a,b,key){
-  if(a[key]!==b[key]) return a[key]?1:-1;
-  return naLast(a.brand,b.brand)
-    ||naLast(a.identifier,b.identifier)
-    ||naLast(a.varietal,b.varietal)
-    ||naLast(b.year,a.year);
-}
-
-function updateGlobalFilters() {
-  /* ---------- ARCHIVE ---------- */
-  ArchiveFilter = archiveBtn.classList.contains("active");
-
-  /* ---------- GROUP ---------- */
-  if (groupBtn.classList.contains("active")) {
-    if (
-      Source === "Emporio" ||
-      Source === "Mezzo" ||
-      Source === "Tetto (L)" ||
-      Source === "Tetto (R)" ||
-      Source === "Prep Cooler"
-    ) {
-      GroupFilter = "Tier";
-    } else if (
-      Source === "Liquor Closet" ||
-      Source === "Wine Cellar"
-    ) {
-      GroupFilter = "Special";
-    } else {
-      GroupFilter = "None";
-    }
-  } else {
-    GroupFilter = "None";
-  }
-
-  /* ---------- SUBGROUP ---------- */
-  if (smartSortBtn.classList.contains("active")) {
-    if (
-      Source === "Other" ||
-      Source === "Emporio" ||
-      Source === "Mezzo" ||
-      Source === "Tetto (L)" ||
-      Source === "Tetto (R)"
-    ) {
-      SubgroupFilter = "Color";
-    } else {
-      SubgroupFilter = "None";
-    }
-  } else {
-    SubgroupFilter = "None";
-  }
-
-  /* ---------- ITEM ---------- */
-  if (smartSortBtn.classList.contains("active")) {
-    if (
-      Source === "Other" ||
-      Source === "Emporio" ||
-      Source === "Mezzo" ||
-      Source === "Tetto (L)" ||
-      Source === "Tetto (R)" ||
-      Source === "Liquor Closet" ||
-      Source === "Prep Cooler"
-    ) {
-      ItemFilter = "None";
-    } else if (Source === "Wine Cellar") {
-      ItemFilter = "Special";
-    } else {
-      ItemFilter = "None";
-    }
-  } else {
-    ItemFilter = "None";
-  }
-}
-
-function drawDivider(label) {
-  const div = document.createElement("div");
-  div.style.margin = "20px 0 10px";
-  div.style.fontFamily = "Copperplate, serif";
-  div.style.fontSize = "15px";
-  div.style.opacity = "0.7";
-  div.textContent = label;
-  list.appendChild(div);
-}
-
-function applySubgroupSort(arr) {
-  if (SubgroupFilter !== "Color") return arr;
-
-  const nonRed = [];
-  const red = [];
-
-  arr.forEach(item => {
-    if ((item.color || "").toLowerCase() === "red") {
-      red.push(item);
-    } else {
-      nonRed.push(item);
-    }
-  });
-
-  return nonRed.concat(red);
-}
-
-function standardSort(arr) {
-  const na = v => (v === undefined || v === null || v === "" ? "N/A" : v);
-
-  return [...arr].sort((a, b) => {
-    const brandA = na(a.brand);
-    const brandB = na(b.brand);
-    if (brandA !== brandB) {
-      if (brandA === "N/A") return 1;
-      if (brandB === "N/A") return -1;
-      return brandA.localeCompare(brandB);
-    }
-
-    const idA = na(a.identifier);
-    const idB = na(b.identifier);
-    if (idA !== idB) {
-      if (idA === "N/A") return 1;
-      if (idB === "N/A") return -1;
-      return idA.localeCompare(idB);
-    }
-
-    const varA = na(a.varietal);
-    const varB = na(b.varietal);
-    if (varA !== varB) {
-      if (varA === "N/A") return 1;
-      if (varB === "N/A") return -1;
-      return varA.localeCompare(varB);
-    }
-
-    const yearA = na(a.year);
-    const yearB = na(b.year);
-    if (yearA !== yearB) {
-      if (yearA === "N/A") return 1;
-      if (yearB === "N/A") return -1;
-      return Number(yearB) - Number(yearA); // Z-A
-    }
-
-    return 0;
-  });
-}
-
-function totalQuantity(item){
-  return SOURCES.reduce((sum, src) => {
-    return sum + (Number(item[src]) || 0);
-  }, 0);
-}
-
-function defaultArchiveAction(item){
-  const qty = totalQuantity(item);
-  const active = item.status === true;
-
-  if (qty > 0 && !active) return "Make Active";
-  if (qty === 0 && active) return "Make Inactive";
-  if (qty === 0 && !active) return "Delete Item";
-  return null;
-}
-
-const ARCHIVE_ACTIONS = [
-  "Make Active",
-  "Make Inactive",
-  "Delete Item",
-  null
-];
-
-
-/* ---------------- RENDER ---------------- */
-async function renderItems() {
-  list.innerHTML = "";
-
-  const completeKey = `${Source}Complete`;
-
-  // ---------- NORMALIZE ----------
-  items.forEach(i => {
-    i[Source] = Math.max(0, Number(i[Source]) || 0);
-    if (typeof i[completeKey] !== "boolean") i[completeKey] = false;
-    if (typeof i.status !== "boolean") i.status = true;
-  });
-
-  // ---------- ARCHIVE ----------
-  let allItems = ArchiveFilter
-    ? [...items]
-    : items.filter(i => i.status === true);
-
-  // ---------- GROUPING ----------
-  let group1items = [];
-  let group2items = [];
-
-  if (GroupFilter === "Tier") {
-    group1items = allItems.filter(i => i.tier === "House");
-    group2items = allItems.filter(i => i.tier === "Reserve");
-  }
-
-  else if (GroupFilter === "None") {
-    group1items = [...allItems];
-    group2items = [];
-  }
-
-else if (GroupFilter === "Special") {
-  const smartKey = `${Source}SmartList`;
-  const smartItems = window[smartKey] || [];
-
-  const smartSet = new Set(smartItems.map(i => i.UUID));
-
-  group1items = allItems.filter(i => smartSet.has(i.UUID));
-  group2items = allItems.filter(i => !smartSet.has(i.UUID));
-}
-
-  // ---------- COMPLETE / INCOMPLETE ----------
-  const group1incomplete = group1items.filter(i => i[completeKey] === false);
-  const group1complete   = group1items.filter(i => i[completeKey] === true);
-
-  const group2incomplete = group2items.filter(i => i[completeKey] === false);
-  const group2complete   = group2items.filter(i => i[completeKey] === true);
-
-  // ---------- SUBGROUP ----------
-  let subgroup1A = [], subgroup1B = [], subgroup1C = [];
-  let subgroup2A = [], subgroup2B = [], subgroup2C = [];
-
-  if (SubgroupFilter === "Color") {
-    subgroup1A = group1incomplete.filter(i => i.color !== "Red");
-    subgroup1B = group1incomplete.filter(i => i.color === "Red");
-
-    subgroup2A = group2incomplete.filter(i => i.color !== "Red");
-    subgroup2B = group2incomplete.filter(i => i.color === "Red");
-
-    if (ItemFilter === "None") {
-      subgroup1A = standardSort(subgroup1A);
-      subgroup1B = standardSort(subgroup1B);
-      subgroup2A = standardSort(subgroup2A);
-      subgroup2B = standardSort(subgroup2B);
-    }
-  }
-
-  else {
-    subgroup1A = ItemFilter === "None"
-      ? standardSort(group1incomplete)
-      : [...group1incomplete];
-
-    subgroup2A = ItemFilter === "None"
-      ? standardSort(group2incomplete)
-      : [...group2incomplete];
-  }
-
-  subgroup1C = standardSort(group1complete);
-  subgroup2C = standardSort(group2complete);
-
-  // ---------- RENDER ----------
-  function renderGroup(label, a, b, c) {
-    if (label) drawDivider(label);
-    a.forEach(drawItem);
-    b.forEach(drawItem);
-    c.forEach(drawItem);
-  }
-
-  if (GroupFilter === "Tier") {
-    renderGroup("House", subgroup1A, subgroup1B, subgroup1C);
-    renderGroup("Reserve", subgroup2A, subgroup2B, subgroup2C);
-  }
-
-  else if (GroupFilter === "Special") {
-    renderGroup("Suggested", subgroup1A, subgroup1B, subgroup1C);
-    renderGroup("Other", subgroup2A, subgroup2B, subgroup2C);
-  }
-
-  else {
-    renderGroup(null, subgroup1A, subgroup1B, subgroup1C);
-  }
-}
-
-
-
-/* ---------------- DRAW ITEM ---------------- */
-function openEditBottle(item) {
-  editingItem = item;
-
-
-  // --- populate values ---
-  newBottleStatus = item.status;
-  statusValue.textContent = item.status ? "Active" : "Inactive";
-  statusValue.style.color = item.status ? "green" : "red";
-
-  newBottleTier = item.tier || "House";
-  tierToggle.onclick(); // force UI sync
-  tierToggle.onclick(); // toggle back to correct state
-
-  newBottleColor = item.color || "White";
-  updateColorUI();
-
-  brandInput.value = item.brand !== "N/A" ? item.brand : "";
-  newBottleBrand = brandInput.value;
-
-  identifierInput.value = item.identifier !== "N/A" ? item.identifier : "";
-  newBottleIdentifier = identifierInput.value || "N/A";
-
-  varietalInput.value = item.varietal !== "N/A" ? item.varietal : "";
-  newBottleVarietal = varietalInput.value;
-
-  yearInput.value = item.year !== "N/A" ? item.year : "";
-  newBottleYear = item.year;
-
-  priceInput.value = item.price || "";
-  newBottlePrice = item.price || null;
-
-  noteInput.value = item.note || "";
-  newBottleNote = item.note || "";
-deleteBottleBtn.style.display = "block";
-
-
-
-  // featured
-  newBottleFeatured = [];
-  document.querySelectorAll(".featured-btn").forEach(btn => {
-    const v = btn.dataset.value;
-    if ((item.featured || "").includes(v)) {
-      btn.classList.add("active");
-      newBottleFeatured.push(v);
-    } else {
-      btn.classList.remove("active");
-    }
-  });
-
-
-  // icon
-  if (item.base64) {
-    newBottleBase64 = true;
-    newBottleIcon = item.icon;
-    newBottleImageBox.innerHTML = `
-      <img src="data:image/*;base64,${item.icon}"
-           style="width:100%;height:100%;object-fit:cover;">
-    `;
-  } else {
-    newBottleBase64 = false;
-    newBottleIcon = null;
-    newBottleImageBox.textContent = "Insert Image";
-  }
-
-
-  // open sheet
-  document.body.style.overflow = "hidden";
-  newBottleSheet.style.opacity = "1";
-  newBottleSheet.style.pointerEvents = "auto";
-  newBottleSheet.style.transform = "translate(-50%, -50%) scale(1)";
-  newBottleOverlay.classList.add("show");
-}
-
-
-function drawItem(item){
-  const key=`${Source}Complete`;
-  const iconHTML=item.base64
-    ? `<img src="data:image/png;base64,${item.icon}" width="40">`
-    : `<div class="wine" style="color:${item.icon}"></div>`;
-
-  const row=document.createElement("div");
-  row.className="item";
-  row.innerHTML=`
-    <div class="left">
-      <div class="icon">${iconHTML}</div>
-      <div class="text-stack">
-        <div class="title" style="color:${item.status?'#000':'#ccc'}">
-          ${[item.brand,item.identifier,item.varietal,item.year].filter(v=>v&&v!=="N/A").join(" ")}
-        </div>
-        <div class="sub-row">
-          <div class="subtitle">${item.tier||""}</div>
-          <div class="controls">
-            <button class="minus">−</button>
-            <div class="value">${item[Source]}</div>
-            <button class="plus">+</button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="toggle">
-      ${item[key]?`<span class="toggle-check">✔</span>`:`<div class="toggle-circle"></div>`}
-    </div>
-  `;
-
-  /* 🔹 RESTORED LONG-PRESS EDIT 🔹 */
-  let pressTimer;
-  const valueEl=row.querySelector(".value");
-
-  valueEl.onpointerdown=()=>{
-    pressTimer=setTimeout(()=>{
-      const v=prompt("Enter value:",item[Source]);
-      if(v!==null&&!isNaN(v)){
-        item[Source]=Math.max(0,round(Number(v)));
-saveItems();
-        renderItems();
-      }
-    },450);
-  };
-  valueEl.onpointerup=()=>clearTimeout(pressTimer);
-  valueEl.onpointerleave=()=>clearTimeout(pressTimer);
-
-   const minusBtn = row.querySelector(".minus");
-  const plusBtn  = row.querySelector(".plus");
-
-  let holdTimerBtn;
-
-  /* ----- MINUS ----- */
-  minusBtn.onclick = () => {
-    item[Source] = Math.max(0, round(item[Source] - 1));
-saveItems();
-    renderItems();
-  };
-
-  minusBtn.onpointerdown = () => {
-    holdTimerBtn = setTimeout(() => {
-      const v = prompt("Subtract how many?", 0);
-      if (v !== null && !isNaN(v)) {
-        item[Source] = Math.max(
-          0,
-          round(item[Source] - Number(v))
-        );
-saveItems();
-        renderItems();
-      }
-    }, 450);
-  };
-
-  minusBtn.onpointerup = () => clearTimeout(holdTimerBtn);
-  minusBtn.onpointerleave = () => clearTimeout(holdTimerBtn);
-
-  /* ----- PLUS ----- */
-  plusBtn.onclick = () => {
-    item[Source] = round(item[Source] + 1);
-saveItems();
-    renderItems();
-  };
-
-  plusBtn.onpointerdown = () => {
-    holdTimerBtn = setTimeout(() => {
-      const v = prompt("Add how many?", 0);
-      if (v !== null && !isNaN(v)) {
-        item[Source] = round(item[Source] + Number(v));
-saveItems();
-        renderItems();
-      }
-    }, 450);
-  };
-
-  plusBtn.onpointerup = () => clearTimeout(holdTimerBtn);
-  plusBtn.onpointerleave = () => clearTimeout(holdTimerBtn);
-
-
-row.querySelector(".toggle").onclick = () => {
-  item[key] = !item[key];
-  saveItems();
-  renderItems();
-};
-
-
-let rowHoldTimer;
-
-row.onpointerdown = e => {
-  // ignore controls
-  if (
-    e.target.closest(".controls") ||
-    e.target.closest(".toggle") ||
-    e.target.closest(".value")
-  ) return;
-
-  rowHoldTimer = setTimeout(() => {
-    openEditBottle(item);
-  }, 1000);
-};
-
-row.onpointerup = () => clearTimeout(rowHoldTimer);
-row.onpointerleave = () => clearTimeout(rowHoldTimer);
-
-  list.appendChild(row);
-}
-
-function smartItemTitle(item){
-  return [item.brand, item.identifier, item.varietal, item.year]
-    .filter(v => v && v !== "N/A")
-    .join(" ");
-}
-
-
-/* ---------- INIT ---------- */
-buildSourceTabs();
-loadItems();
-
-/* ---------- ACTION STATES ---------- */
-let showArchived = false;
-let groupEnabled = false;
-
-let archiveHoldTimer = null;
-let archiveLongPressFired = false;
-
-archiveBtn.onpointerdown = e => {
-  e.preventDefault();
-  archiveLongPressFired = false;
-
-  archiveHoldTimer = setTimeout(() => {
-    archiveLongPressFired = true;
-    openArchiveCleanup();
-  }, 700);
-};
-
-archiveBtn.onpointerup = () => clearTimeout(archiveHoldTimer);
-archiveBtn.onpointerleave = () => clearTimeout(archiveHoldTimer);
-
-archiveBtn.onclick = e => {
-  if (archiveLongPressFired) {
-    e.preventDefault();
-    e.stopPropagation();
-    return;
-  }
-
-  archiveBtn.classList.toggle("active");
-  updateGlobalFilters();
-  renderItems();
-};
-
-let groupHoldTimer = null;
-let groupLongPressFired = false;
-
-groupBtn.onpointerdown = e => {
-  e.preventDefault(); // iOS safety
-  groupLongPressFired = false;
-
-groupHoldTimer = setTimeout(() => {
-  groupLongPressFired = true;
-  openSmartListEditor();
-}, 700);
-
-};
-
-groupBtn.onpointerup = () => {
-  clearTimeout(groupHoldTimer);
-};
-
-groupBtn.onpointerleave = () => {
-  clearTimeout(groupHoldTimer);
-};
-
-groupBtn.onclick = e => {
-  // 🚫 suppress click if long-press fired
-  if (groupLongPressFired) {
-    e.preventDefault();
-    e.stopPropagation();
-    return;
-  }
-
-  // ✅ normal toggle behavior
-  groupBtn.classList.toggle("active");
-  updateGlobalFilters();
-  renderItems();
-};
-
-
-smartSortBtn.onclick = () => {
-  smartSortBtn.classList.toggle("active");
-  updateGlobalFilters();
-  renderItems();
-};
-
-const smartListAddInput = document.getElementById("smartListAddInput");
-const smartListAddSuggestions = document.getElementById("smartListAddSuggestions");
-
-let smartListSelectedItem = null;
-
-smartListAddInput.oninput = () => {
-  const value = smartListAddInput.value.trim().toLowerCase();
-  smartListAddSuggestions.innerHTML = "";
-  smartListSelectedItem = null;
-
-  if (!value || !activeSmartKey) {
-    smartListAddSuggestions.style.display = "none";
-    return;
-  }
-
-  const currentList = window[activeSmartKey] || [];
-  const currentUUIDs = new Set(currentList.map(i => i.UUID));
-
-  // Eligible items: exist in inventory, NOT already in smart list
-  const candidates = items.filter(i =>
-    !currentUUIDs.has(i.UUID)
-  );
-
-  const matches = candidates.filter(i =>
-    smartItemTitle(i).toLowerCase().includes(value)
-  );
-
-  if (!matches.length) {
-    smartListAddSuggestions.style.display = "none";
-    return;
-  }
-
-  matches.forEach(item => {
-    const div = document.createElement("div");
-    div.textContent = smartItemTitle(item);
-    div.style.padding = "12px 16px";
-    div.style.cursor = "pointer";
-
-    div.onclick = () => {
-      smartListAddInput.value = smartItemTitle(item);
-      smartListSelectedItem = item;
-      smartListAddSuggestions.style.display = "none";
-    };
-
-    smartListAddSuggestions.appendChild(div);
-  });
-
-  smartListAddSuggestions.style.display = "flex";
-};
-
-smartListAddInput.onkeydown = e => {
-  if (e.key !== "Enter") return;
-
-  // 🚫 Only allow confirmed autocomplete items
-  if (!smartListSelectedItem || !activeSmartKey) return;
-
-  const list = window[activeSmartKey];
-
-  list.push(smartListSelectedItem);
-
-  // reset UI
-  smartListAddInput.value = "";
-  smartListSelectedItem = null;
-  smartListAddSuggestions.style.display = "none";
-
-  renderSmartListEditor();
-  renderItems(); // reflect immediately
-};
-
-
-
-/* ---------- DRAWER ---------- */
-drawerTab.onclick=()=>{
-  drawer.classList.add("open");
-  overlay.classList.add("show");
-};
-overlay.onclick=()=>{
-  drawer.classList.remove("open");
-  overlay.classList.remove("show");
-};
-
-
-
-/* ---------- SALES REPORT DEBUG ---------- */
-const salesReportBtn = document.getElementById("salesReportBtn");
-
-salesReportBtn.onclick = () => {
-  drawer.classList.remove("open");
-  overlay.classList.remove("show");
-
-  const message =
-`Sales Report Filters:
-
-ArchiveFilter: ${ArchiveFilter}
-GroupFilter: ${GroupFilter}
-SubgroupFilter: ${SubgroupFilter}
-ItemFilter: ${ItemFilter}`;
-
-  alert(message);
-};
-
-const archiveCleanupSheet = document.getElementById("archiveCleanupSheet");
-const archiveCleanupOverlay = document.getElementById("archiveCleanupOverlay");
-const archiveCleanupList = document.getElementById("archiveCleanupList");
-const confirmArchiveCleanup = document.getElementById("confirmArchiveCleanup");
-
-let archiveCleanupItems = [];
-
-function renderArchiveCleanup(){
-  archiveCleanupList.innerHTML = "";
-
-  archiveCleanupItems.forEach(obj => {
-    const row = document.createElement("div");
-    row.className = "archive-row";
-
-    const title = document.createElement("div");
-    title.className = "archive-title";
-    title.textContent = smartItemTitle(obj.item);
-
-    const action = document.createElement("div");
-    action.className = "archive-action default";
-    action.textContent = obj.defaultLabel || "None";
-
-    action.onclick = () => {
-      // first click → default
-      if (obj.action === null && obj.defaultLabel) {
-        obj.action = obj.defaultLabel;
-      } else {
-        const i = ARCHIVE_ACTIONS.indexOf(obj.action);
-        obj.action = ARCHIVE_ACTIONS[(i + 1) % ARCHIVE_ACTIONS.length];
-      }
-
-      if (obj.action === null) {
-        action.textContent = obj.defaultLabel || "None";
-        action.classList.add("default");
-      } else {
-        action.textContent = obj.action;
-        action.classList.remove("default");
-      }
-    };
-
-    row.appendChild(title);
-    row.appendChild(action);
-    archiveCleanupList.appendChild(row);
-  });
-}
-
-function openArchiveCleanup(){
-archiveCleanupItems = items
-  .map(item => {
-    const qty = totalQuantity(item);
-    if (qty > 0 || item.status !== true) return null;
-
-    const def = defaultArchiveAction(item);
-    return {
-      item,
-      defaultLabel: def,
-      action: null,
-      title: smartItemTitle(item)
-    };
-  })
-  .filter(Boolean)
-  .sort((a, b) =>
-    a.title.localeCompare(b.title, undefined, { sensitivity: "base" })
-  );
-
-
-  if (!archiveCleanupItems.length) return;
-
-  renderArchiveCleanup();
-  archiveCleanupSheet.style.transform = "translateY(0)";
-  archiveCleanupOverlay.classList.add("show");
-}
-
-confirmArchiveCleanup.onclick = () => {
-  archiveCleanupItems.forEach(obj => {
-    if (obj.action === "Delete Item") {
-      const i = items.indexOf(obj.item);
-      if (i > -1) items.splice(i, 1);
-    }
-
-    if (obj.action === "Make Active") {
-      obj.item.status = true;
-    }
-
-    if (obj.action === "Make Inactive") {
-      obj.item.status = false;
-    }
-  });
-
-  archiveCleanupSheet.style.transform = "translateY(100%)";
-  archiveCleanupOverlay.classList.remove("show");
-saveItems();
-  renderItems();
-};
-
-archiveCleanupOverlay.onclick = () => {
-  archiveCleanupSheet.style.transform = "translateY(100%)";
-  archiveCleanupOverlay.classList.remove("show");
-};
-  
-
-/* ---------- NEW BOTTLE ---------- */
-const newBottleBtn = document.getElementById("newBottleBtn");
-const newBottleSheet = document.getElementById("newBottleSheet");
-const newBottleOverlay = document.getElementById("newBottleOverlay");
-const cancelNewBottle = document.getElementById("cancelNewBottle");
-const statusToggle = document.getElementById("statusToggle");
-const statusValue = document.getElementById("statusValue");
-const deleteBottleBtn = document.getElementById("deleteBottleBtn");
-
-
-
-let newBottleStatus = true;
-let editingItem = null; // null = new bottle, object = editing existing
-let newBottleTier = "House"; // "House" | "Reserve"
-let newBottleColor = "White"; // White | Rose | Red
-let newBottleBrand = "";
-let newBottleVarietal = "";
-let newBottleIdentifier = "N/A";
-let newBottleYear = "N/A";
-let newBottlePrice = null;
-let newBottleBase64 = false;
-let newBottleIcon = null;
-let newBottleNote = "";
-
-newBottleBtn.onclick = () => {
-document.body.style.overflow = "hidden";
-newBottleSheet.style.opacity = "1";
-newBottleSheet.style.pointerEvents = "auto";
-newBottleSheet.style.transform = "translate(-50%, -50%) scale(1)";
-newBottleOverlay.classList.add("show");
-newBottleBase64 = false;
-newBottleIcon = null;
-newBottleImageInput.value = "";
-newBottleImageBox.textContent = "Insert Image";
-noteInput.value = "";
-newBottleNote = "";
-deleteBottleBtn.style.display = "none";
-
-};
-
-function closeNewBottle() {
-document.body.style.overflow = "";
-newBottleSheet.style.opacity = "0";
-newBottleSheet.style.pointerEvents = "none";
-newBottleSheet.style.transform = "translate(-50%, -50%) scale(.95)";
-newBottleOverlay.classList.remove("show");
-newBottleBase64 = false;
-newBottleIcon = null;
-newBottleImageInput.value = "";
-newBottleImageBox.textContent = "Insert Image";
-noteInput.value = "";
-newBottleNote = "";
-deleteBottleBtn.style.display = "none";
-
-}
-
-cancelNewBottle.onclick = closeNewBottle;
-newBottleOverlay.onclick = closeNewBottle;
-
-const newBottleImageBox = document.getElementById("newBottleImageBox");
-const newBottleImageInput = document.getElementById("newBottleImageInput");
-
-newBottleImageBox.onclick = () => {
-  newBottleImageInput.click();
-};
-
-newBottleImageInput.onchange = () => {
-  const file = newBottleImageInput.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = e => {
-    const base64 = e.target.result
-      .replace(/^data:image\/[a-z]+;base64,/, "")
-      .replace(/\s/g, "");
-
-    newBottleBase64 = true;
-    newBottleIcon = base64;
-
-    newBottleImageBox.innerHTML = `
-      <img
-        src="data:image/*;base64,${base64}"
-        style="width:100%;height:100%;object-fit:cover;"
-      >
-    `;
-  };
-
-  reader.readAsDataURL(file);
-};
-
-
-statusToggle.onclick = () => {
-  newBottleStatus = !newBottleStatus;
-  statusValue.textContent = newBottleStatus ? "Active" : "Inactive";
-  statusValue.style.color = newBottleStatus ? "green" : "red";
-};
-
-const tierToggle = document.getElementById("tierToggle");
-const tierValue = document.getElementById("tierValue");
-const tierIcon = document.getElementById("tierIcon");
-
-tierToggle.onclick = () => {
-  if (newBottleTier === "House") {
-    newBottleTier = "Reserve";
-    tierIcon.textContent = "⭐";
-    tierValue.lastElementChild.textContent = "Reserve";
-    tierValue.style.color = "#b08d2d";
-  } else {
-    newBottleTier = "House";
-    tierIcon.textContent = "🏠";
-    tierValue.lastElementChild.textContent = "House";
-    tierValue.style.color = "#1f5e3b";
-  }
-};
-
-const colorToggle = document.getElementById("colorToggle");
-const colorValue = document.getElementById("colorValue");
-
-function updateColorUI() {
-  if (newBottleColor === "White") {
-    colorValue.textContent = "White";
-    colorValue.style.color = "#c9b037"; // gold
-  } else if (newBottleColor === "Rose") {
-    colorValue.textContent = "Rosé / Sparkling";
-    colorValue.style.color = "#d97c8a"; // rosé
-  } else {
-    colorValue.textContent = "Red";
-    colorValue.style.color = "#7b1e1e"; // red
-  }
-}
-
-colorToggle.onclick = () => {
-  if (newBottleColor === "White") {
-    newBottleColor = "Rose";
-  } else if (newBottleColor === "Rose") {
-    newBottleColor = "Red";
-  } else {
-    newBottleColor = "White";
-  }
-  updateColorUI();
-};
-
-const brandInput = document.getElementById("brandInput");
-const brandSuggestions = document.getElementById("brandSuggestions");
-
-brandInput.oninput = () => {
-  const value = brandInput.value.trim().toLowerCase();
-  brandSuggestions.innerHTML = "";
-
-  if (!value) {
-    brandSuggestions.style.display = "none";
-    return;
-  }
-
-  const brands = [...new Set(
-    items
-      .map(i => i.brand)
-      .filter(b => b && b !== "N/A")
-  )];
-
-  const matches = brands.filter(b =>
-    b.toLowerCase().includes(value)
-  );
-
-  if (!matches.length) {
-    brandSuggestions.style.display = "none";
-    return;
-  }
-
-  matches.forEach(brand => {
-    const div = document.createElement("div");
-    div.textContent = brand;
-    div.style.padding = "12px 16px";
-    div.style.cursor = "pointer";
-
-    div.onclick = () => {
-      brandInput.value = brand;
-      brandSuggestions.style.display = "none";
-    };
-
-    brandSuggestions.appendChild(div);
-  });
-
-  brandSuggestions.style.display = "flex";
-};
-
-
-const identifierInput = document.getElementById("identifierInput");
-
-identifierInput.oninput = () => {
-  const v = identifierInput.value.trim();
-  newBottleIdentifier = v === "" ? "N/A" : v;
-};
-
-const varietalInput = document.getElementById("varietalInput");
-const varietalSuggestions = document.getElementById("varietalSuggestions");
-
-varietalInput.oninput = () => {
-  const value = varietalInput.value.trim().toLowerCase();
-  varietalSuggestions.innerHTML = "";
-
-  if (!value) {
-    varietalSuggestions.style.display = "none";
-    newBottleVarietal = "";
-    return;
-  }
-
-  newBottleVarietal = varietalInput.value;
-
-  const existingVarietals = [...new Set(
-    items
-      .map(i => i.varietal)
-      .filter(v => v && v.trim() !== "" && v !== "N/A")
-  )];
-
-  const matches = existingVarietals.filter(v =>
-    v.toLowerCase().includes(value)
-  );
-
-  if (matches.length === 0) {
-    varietalSuggestions.style.display = "none";
-    return;
-  }
-
-  matches.forEach(match => {
-    const div = document.createElement("div");
-    div.textContent = match;
-    div.style.padding = "12px 16px";
-    div.style.cursor = "pointer";
-
-    div.onclick = () => {
-      varietalInput.value = match;
-      newBottleVarietal = match;
-      varietalSuggestions.style.display = "none";
-    };
-
-    varietalSuggestions.appendChild(div);
-  });
-
-  varietalSuggestions.style.display = "flex";
-};
-
-const yearInput = document.getElementById("yearInput");
-const yearError = document.getElementById("yearError");
-
-yearInput.oninput = () => {
-  const year = Number(yearInput.value);
-  const currentYear = new Date().getFullYear();
-  const minYear = currentYear - 200;
-
-  if (!yearInput.value) {
-    yearError.style.display = "none";
-    newBottleYear = "N/A";
-    return;
-  }
-
-  if (isNaN(year) || year < minYear || year > currentYear) {
-    yearError.style.display = "block";
-    newBottleYear = "N/A";
-  } else {
-    yearError.style.display = "none";
-    newBottleYear = year;
-  }
-};
-
-const priceInput = document.getElementById("priceInput");
-const priceError = document.getElementById("priceError");
-
-priceInput.oninput = () => {
-  const value = priceInput.value.trim();
-
-  // Allow empty while typing
-  if (value === "") {
-    priceError.style.display = "none";
-    newBottlePrice = null;
-    return;
-  }
-
-  // Regex: digits, optional decimal, max 2 decimals
-  const validFormat = /^\d+(\.\d{1,2})?$/.test(value);
-  const numericValue = Number(value);
-
-  if (!validFormat || isNaN(numericValue) || numericValue <= 0) {
-    priceError.style.display = "block";
-    newBottlePrice = null;
-    return;
-  }
-
-  priceError.style.display = "none";
-  newBottlePrice = numericValue;
-};
-
-/* ---------- FEATURED ---------- */
-let newBottleFeatured = [];
-const featuredButtons = document.querySelectorAll(".featured-btn");
-
-featuredButtons.forEach(btn => {
-  btn.onclick = () => {
-    const value = btn.dataset.value;
-
-    if (newBottleFeatured.includes(value)) {
-      newBottleFeatured = newBottleFeatured.filter(v => v !== value);
-      btn.classList.remove("active");
-    } else {
-      newBottleFeatured.push(value);
-      btn.classList.add("active");
-    }
-  };
-});
-
-/* ---------- DISTRIBUTOR ---------- */
-let newBottleDistributor = "";
-
-const distributorInput = document.getElementById("distributorInput");
-const distributorSuggestions = document.getElementById("distributorSuggestions");
-
-distributorInput.oninput = () => {
-  const value = distributorInput.value.trim().toLowerCase();
-  distributorSuggestions.innerHTML = "";
-
-  if (!value) {
-    distributorSuggestions.style.display = "none";
-    newBottleDistributor = "";
-    return;
-  }
-
-  newBottleDistributor = distributorInput.value;
-
-  const existingDistributors = [...new Set(
-    items
-      .map(i => i.distributor)
-      .filter(d => d && d.trim() !== "" && d !== "N/A")
-  )];
-
-  const matches = existingDistributors.filter(d =>
-    d.toLowerCase().includes(value)
-  );
-
-  if (matches.length === 0) {
-    distributorSuggestions.style.display = "none";
-    return;
-  }
-
-  matches.forEach(match => {
-    const div = document.createElement("div");
-    div.textContent = match;
-    div.style.padding = "12px 16px";
-    div.style.cursor = "pointer";
-
-    div.onclick = () => {
-      distributorInput.value = match;
-      newBottleDistributor = match;
-      distributorSuggestions.style.display = "none";
-    };
-
-    distributorSuggestions.appendChild(div);
-  });
-
-  distributorSuggestions.style.display = "flex";
-};
-
-/* Hide suggestions when leaving */
-distributorInput.onblur = () => {
-  setTimeout(() => distributorSuggestions.style.display = "none", 150);
-};
-
-const noteInput = document.getElementById("noteInput");
-
-noteInput.oninput = () => {
-  newBottleNote = noteInput.value;
-};
-
-deleteBottleBtn.onclick = () => {
-  if (!editingItem) return;
-
-  const confirmed = confirm("Delete this bottle permanently?");
-  if (!confirmed) return;
-
-  items = items.filter(i => i !== editingItem);
-  editingItem = null;
-saveItems();
-  renderItems();
-  closeNewBottle();
-};
-
-const confirmNewBottle = document.getElementById("confirmNewBottle");
-
-confirmNewBottle.onclick = () => {
-
-  const target = editingItem || {};
-
-  Object.assign(target, {
-    status: newBottleStatus,
-    tier: newBottleTier,
-    color: newBottleColor,
-    brand: newBottleBrand || "N/A",
-    identifier: newBottleIdentifier || "N/A",
-    varietal: newBottleVarietal || "N/A",
-    year: newBottleYear || "N/A",
-    price: newBottlePrice || 0,
-    featured: newBottleFeatured.join(", "),
-    distributor: newBottleDistributor || "N/A",
-    note: newBottleNote || "",
-    base64: newBottleBase64,
-    icon: newBottleBase64
-      ? newBottleIcon
-      : (newBottleColor === "White" ? "#c9b037"
-         : newBottleColor === "Rose" ? "#d97c8a"
-         : "#7b1e1e")
-  });
-
-  if (!editingItem) {
-    SOURCES.forEach(src => {
-      target[src] = 0;
-      target[`${src}Complete`] = false;
-    });
-    items.push(target);
-  }
-
-  editingItem = null;
-saveItems();
-  renderItems();
-  closeNewBottle();
-};
-  
-/*---------EXPORT---------------*/
-  
-  function wineTitle(item) {
-  return [
-    item.brand,
-    item.identifier,
-    item.varietal,
-    item.year
-  ].filter(v => v && v !== "N/A").join(" ");
-}
-
-function totalQty(item) {
-  return (
-    Number(item.Emporio || 0) +
-    Number(item.Mezzo || 0) +
-    Number(item["Tetto (L)"] || 0) +
-    Number(item["Tetto (R)"] || 0) +
-    Number(item["Wine Cellar"] || 0) +
-    Number(item["Liquor Closet"] || 0) +
-    Number(item["Prep Cooler"] || 0) +
-    Number(item.Other || 0)
-  );
-}
-
-function sortAlphabetically(a, b) {
-  return wineTitle(a).toLowerCase().localeCompare(
-    wineTitle(b).toLowerCase()
-  );
-}
-
-  function generateExportHTML(items, pageTitle) {
-  const active = [];
-  const inactive = [];
-
-  items.forEach(item => {
-    const qty = totalQty(item);
-    if (qty > 0) active.push({ ...item, qty });
-    else inactive.push(item);
-  });
-
-  const tiers = {
-    House: {},
-    Reserve: {}
-  };
-
-  active.forEach(item => {
-    const tier = item.tier || "House";
-    const color = item.color || "Other";
-    tiers[tier] ??= {};
-    tiers[tier][color] ??= [];
-    tiers[tier][color].push(item);
-  });
-
-  Object.values(tiers).forEach(colors =>
-    Object.values(colors).forEach(arr => arr.sort(sortAlphabetically))
-  );
-
-  let html = `
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>${pageTitle}</title>
-<style>
-body{font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;padding:24px;}
-.logo{text-align:center;margin-bottom:12px;}
-.logo img{max-width:260px;}
-.title{background:#1f5e3b;color:white;padding:14px;text-align:center;border-radius:8px;margin-bottom:24px;}
-h2{margin-top:32px;border-bottom:2px solid #1f5e3b;}
-h3{margin-top:16px;color:#555;}
-table{width:100%;border-collapse:collapse;margin-bottom:12px;}
-th,td{padding:8px;border-bottom:1px solid #ddd;}
-.qty{text-align:center;font-weight:bold;}
-.money{text-align:right;}
-.subtotal{font-weight:bold;background:#fafafa;}
-</style>
-</head>
-<body>
-
-<div class="logo">
-  <img src="SiennaTransparent.png">
-</div>
-
-<div class="title">${pageTitle}</div>
-`;
-
-  let grandTotal = 0;
-
-  ["House", "Reserve"].forEach(tier => {
-    if (!tiers[tier] || Object.keys(tiers[tier]).length === 0) return;
-
-    let tierTotal = 0;
-    html += `<h2>${tier} Wines</h2>`;
-
-    Object.keys(tiers[tier]).forEach(color => {
-      html += `<h3>${color}</h3>
-<table>
-<tr><th>Qty</th><th>Wine</th><th class="money">Price</th><th class="money">Total</th></tr>`;
-
-      tiers[tier][color].forEach(item => {
-        const value = item.qty * (item.price || 0);
-        tierTotal += value;
-        html += `
-<tr>
-  <td class="qty">${item.qty}</td>
-  <td>${wineTitle(item)}</td>
-  <td class="money">$${item.price || 0}</td>
-  <td class="money">$${value}</td>
-</tr>`;
-      });
-
-      html += `</table>`;
-    });
-
-    grandTotal += tierTotal;
-    html += `
-<table>
-<tr class="subtotal">
-<td colspan="3">${tier} Subtotal</td>
-<td class="money">$${tierTotal}</td>
-</tr>
-</table>`;
-  });
-
-  html += `
-<h2>Inactive Wines</h2>
-<ul>
-${inactive.map(i => `<li>${wineTitle(i)}</li>`).join("")}
-</ul>
-
-<h2 style="text-align:right;">Grand Total: $${grandTotal}</h2>
-
-</body>
-</html>`;
-
-  return html;
-}
-const exportBtn = document.getElementById("exportBtn");
-
-exportBtn.onclick = () => {
-  const html = generateExportHTML(items, pageTitle);
-
-  const win = window.open("", "_blank");
-  win.document.open();
-  win.document.write(html);
-  win.document.close();
-};
-
-</script>
-
-</body>
-</html>
-
-
-
-
-
-
-/*---------EXPORT----------
