@@ -743,7 +743,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
     <button id="closeSmartList">Done</button>
   </div>
 
-  <div id="smartListContainer"></div>’
+  <div id="smartListContainer"></div>
 
 <!-- SMART LIST ADD INPUT -->
 <div id="smartListAddWrap" style="
@@ -937,8 +937,8 @@ const tabsEl=document.getElementById("sourceTabs");
 
   if (itemsPatch) {
     // If itemsPatch exists in localStorage, display it
-    const jsonContent = JSON.stringify(JSON.parse(patchItems), null, 2); // Pretty-print JSON
-    alert("Items Patch Loaded: \n\n" + jsonContent); // Display in alert (could be a modal in the future)
+    let message = itemsPatch; // Pretty-print JSON
+    alert(message); // Display in alert (could be a modal in the future)
   } else {
     // If itemsPatch does not exist, show an error message
     alert("The values could not be loaded.");
