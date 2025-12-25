@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Test</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -884,6 +884,17 @@ async function loadItems(){
   renderItems();
 }
 
+function openSmartListEditor() {
+  // open the existing Specialty List sheet
+  drawer.classList.remove("open");
+  overlay.classList.remove("show");
+
+  loadSpecialtyLists().then(() => {
+    specialtySheet.style.transform = "translateX(0)";
+    specialtyOverlay.classList.add("show");
+  });
+}
+
 /* ---------------- TABS ---------------- */
 function buildSourceTabs(){
   tabsEl.innerHTML = "";
@@ -1140,6 +1151,7 @@ function updateGlobalFilters() {
   }
 
   /* ---------- ITEM ---------- */
+
   if (smartSortBtn.classList.contains("active")) {
     if (
       Source === "Other" ||
@@ -1338,16 +1350,6 @@ else if (GroupFilter === "Special") {
   subgroup2C = standardSort(group2complete);
 
 
-function openSmartListEditor() {
-  // open the existing Specialty List sheet
-  drawer.classList.remove("open");
-  overlay.classList.remove("show");
-
-  loadSpecialtyLists().then(() => {
-    specialtySheet.style.transform = "translateX(0)";
-    specialtyOverlay.classList.add("show");
-  });
-}
 
 
   // ---------- RENDER ----------
