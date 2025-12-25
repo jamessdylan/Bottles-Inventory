@@ -714,7 +714,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
   <button id="reserveListBtn">Reserve List</button>
 
-<button id="salesReportBtn">Sales Report</button>
   <button>Dictionary File</button>
   <button id="exportBtn">Export</button>
 </div>
@@ -1072,16 +1071,6 @@ function renderSmartListEditor() {
 
 
 /* ---------------- HELPERS ---------------- */
-const round=v=>Math.round(v*10)/10;
-const naLast=(a,b)=>a==="N/A"?1:b==="N/A"?-1:a.localeCompare(b);
-function baseSort(a,b,key){
-  if(a[key]!==b[key]) return a[key]?1:-1;
-  return naLast(a.brand,b.brand)
-    ||naLast(a.identifier,b.identifier)
-    ||naLast(a.varietal,b.varietal)
-    ||naLast(b.year,a.year);
-}
-
 function updateGlobalFilters() {
   /* ---------- ARCHIVE ---------- */
   ArchiveFilter = archiveBtn.classList.contains("active");
@@ -1157,22 +1146,6 @@ function drawDivider(label) {
   list.appendChild(div);
 }
 
-function applySubgroupSort(arr) {
-  if (SubgroupFilter !== "Color") return arr;
-
-  const nonRed = [];
-  const red = [];
-
-  arr.forEach(item => {
-    if ((item.color || "").toLowerCase() === "red") {
-      red.push(item);
-    } else {
-      nonRed.push(item);
-    }
-  });
-
-  return nonRed.concat(red);
-}
 
 function standardSort(arr) {
   const na = v => (v === undefined || v === null || v === "" ? "N/A" : v);
@@ -1703,23 +1676,6 @@ overlay.onclick=()=>{
 
 
 
-/* ---------- SALES REPORT DEBUG ---------- */
-const salesReportBtn = document.getElementById("salesReportBtn");
-
-salesReportBtn.onclick = () => {
-  drawer.classList.remove("open");
-  overlay.classList.remove("show");
-
-  const message =
-`Sales Report Filters:
-
-ArchiveFilter: ${ArchiveFilter}
-GroupFilter: ${GroupFilter}
-SubgroupFilter: ${SubgroupFilter}
-ItemFilter: ${ItemFilter}`;
-
-  alert(message);
-};
 
 const archiveCleanupSheet = document.getElementById("archiveCleanupSheet");
 const archiveCleanupOverlay = document.getElementById("archiveCleanupOverlay");
@@ -2254,69 +2210,6 @@ confirmNewBottle.onclick = () => {
 
 
 
-
-
-/*---------EXPORT---------------*/
-  
-  function wineTitle(item) {
-  return [
-    item.brand,
-    item.identifier,
-    item.varietal,
-    item.year
-  ].filter(v => v && v !== "N/A").join(" ");
-}
-
-function totalQty(item) {
-  return (
-    Number(item.Emporio || 0) +
-    Number(item.Mezzo || 0) +
-    Number(item["Tetto (L)"] || 0) +
-    Number(item["Tetto (R)"] || 0) +
-    Number(item["Wine Cellar"] || 0) +
-    Number(item["Liquor Closet"] || 0) +
-    Number(item["Prep Cooler"] || 0) +
-    Number(item.Other || 0)
-  );
-}
-
-function sortAlphabetically(a, b) {
-  return wineTitle(a).toLowerCase().localeCompare(
-    wineTitle(b).toLowerCase()
-  );
-}
-
-  function generateExportHTML(items, pageTitle) {
-  const active = [];
-  const inactive = [];
-
-  items.forEach(item => {
-    const qty = totalQty(item);
-    if (qty > 0) active.push({ ...item, qty });
-    else inactive.push(item);
-  });
-
-  const tiers = {
-    House: {},
-    Reserve: {}
-  };
-
-  active.forEach(item => {
-    const tier = item.tier || "House";
-    const color = item.color || "Other";
-    tiers[tier] ??= {};
-    tiers[tier][color] ??= [];
-    tiers[tier][color].push(item);
-  });
-
-  Object.values(tiers).forEach(colors =>
-    Object.values(colors).forEach(arr => arr.sort(sortAlphabetically))
-  );
-
-  let html = `;
-
-  return html;
-}
 const exportBtn = document.getElementById("exportBtn");
 
 exportBtn.onclick = () => {
