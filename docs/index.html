@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>SM Wine </title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1377,14 +1377,15 @@ let workingSmartList = [];
 let dragItem = null;
 
 function openSmartListEditor(){
-  const key = `${Source}SmartList`;
-  workingSmartList = [...(window[key] || [])];
+  drawer.classList.remove("open");
+  overlay.classList.remove("show");
 
-  renderSmartListEditor();
-
-  smartSheet.style.transform = "translateY(0)";
-  smartOverlay.classList.add("show");
+  loadSpecialtyLists().then(() => {
+    specialtySheet.style.transform = "translateX(0)";
+    specialtyOverlay.classList.add("show");
+  });
 }
+
 
 function closeSmartListEditor(){
   smartSheet.style.transform = "translateY(100%)";
@@ -1689,10 +1690,15 @@ archiveBtn.onclick = () => {
   renderItems();
 };
 
-let groupHoldTimer;
+let groupHoldTimer = null;
+let groupLongPressFired = false;
 
-groupBtn.onpointerdown = () => {
+groupBtn.onpointerdown = e => {
+  e.preventDefault(); // iOS required
+  groupLongPressFired = false;
+
   groupHoldTimer = setTimeout(() => {
+    groupLongPressFired = true;
     openSmartListEditor();
   }, 700);
 };
@@ -1700,7 +1706,13 @@ groupBtn.onpointerdown = () => {
 groupBtn.onpointerup = () => clearTimeout(groupHoldTimer);
 groupBtn.onpointerleave = () => clearTimeout(groupHoldTimer);
 
-groupBtn.onclick = () => {
+groupBtn.onclick = e => {
+  if (groupLongPressFired) {
+    e.preventDefault();
+    e.stopPropagation();
+    return;
+  }
+
   groupBtn.classList.toggle("active");
   updateGlobalFilters();
   renderItems();
