@@ -307,6 +307,36 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   color:var(--green);
 }
 
+.smart-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:14px 12px;
+  border-radius:12px;
+  background:rgba(0,0,0,.05);
+  margin-bottom:8px;
+  touch-action:pan-y;
+}
+
+.smart-x{
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  background:#b00020;
+  color:white;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.smart-title{
+  flex:1;
+  font-size:15px;
+}
+
+
 </style>
 </head>
 <body>
@@ -884,17 +914,6 @@ async function loadItems(){
   renderItems();
 }
 
-function openSmartListEditor() {
-  // open the existing Specialty List sheet
-  drawer.classList.remove("open");
-  overlay.classList.remove("show");
-
-  loadSpecialtyLists().then(() => {
-    specialtySheet.style.transform = "translateX(0)";
-    specialtyOverlay.classList.add("show");
-  });
-}
-
 /* ---------------- TABS ---------------- */
 function buildSourceTabs(){
   tabsEl.innerHTML = "";
@@ -1151,7 +1170,6 @@ function updateGlobalFilters() {
   }
 
   /* ---------- ITEM ---------- */
-
   if (smartSortBtn.classList.contains("active")) {
     if (
       Source === "Other" ||
@@ -1238,18 +1256,6 @@ function standardSort(arr) {
 
     return 0;
   });
-}
-
-async function getSmartUUIDsForSource() {
-  const key = `${Source}SmartList`;
-  if (Array.isArray(window[key])) return [...window[key]];
-
-  try {
-    const res = await fetch(`./${Source}.json`, { cache:"no-store" });
-    return await res.json();
-  } catch {
-    return [];
-  }
 }
 
 
@@ -1348,9 +1354,6 @@ else if (GroupFilter === "Special") {
 
   subgroup1C = standardSort(group1complete);
   subgroup2C = standardSort(group2complete);
-
-
-
 
   // ---------- RENDER ----------
   function renderGroup(label, a, b, c) {
@@ -1584,42 +1587,11 @@ archiveBtn.onclick = () => {
   renderItems();
 };
 
-let groupHoldTimer = null;
-let groupLongPressFired = false;
-
-groupBtn.addEventListener("pointerdown", e => {
-  e.preventDefault();            // 🔑 critical for iOS
-  groupLongPressFired = false;
-
-  groupHoldTimer = setTimeout(() => {
-    groupLongPressFired = true;
-    openSmartListEditor();        // ✅ LONG PRESS ACTION
-  }, 700);
-});
-
-groupBtn.addEventListener("pointerup", () => {
-  clearTimeout(groupHoldTimer);
-});
-
-groupBtn.addEventListener("pointerleave", () => {
-  clearTimeout(groupHoldTimer);
-});
-
-groupBtn.addEventListener("click", e => {
-  // ❌ block click if long-press already fired
-  if (groupLongPressFired) {
-    e.preventDefault();
-    e.stopPropagation();
-    return;
-  }
-
-  // ✅ normal short tap behavior
+groupBtn.onclick = () => {
   groupBtn.classList.toggle("active");
   updateGlobalFilters();
   renderItems();
-});
-
-
+};
 
 smartSortBtn.onclick = () => {
   smartSortBtn.classList.toggle("active");
@@ -1656,6 +1628,142 @@ ItemFilter: ${ItemFilter}`;
   alert(message);
 };
   
+/* ---------- SMART LIST EDITOR ---------- */
+
+const smartOverlay = document.getElementById("smartListOverlay");
+const smartSheet   = document.getElementById("smartListSheet");
+const smartListEl  = document.getElementById("smartListItems");
+const smartInput   = document.getElementById("smartAddInput");
+const smartSuggest = document.getElementById("smartAddSuggestions");
+const closeSmart   = document.getElementById("closeSmartList");
+
+let smartUUIDs = [];
+
+/* ---------- OPEN (LONG PRESS) ---------- */
+let smartHold;
+smartSortBtn.onpointerdown = () => {
+  smartHold = setTimeout(openSmartEditor, 700);
+};
+smartSortBtn.onpointerup =
+smartSortBtn.onpointerleave = () => clearTimeout(smartHold);
+
+/* ---------- LOAD SOURCE ---------- */
+async function loadSmartList() {
+  const key = `${Source}SmartList`;
+
+  if (Array.isArray(window[key])) {
+    smartUUIDs = [...window[key]];
+  } else {
+    try {
+      const res = await fetch(`./${Source}.json`, { cache:"no-store" });
+      smartUUIDs = await res.json();
+    } catch {
+      smartUUIDs = [];
+    }
+  }
+}
+
+/* ---------- OPEN UI ---------- */
+async function openSmartEditor() {
+  await loadSmartList();
+  renderSmartList();
+
+  smartSheet.style.transform = "translateY(0)";
+  smartOverlay.classList.add("show");
+}
+
+/* ---------- CLOSE + SAVE ---------- */
+function closeSmartEditor() {
+  window[`${Source}SmartList`] = [...smartUUIDs];
+  smartSheet.style.transform = "translateY(100%)";
+  smartOverlay.classList.remove("show");
+  renderItems();
+}
+
+closeSmart.onclick = closeSmartEditor;
+smartOverlay.onclick = closeSmartEditor;
+
+/* ---------- RENDER LIST ---------- */
+function renderSmartList() {
+  smartListEl.innerHTML = "";
+
+  smartUUIDs.forEach((uuid, idx) => {
+    const item = items.find(i => i.UUID === uuid);
+    if (!item) return;
+
+    const row = document.createElement("div");
+    row.className = "smart-row";
+    row.draggable = true;
+
+    row.innerHTML = `
+      <div class="smart-x">×</div>
+      <div class="smart-title">
+        ${[item.brand,item.identifier,item.varietal,item.year]
+          .filter(v=>v && v!=="N/A").join(" ")}
+      </div>
+    `;
+
+    // delete
+    row.querySelector(".smart-x").onclick = () => {
+      smartUUIDs.splice(idx, 1);
+      renderSmartList();
+    };
+
+    // reorder
+    row.ondragstart = e => e.dataTransfer.setData("i", idx);
+    row.ondragover  = e => e.preventDefault();
+    row.ondrop = e => {
+      const from = Number(e.dataTransfer.getData("i"));
+      const to = idx;
+      const moved = smartUUIDs.splice(from, 1)[0];
+      smartUUIDs.splice(to, 0, moved);
+      renderSmartList();
+    };
+
+    smartListEl.appendChild(row);
+  });
+}
+
+/* ---------- AUTOCOMPLETE ADD ---------- */
+smartInput.oninput = () => {
+  const q = smartInput.value.toLowerCase();
+  smartSuggest.innerHTML = "";
+
+  if (!q) return smartSuggest.style.display = "none";
+
+  const available = items.filter(
+    i => !smartUUIDs.includes(i.UUID)
+  );
+
+  const matches = available.filter(i =>
+    `${i.brand} ${i.identifier} ${i.varietal} ${i.year}`
+      .toLowerCase().includes(q)
+  );
+
+  if (!matches.length) return smartSuggest.style.display = "none";
+
+  matches.forEach(item => {
+    const div = document.createElement("div");
+    div.textContent =
+      [item.brand,item.identifier,item.varietal,item.year]
+      .filter(v=>v && v!=="N/A").join(" ");
+    div.style.padding = "12px 16px";
+    div.style.cursor = "pointer";
+
+    div.onclick = () => {
+      smartUUIDs.push(item.UUID);
+      smartInput.value = "";
+      smartSuggest.style.display = "none";
+      renderSmartList();
+    };
+
+    smartSuggest.appendChild(div);
+  });
+
+  smartSuggest.style.display = "block";
+};
+
+
 /* ---------- NEW BOTTLE ---------- */
 const newBottleBtn = document.getElementById("newBottleBtn");
 const newBottleSheet = document.getElementById("newBottleSheet");
@@ -2222,6 +2330,60 @@ ${inactive.map(i => `<li>${wineTitle(i)}</li>`).join("")}
 
 <h2 style="text-align:right;">Grand Total: $${grandTotal}</h2>
 
+
+<!-- SMART LIST EDITOR -->
+<div id="smartListOverlay" class="overlay"></div>
+
+<div id="smartListSheet" style="
+  position:fixed;
+  inset:0;
+  background:rgba(255,255,255,.95);
+  backdrop-filter:blur(16px);
+  padding:calc(20px + env(safe-area-inset-top)) 16px 20px;
+  transform:translateY(100%);
+  transition:.25s ease;
+  z-index:600;
+  overflow-y:auto;
+">
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div style="font-family:'Copperplate',serif;font-size:18px;">
+      Smart List Editor
+    </div>
+    <button id="closeSmartList">Done</button>
+  </div>
+
+  <div id="smartListItems"></div>
+
+  <!-- ADD ITEM -->
+  <div style="margin-top:16px;">
+    <input
+      id="smartAddInput"
+      placeholder="Add item…"
+      autocomplete="off"
+      style="
+        width:100%;
+        padding:14px 16px;
+        border-radius:12px;
+        border:none;
+        background:rgba(0,0,0,.06);
+        font-size:16px;
+      "
+    />
+    <div id="smartAddSuggestions"
+      style="
+        display:none;
+        background:white;
+        border-radius:12px;
+        margin-top:6px;
+        box-shadow:0 6px 20px rgba(0,0,0,.15);
+        overflow:hidden;
+      ">
+    </div>
+  </div>
+
+</div>
+
 </body>
 </html>`;
 
@@ -2238,174 +2400,7 @@ exportBtn.onclick = () => {
   win.document.close();
 };
 
-const smartListSheet = document.getElementById("smartListSheet");
-const smartListOverlay = document.getElementById("smartListOverlay");
-const smartListItemsEl = document.getElementById("smartListItems");
-const smartListAddInput = document.getElementById("smartListAddInput");
-const smartListSuggestions = document.getElementById("smartListSuggestions");
-
-let smartUUIDs = [];
-
-function openSmartListEditor() {
-  loadSmartList();
-  smartListSheet.style.transform = "translateY(0)";
-  smartListOverlay.classList.add("show");
-}
-
-document.getElementById("closeSmartList").onclick = () => {
-  window[`${Source}SmartList`] = [...smartUUIDs];
-  smartListSheet.style.transform = "translateY(100%)";
-  smartListOverlay.classList.remove("show");
-  renderItems();
-};
-
-smartListOverlay.onclick = () =>
-  document.getElementById("closeSmartList").onclick();
-
-async function loadSmartList() {
-  smartUUIDs = await getSmartUUIDsForSource();
-  renderSmartList();
-}
-
-function renderSmartList() {
-  smartListItemsEl.innerHTML = "";
-
-  smartUUIDs.forEach((uuid, index) => {
-    const item = items.find(i => i.UUID === uuid);
-    if (!item) return;
-
-    const row = document.createElement("div");
-    row.style.cssText = `
-      display:flex;
-      align-items:center;
-      gap:12px;
-      padding:14px;
-      border-radius:12px;
-      background:rgba(0,0,0,.05);
-      margin-bottom:10px;
-      cursor:grab;
-    `;
-
-    const remove = document.createElement("div");
-    remove.textContent = "✕";
-    remove.style.cursor = "pointer";
-    remove.onclick = () => {
-      smartUUIDs.splice(index, 1);
-      renderSmartList();
-    };
-
-    const title = document.createElement("div");
-    title.textContent =
-      [item.brand,item.identifier,item.varietal,item.year]
-      .filter(v=>v && v!=="N/A")
-      .join(" ");
-
-    row.append(remove, title);
-
-    // long-press reorder
-    let hold;
-    row.onpointerdown = () => {
-      hold = setTimeout(() => {
-        const moved = smartUUIDs.splice(index,1)[0];
-        smartUUIDs.unshift(moved);
-        renderSmartList();
-      },600);
-    };
-    row.onpointerup = () => clearTimeout(hold);
-    row.onpointerleave = () => clearTimeout(hold);
-
-    smartListItemsEl.appendChild(row);
-  });
-}
-
-smartListAddInput.oninput = () => {
-  const value = smartListAddInput.value.toLowerCase();
-  smartListSuggestions.innerHTML = "";
-
-  const candidates = items.filter(i =>
-    !smartUUIDs.includes(i.UUID) &&
-    [i.brand,i.identifier,i.varietal,i.year]
-      .join(" ")
-      .toLowerCase()
-      .includes(value)
-  );
-
-  if (!value || candidates.length === 0) {
-    smartListSuggestions.style.display = "none";
-    return;
-  }
-
-  candidates.forEach(item => {
-    const div = document.createElement("div");
-    div.textContent =
-      [item.brand,item.identifier,item.varietal,item.year]
-      .filter(v=>v && v!=="N/A")
-      .join(" ");
-    div.style.padding = "12px 16px";
-    div.onclick = () => {
-      smartUUIDs.push(item.UUID);
-      smartListAddInput.value = "";
-      smartListSuggestions.style.display = "none";
-      renderSmartList();
-    };
-    smartListSuggestions.appendChild(div);
-  });
-
-  smartListSuggestions.style.display = "flex";
-};
-
-
 </script>
-
-<!-- SMART LIST EDITOR -->
-<div id="smartListOverlay" class="overlay"></div>
-
-<div id="smartListSheet" style="
-  position:fixed;
-  inset:0;
-  background:rgba(255,255,255,.94);
-  backdrop-filter:blur(18px);
-  padding:calc(20px + env(safe-area-inset-top)) 16px 20px;
-  transform:translateY(100%);
-  transition:.25s ease;
-  z-index:600;
-  overflow-y:auto;
-">
-
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-    <div style="font-family:'Copperplate',serif;font-size:18px;">
-      Edit Smart List
-    </div>
-    <button id="closeSmartList">Done</button>
-  </div>
-
-  <div id="smartListItems"></div>
-
-  <input
-    id="smartListAddInput"
-    placeholder="Add item…"
-    style="
-      margin-top:16px;
-      width:100%;
-      padding:14px 16px;
-      border-radius:14px;
-      border:none;
-      background:rgba(0,0,0,.05);
-      font-size:16px;
-    "
-  />
-
-  <div id="smartListSuggestions" style="
-    display:none;
-    flex-direction:column;
-    background:white;
-    border-radius:12px;
-    margin-top:6px;
-    box-shadow:0 6px 18px rgba(0,0,0,.15);
-    overflow:hidden;
-  "></div>
-</div>
-
 
 </body>
 </html>
