@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Patch Inventory</title>
+<title>SM Wine</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -932,7 +932,7 @@ const tabsEl=document.getElementById("sourceTabs");
     reserveListBtn.onclick = () => {
       drawer.classList.remove("open");
       overlay.classList.remove("show");
-      const itemsPatch = localStorage.getItem("itemsPatch.json");
+      const itemsPatch = localStorage.getItem("itemsPatch");
 
   if (itemsPatch) {
     // If itemsPatch exists in localStorage, display it
@@ -945,23 +945,20 @@ const tabsEl=document.getElementById("sourceTabs");
     };
 
     // Handle the "Sales Report" button click
-    salesReportBtn.onclick = () => {
-      drawer.classList.remove("open");
-      overlay.classList.remove("show");
 salesReportBtn.onclick = () => {
   drawer.classList.remove("open");
   overlay.classList.remove("show");
 
-  const message =
-`Sales Report Filters:
+  // Generate current items
+  const currentItems = createCurrentItems();
 
-ArchiveFilter: ${ArchiveFilter}
-GroupFilter: ${GroupFilter}
-SubgroupFilter: ${SubgroupFilter}
-ItemFilter: ${ItemFilter}`;
-
-  alert(message);
+  // Pretty-print the current items as a JSON string
+  const jsonContent = JSON.stringify(currentItems, null, 2); 
+      const jsonWindow = window.open('', '_blank');
+      jsonWindow.document.write('<pre>' + jsonContent + '</pre>');
+      jsonWindow.document.close();
 };
+
     };
 
     // Handle the "Dictionary File" button click
@@ -985,38 +982,11 @@ ItemFilter: ${ItemFilter}`;
 
 
 /* ---------------- LOAD ---------------- */
-async function loadItems() {
-  const res = await fetch("./items.json", { cache: "no-store" });
-  items = await res.json();
-
-  // Check if itemsPatch exists in localStorage
-  let itemsPatch = localStorage.getItem("itemsPatch");
-
-  if (!itemsPatch) {
-    // If itemsPatch doesn't exist, create it using the items loaded
-    itemsPatch = {};
-
-    // Loop through each item and create a patch for it
-    items.forEach(item => {
-      const currentDictionary = {}; // Create a dictionary for each item
-      Object.keys(item).forEach(key => {
-        if (key !== "UUID") {
-          currentDictionary[key] = item[key];
-        }
-      });
-      
-      // Add the item UUID as the key in the itemsPatch object
-      itemsPatch[item.UUID] = currentDictionary;
-    });
-
-    // Store the itemsPatch in localStorage
-    localStorage.setItem("itemsPatch", JSON.stringify(itemsPatch));
-    console.log("itemsPatch created and saved to localStorage.");
-  }
-
+async function loadItems(){
+  const res=await fetch("./items.json",{cache:"no-store"});
+  items=await res.json();
   renderItems();
 }
-
 
 /* ---------------- TABS ---------------- */
 function buildSourceTabs(){
@@ -1351,6 +1321,33 @@ function persistSmartListUUIDs() {
   const uuidKey = `${Source}SmartListUUIDs`;
 
   window[uuidKey] = list.map(item => item.UUID);
+}
+
+
+function createCurrentItems() {
+  return items.map(item => {
+    return {
+      UUID: item.UUID,
+      brand: item.brand || "N/A",
+      identifier: item.identifier || "N/A",
+      varietal: item.varietal || "N/A",
+      year: item.year || "N/A",
+      price: item.price || 0,
+      color: item.color || "White",
+      status: item.status || true,
+      tier: item.tier || "House",
+      featured: item.featured || "",
+      distributor: item.distributor || "N/A",
+      note: item.note || "",
+      base64: item.base64 || false,
+      icon: item.icon || (item.color === "White" ? "#c9b037" : item.color === "Rose" ? "#d97c8a" : "#7b1e1e"),
+      ...SOURCES.reduce((acc, source) => {
+        acc[source] = item[source] || 0;
+        acc[`${source}Complete`] = item[`${source}Complete`] || false;
+        return acc;
+      }, {})
+    };
+  });
 }
 
 
@@ -2404,3 +2401,4 @@ confirmNewBottle.onclick = () => {
 
 </body>
 </html>
+
