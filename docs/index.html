@@ -2257,154 +2257,25 @@ confirmNewBottle.onclick = () => {
 
 
 
-
-
-/*---------EXPORT---------------*/
-  
-  function wineTitle(item) {
-  return [
-    item.brand,
-    item.identifier,
-    item.varietal,
-    item.year
-  ].filter(v => v && v !== "N/A").join(" ");
-}
-
-function totalQty(item) {
-  return (
-    Number(item.Emporio || 0) +
-    Number(item.Mezzo || 0) +
-    Number(item["Tetto (L)"] || 0) +
-    Number(item["Tetto (R)"] || 0) +
-    Number(item["Wine Cellar"] || 0) +
-    Number(item["Liquor Closet"] || 0) +
-    Number(item["Prep Cooler"] || 0) +
-    Number(item.Other || 0)
-  );
-}
-
-function sortAlphabetically(a, b) {
-  return wineTitle(a).toLowerCase().localeCompare(
-    wineTitle(b).toLowerCase()
-  );
-}
-
-  function generateExportHTML(items, pageTitle) {
-  const active = [];
-  const inactive = [];
-
-  items.forEach(item => {
-    const qty = totalQty(item);
-    if (qty > 0) active.push({ ...item, qty });
-    else inactive.push(item);
-  });
-
-  const tiers = {
-    House: {},
-    Reserve: {}
-  };
-
-  active.forEach(item => {
-    const tier = item.tier || "House";
-    const color = item.color || "Other";
-    tiers[tier] ??= {};
-    tiers[tier][color] ??= [];
-    tiers[tier][color].push(item);
-  });
-
-  Object.values(tiers).forEach(colors =>
-    Object.values(colors).forEach(arr => arr.sort(sortAlphabetically))
-  );
-
-  let html = `
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>${pageTitle}</title>
-<style>
-body{font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;padding:24px;}
-.logo{text-align:center;margin-bottom:12px;}
-.logo img{max-width:260px;}
-.title{background:#1f5e3b;color:white;padding:14px;text-align:center;border-radius:8px;margin-bottom:24px;}
-h2{margin-top:32px;border-bottom:2px solid #1f5e3b;}
-h3{margin-top:16px;color:#555;}
-table{width:100%;border-collapse:collapse;margin-bottom:12px;}
-th,td{padding:8px;border-bottom:1px solid #ddd;}
-.qty{text-align:center;font-weight:bold;}
-.money{text-align:right;}
-.subtotal{font-weight:bold;background:#fafafa;}
-</style>
-</head>
-<body>
-
-<div class="logo">
-  <img src="SiennaTransparent.png">
-</div>
-
-<div class="title">${pageTitle}</div>
-`;
-
-  let grandTotal = 0;
-
-  ["House", "Reserve"].forEach(tier => {
-    if (!tiers[tier] || Object.keys(tiers[tier]).length === 0) return;
-
-    let tierTotal = 0;
-    html += `<h2>${tier} Wines</h2>`;
-
-    Object.keys(tiers[tier]).forEach(color => {
-      html += `<h3>${color}</h3>
-<table>
-<tr><th>Qty</th><th>Wine</th><th class="money">Price</th><th class="money">Total</th></tr>`;
-
-      tiers[tier][color].forEach(item => {
-        const value = item.qty * (item.price || 0);
-        tierTotal += value;
-        html += `
-<tr>
-  <td class="qty">${item.qty}</td>
-  <td>${wineTitle(item)}</td>
-  <td class="money">$${item.price || 0}</td>
-  <td class="money">$${value}</td>
-</tr>`;
-      });
-
-      html += `</table>`;
-    });
-
-    grandTotal += tierTotal;
-    html += `
-<table>
-<tr class="subtotal">
-<td colspan="3">${tier} Subtotal</td>
-<td class="money">$${tierTotal}</td>
-</tr>
-</table>`;
-  });
-
-  html += `
-<h2>Inactive Wines</h2>
-<ul>
-${inactive.map(i => `<li>${wineTitle(i)}</li>`).join("")}
-</ul>
-
-<h2 style="text-align:right;">Grand Total: $${grandTotal}</h2>
-
-</body>
-</html>`;
-
-  return html;
-}
 const exportBtn = document.getElementById("exportBtn");
 
 exportBtn.onclick = () => {
-  const html = generateExportHTML(items, pageTitle);
+  // close drawer
+  drawer.classList.remove("open");
+  overlay.classList.remove("show");
 
-  const win = window.open("", "_blank");
-  win.document.open();
-  win.document.write(html);
-  win.document.close();
+  // OPTIONAL: persist context for export.html
+  localStorage.setItem("exportContext", JSON.stringify({
+    source: Source,
+    archive: ArchiveFilter,
+    group: GroupFilter,
+    subgroup: SubgroupFilter,
+    item: ItemFilter
+  }));
+
+  // open export page
+
+  window.location.href = "./export.html";
 };
 
 </script>
