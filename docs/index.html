@@ -836,12 +836,20 @@ function loadItemsFromLocal() {
   if (!saved) return false;
 
   try {
-    items = JSON.parse(saved);
-    return true;
+    const parsed = JSON.parse(saved);
+
+    // ✅ Only accept if it is a non-empty array
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      items = parsed;
+      return true;
+    }
+
+    return false;
   } catch {
     return false;
   }
 }
+
 
 const pageTitleEl=document.getElementById("pageTitle");
 
