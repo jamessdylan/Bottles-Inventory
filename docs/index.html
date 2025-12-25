@@ -879,6 +879,8 @@ confirmDate.onclick=()=>{
 ;
 
 /* ---------------- STATE ---------------- */
+const STORAGE_KEY = "sm-wine-items-v1";
+
 const SOURCES=[
   "Emporio","Mezzo","Tetto (L)","Tetto (R)",
   "Wine Cellar","Liquor Closet","Prep Cooler","Other"
@@ -914,11 +916,34 @@ const overlay = document.getElementById("overlay");
 
 
 /* ---------------- LOAD ---------------- */
-async function loadItems(){
-  const res=await fetch("./items.json",{cache:"no-store"});
-  items=await res.json();
-  renderItems();
+function loadItems() {
+  const stored = localStorage.getItem(STORAGE_KEY);
+
+  if (stored) {
+    try {
+      items = JSON.parse(stored);
+      renderItems();
+      return;
+    } catch (e) {
+      console.warn("Local data corrupted, reloading from file.");
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }
+
+  // fallback only once
+  fetch("./items.json", { cache: "no-store" })
+    .then(res => res.json())
+    .then(data => {
+      items = data;
+      saveItems();
+      renderItems();
+    });
 }
+
+function saveItems() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+}
+
 
 /* ---------------- TABS ---------------- */
 function buildSourceTabs(){
@@ -1461,6 +1486,7 @@ function drawItem(item){
       const v=prompt("Enter value:",item[Source]);
       if(v!==null&&!isNaN(v)){
         item[Source]=Math.max(0,round(Number(v)));
+saveItems();
         renderItems();
       }
     },450);
@@ -1476,6 +1502,7 @@ function drawItem(item){
   /* ----- MINUS ----- */
   minusBtn.onclick = () => {
     item[Source] = Math.max(0, round(item[Source] - 1));
+saveItems();
     renderItems();
   };
 
@@ -1487,6 +1514,7 @@ function drawItem(item){
           0,
           round(item[Source] - Number(v))
         );
+saveItems();
         renderItems();
       }
     }, 450);
@@ -1498,6 +1526,7 @@ function drawItem(item){
   /* ----- PLUS ----- */
   plusBtn.onclick = () => {
     item[Source] = round(item[Source] + 1);
+saveItems();
     renderItems();
   };
 
@@ -1506,6 +1535,7 @@ function drawItem(item){
       const v = prompt("Add how many?", 0);
       if (v !== null && !isNaN(v)) {
         item[Source] = round(item[Source] + Number(v));
+saveItems();
         renderItems();
       }
     }, 450);
@@ -1815,7 +1845,7 @@ confirmArchiveCleanup.onclick = () => {
 
   archiveCleanupSheet.style.transform = "translateY(100%)";
   archiveCleanupOverlay.classList.remove("show");
-
+saveItems();
   renderItems();
 };
 
@@ -2211,7 +2241,7 @@ deleteBottleBtn.onclick = () => {
 
   items = items.filter(i => i !== editingItem);
   editingItem = null;
-
+saveItems();
   renderItems();
   closeNewBottle();
 };
@@ -2251,6 +2281,7 @@ confirmNewBottle.onclick = () => {
   }
 
   editingItem = null;
+saveItems();
   renderItems();
   closeNewBottle();
 };
