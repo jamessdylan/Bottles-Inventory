@@ -2057,19 +2057,24 @@ function renderArchiveCleanup(){
 }
 
 function openArchiveCleanup(){
-  archiveCleanupItems = items
-    .map(item => {
-      const qty = totalQuantity(item);
-      if (qty > 0 || item.status !== true) return null;
+archiveCleanupItems = items
+  .map(item => {
+    const qty = totalQuantity(item);
+    if (qty > 0 || item.status !== true) return null;
 
-      const def = defaultArchiveAction(item);
-      return {
-        item,
-        defaultLabel: def,
-        action: null
-      };
-    })
-    .filter(Boolean);
+    const def = defaultArchiveAction(item);
+    return {
+      item,
+      defaultLabel: def,
+      action: null,
+      title: smartItemTitle(item)
+    };
+  })
+  .filter(Boolean)
+  .sort((a, b) =>
+    a.title.localeCompare(b.title, undefined, { sensitivity: "base" })
+  );
+
 
   if (!archiveCleanupItems.length) return;
 
