@@ -913,11 +913,43 @@ const overlay = document.getElementById("overlay");
 
 
 /* ---------------- LOAD ---------------- */
-async function loadItems(){
-  const res=await fetch("./items.json",{cache:"no-store"});
-  items=await res.json();
+async function loadItems() {
+  let loadedFromStorage = false;
+
+  try {
+    const stored = localStorage.getItem("SMInventoryItems");
+
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length >= 0) {
+        items = parsed;
+        loadedFromStorage = true;
+      }
+    }
+  } catch (e) {
+    console.warn("Failed to load from localStorage, falling back to JSON", e);
+  }
+
+  // ⬇️ First run / empty storage fallback
+  if (!loadedFromStorage) {
+    const res = await fetch("./items.json", { cache: "no-store" });
+    items = await res.json();
+
+    // seed storage immediately
+    try {
+      localStorage.setItem(
+        "SMInventoryItems",
+        JSON.stringify(items)
+      );
+    } catch (e) {
+      console.warn("Failed to seed localStorage", e);
+    }
+  }
+
   renderItems();
 }
+
+
 
 /* ---------------- TABS ---------------- */
 function buildSourceTabs(){
@@ -1212,8 +1244,19 @@ const ARCHIVE_ACTIONS = [
 
 
 /* ---------------- RENDER ---------------- */
+
 async function renderItems() {
   list.innerHTML = "";
+
+  // ---------- PERSIST ALL ITEMS ----------
+  try {
+    localStorage.setItem(
+      "SMInventoryItems",
+      JSON.stringify(items)
+    );
+  } catch (e) {
+    console.warn("Failed to save inventory to localStorage", e);
+  }
 
   const completeKey = `${Source}Complete`;
 
