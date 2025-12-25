@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>SM sfda Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -881,9 +881,7 @@ confirmDate.onclick=()=>{
 
 /* ---------------- STATE ---------------- */
 const STORAGE_KEY = "sm-wine-items-v1";
-const archiveBtn   = document.getElementById("archiveBtn");
-const groupBtn     = document.getElementById("groupBtn");
-const smartSortBtn = document.getElementById("smartSortBtn");
+
 
 
 const SOURCES=[
@@ -915,6 +913,9 @@ let ItemFilter    = "None";  // None | Special
 
 const list=document.getElementById("list");
 const tabsEl=document.getElementById("sourceTabs");
+const archiveBtn   = document.getElementById("archiveBtn");
+const groupBtn     = document.getElementById("groupBtn");
+const smartSortBtn = document.getElementById("smartSortBtn");
 
 const drawer = document.getElementById("drawer");
 const overlay = document.getElementById("overlay");
