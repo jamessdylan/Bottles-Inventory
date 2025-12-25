@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine </title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -932,7 +932,7 @@ const tabsEl=document.getElementById("sourceTabs");
     reserveListBtn.onclick = () => {
       drawer.classList.remove("open");
       overlay.classList.remove("show");
-      const itemsPatch = localStorage.getItem("itemsPatch.json");
+      const itemsPatch = localStorage.getItem("itemsPatch");
 
   if (itemsPatch) {
     // If itemsPatch exists in localStorage, display it
