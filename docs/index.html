@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>SM Wine Test</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1261,16 +1261,30 @@ async function renderItems() {
     group2items = [];
   }
 
-  else if (GroupFilter === "Special") {
-    let uuidList = [];
+else if (GroupFilter === "Special") {
+  let uuidList = [];
+
+  // 🔑 1. Attempt global Smart List first
+  const smartKey = `${Source}SmartList`;
+  const smartList = window[smartKey];
+
+  if (Array.isArray(smartList) && smartList.length > 0) {
+    uuidList = smartList;
+  } 
+  // 🔄 2. Fallback to file-based list
+  else {
     try {
       const res = await fetch(`./${Source}.json`, { cache: "no-store" });
       uuidList = await res.json();
-    } catch {}
-
-    group1items = allItems.filter(i => uuidList.includes(i.UUID));
-    group2items = allItems.filter(i => !uuidList.includes(i.UUID));
+    } catch {
+      uuidList = [];
+    }
   }
+
+  group1items = allItems.filter(i => uuidList.includes(i.UUID));
+  group2items = allItems.filter(i => !uuidList.includes(i.UUID));
+}
+
 
   // ---------- COMPLETE / INCOMPLETE ----------
   const group1incomplete = group1items.filter(i => i[completeKey] === false);
