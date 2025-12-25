@@ -823,6 +823,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
 <script>
 /* ---------- PAGE TITLE ---------- */
+
 const pageTitleEl=document.getElementById("pageTitle");
 
 function defaultTitle(){
@@ -880,6 +881,10 @@ confirmDate.onclick=()=>{
 
 /* ---------------- STATE ---------------- */
 const STORAGE_KEY = "sm-wine-items-v1";
+const archiveBtn   = document.getElementById("archiveBtn");
+const groupBtn     = document.getElementById("groupBtn");
+const smartSortBtn = document.getElementById("smartSortBtn");
+
 
 const SOURCES=[
   "Emporio","Mezzo","Tetto (L)","Tetto (R)",
@@ -1728,9 +1733,6 @@ smartListAddInput.onkeydown = e => {
   renderItems(); // reflect immediately
 };
 
-const archiveBtn   = document.getElementById("archiveBtn");
-const groupBtn     = document.getElementById("groupBtn");
-const smartSortBtn = document.getElementById("smartSortBtn");
 
 
 /* ---------- DRAWER ---------- */
@@ -2009,8 +2011,6 @@ colorToggle.onclick = () => {
 const brandInput = document.getElementById("brandInput");
 const brandSuggestions = document.getElementById("brandSuggestions");
 
-
-/* Hide suggestions when leaving field */
 brandInput.oninput = () => {
   const value = brandInput.value.trim().toLowerCase();
   brandSuggestions.innerHTML = "";
@@ -2020,7 +2020,7 @@ brandInput.oninput = () => {
     return;
   }
 
-  const brands = [...new Set(items.map(i => i.brand).filter(Boolean))];
+  const brands = [...new Set(items.map(i => i.brand).filter(b => b && b !== "N/A"))];
 
   const matches = brands.filter(b =>
     b.toLowerCase().includes(value)
@@ -2034,7 +2034,7 @@ brandInput.oninput = () => {
   matches.forEach(brand => {
     const div = document.createElement("div");
     div.textContent = brand;
-    div.style.padding = "10px 14px";
+    div.style.padding = "12px 16px";
     div.style.cursor = "pointer";
 
     div.onclick = () => {
@@ -2047,6 +2047,7 @@ brandInput.oninput = () => {
 
   brandSuggestions.style.display = "flex";
 };
+
 
 const identifierInput = document.getElementById("identifierInput");
 
