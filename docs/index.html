@@ -743,7 +743,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
     <button id="closeSmartList">Done</button>
   </div>
 
-  <div id="smartListContainer"></div>’
+  <div id="smartListContainer"></div>
 
 <!-- SMART LIST ADD INPUT -->
 <div id="smartListAddWrap" style="
@@ -948,12 +948,10 @@ const tabsEl=document.getElementById("sourceTabs");
 salesReportBtn.onclick = () => {
   drawer.classList.remove("open");
   overlay.classList.remove("show");
-
-  // Generate the list of items in the proper format
   const itemsListJson = createItemsList();
 
   // Show the items in an alert (this could be adapted to save to a file, send to a server, etc.)
-  alert("Sales Report Filters:\n\n" + itemsListJson);
+  alert(itemsListJson);
 };  
 
     };
