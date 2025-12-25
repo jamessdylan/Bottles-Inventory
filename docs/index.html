@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>SM Wine Inventory 2</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -744,7 +744,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
     <button id="closeSmartList">Done</button>
   </div>
 
-  <div id="smartListContainer"></div>’
+  <div id="smartListContainer"></div>
 
 <!-- SMART LIST ADD INPUT -->
 <div id="smartListAddWrap" style="
@@ -754,12 +754,12 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   background:rgba(255,255,255,.94);
   backdrop-filter:blur(14px);
   padding:12px 0 env(safe-area-inset-bottom);
-">
-
+"> 
+ 
   <input
     id="smartListAddInput"
     type="text"
-    placeholder="Add item…"
+    placeholder="Add item …"
     autocomplete="off"
     style="
       width:100%;
@@ -896,26 +896,6 @@ const SOURCE_ICONS = {
 let items=[];
 let Source="Emporio";
 
-/* ---------- PERSISTENCE ---------- */
-const STORAGE_KEY = "SM_WINE_ITEMS";
-
-function saveItems() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-}
-
-function loadItemsFromStorage() {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return null;
-
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
-}
-
-
 // ---------- GLOBAL FILTERS ----------
 let ArchiveFilter = false;   // true | false
 let GroupFilter   = "None";  // None | Tier | Special
@@ -930,27 +910,62 @@ const tabsEl=document.getElementById("sourceTabs");
 const drawer = document.getElementById("drawer");
 const overlay = document.getElementById("overlay");
 
+/* ---------- ACTION BUTTON ELEMENTS ---------- */
+const undoBtn      = document.getElementById("undoBtn");
+const newBottleBtn = document.getElementById("newBottleBtn");
+const archiveBtn   = document.getElementById("archiveBtn");
+const groupBtn     = document.getElementById("groupBtn");
+const smartSortBtn = document.getElementById("smartSortBtn");
+
+/* ---------- ACTION BUTTON STATE ---------- */
+const UNDO_ACTIVE       = false;
+const NEW_BOTTLE_ACTIVE = false;
+const ARCHIVE_ACTIVE    = false;
+const GROUP_ACTIVE      = false;
+const SMART_SORT_ACTIVE = false;
+
+/* ---------- INITIAL BUTTON UI STATE ---------- */
+undoBtn.classList.toggle("active", UNDO_ACTIVE);
+newBottleBtn.classList.toggle("active", NEW_BOTTLE_ACTIVE);
+archiveBtn.classList.toggle("active", ARCHIVE_ACTIVE);
+groupBtn.classList.toggle("active", GROUP_ACTIVE);
+smartSortBtn.classList.toggle("active", SMART_SORT_ACTIVE);
+
 
 /* ---------------- LOAD ---------------- */
-async function loadItems() {
-  // 1️⃣ Try localStorage first
-  const stored = loadItemsFromStorage();
-  if (stored) {
-    items = stored;
-    renderItems();
-    return;
+function normalizeItems(raw) {
+  // already correct
+  if (Array.isArray(raw)) return raw;
+
+  // safety fallback (object keyed by UUID, etc.)
+  if (raw && typeof raw === "object") {
+    return Object.values(raw);
   }
 
-  // 2️⃣ First-time load from JSON
-  const res = await fetch("./items.json", { cache: "no-store" });
-  items = await res.json();
+  return [];
+}
 
-  // 3️⃣ Persist baseline
-  saveItems();
+async function loadItems() {
+  const stored = localStorage.getItem("items");
+
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      items = normalizeItems(parsed);
+    } catch (e) {
+      console.warn("Corrupt local items, refetching", e);
+      localStorage.removeItem("items");
+      return loadItems(); // retry clean
+    }
+  } else {
+    const res = await fetch("./items.json", { cache: "no-store" });
+    const fetched = await res.json();
+    items = normalizeItems(fetched);
+    localStorage.setItem("items", JSON.stringify(items));
+  }
 
   renderItems();
 }
-
 
 /* ---------------- TABS ---------------- */
 function buildSourceTabs(){
@@ -1508,7 +1523,6 @@ function drawItem(item){
       const v=prompt("Enter value:",item[Source]);
       if(v!==null&&!isNaN(v)){
         item[Source]=Math.max(0,round(Number(v)));
-saveItems();
         renderItems();
       }
     },450);
@@ -1524,7 +1538,6 @@ saveItems();
   /* ----- MINUS ----- */
   minusBtn.onclick = () => {
     item[Source] = Math.max(0, round(item[Source] - 1));
-saveItems();
     renderItems();
   };
 
@@ -1536,7 +1549,6 @@ saveItems();
           0,
           round(item[Source] - Number(v))
         );
-saveItems();
         renderItems();
       }
     }, 450);
@@ -1556,7 +1568,6 @@ saveItems();
       const v = prompt("Add how many?", 0);
       if (v !== null && !isNaN(v)) {
         item[Source] = round(item[Source] + Number(v));
-saveItems();
         renderItems();
       }
     }, 450);
@@ -1566,9 +1577,7 @@ saveItems();
   plusBtn.onpointerleave = () => clearTimeout(holdTimerBtn);
 
 
-  row.querySelector(".toggle").onclick=()=>{item[key]=!item[key];
-saveItems();
-renderItems();}
+  row.querySelector(".toggle").onclick=()=>{item[key]=!item[key];renderItems();}
 
 let rowHoldTimer;
 
@@ -1599,11 +1608,8 @@ function smartItemTitle(item){
 
 
 /* ---------- INIT ---------- */
-document.addEventListener("DOMContentLoaded", () => {
-  buildSourceTabs();
-  loadItems();
-});
-
+buildSourceTabs();
+loadItems();
 
 /* ---------- ACTION STATES ---------- */
 let showArchived = false;
@@ -1917,8 +1923,6 @@ confirmArchiveCleanup.onclick = () => {
       obj.item.status = false;
     }
   });
-
-saveItems();
 
   archiveCleanupSheet.style.transform = "translateY(100%)";
   archiveCleanupOverlay.classList.remove("show");
@@ -2321,7 +2325,6 @@ deleteBottleBtn.onclick = () => {
 
   items = items.filter(i => i !== editingItem);
   editingItem = null;
-saveItems();
 
   renderItems();
   closeNewBottle();
@@ -2361,11 +2364,8 @@ confirmNewBottle.onclick = () => {
     items.push(target);
   }
 
-saveItems();
-
   editingItem = null;
   resetNewBottleDefaults();
-
   renderItems();
   closeNewBottle();
 };
