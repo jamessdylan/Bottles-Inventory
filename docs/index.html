@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine </title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -783,20 +783,40 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
   <!-- ✅ INPUT LIVES OUTSIDE -->
   <div style="margin-top:18px;">
-    <input
-      id="smartListAddInput"
-      list="smartListSuggestions"
-      placeholder="Add item…"
-      style="
-        width:100%;
-        padding:14px 16px;
-        font-size:15px;
-        border-radius:14px;
-        border:1px solid rgba(0,0,0,.15);
-        background:rgba(255,255,255,.9);
-      "
-    />
-    <datalist id="smartListSuggestions"></datalist>
+    <div style="position:relative;">
+  <input
+    id="smartListAddInput"
+    placeholder="Add item…"
+    autocomplete="off"
+    style="
+      width:100%;
+      padding:14px 16px;
+      font-size:15px;
+      border-radius:14px;
+      border:1px solid rgba(0,0,0,.15);
+      background:rgba(255,255,255,.9);
+    "
+  />
+
+  <div
+    id="smartListSuggestions"
+    style="
+      display:none;
+      position:absolute;
+      bottom:100%;
+      left:0;
+      right:0;
+      background:white;
+      border-radius:14px;
+      box-shadow:0 8px 24px rgba(0,0,0,.2);
+      overflow:hidden;
+      z-index:600;
+      max-height:240px;
+      overflow-y:auto;
+    "
+  ></div>
+</div>
+
   </div>
 
 </div>
@@ -1218,14 +1238,17 @@ const closeSmartList = document.getElementById("closeSmartList");
 let activeSmartKey = null;
 let dragIndex = null;
 
-function openSmartListEditor() {
+async function openSmartListEditor() {
+  if (!items.length) {
+    await loadItems();
+  }
+
   const smartKey = `${Source}SmartList`;
   const smartItems = window[smartKey];
 
   if (!Array.isArray(smartItems)) return;
 
   activeSmartKey = smartKey;
-  populateSmartListSuggestions();
   smartListAddInput.value = "";
 
   renderSmartListEditor();
@@ -1233,6 +1256,7 @@ function openSmartListEditor() {
   smartListEditor.classList.add("show");
   smartListOverlay.classList.add("show");
 }
+
 
 
 function closeSmartListEditorFn() {
@@ -1306,6 +1330,61 @@ populateSmartListSuggestions();
 
 const smartListAddInput = document.getElementById("smartListAddInput");
 const smartListSuggestions = document.getElementById("smartListSuggestions");
+
+smartListAddInput.oninput = () => {
+  const query = smartListAddInput.value.trim().toLowerCase();
+  smartListSuggestions.innerHTML = "";
+
+  if (!query) {
+    smartListSuggestions.style.display = "none";
+    return;
+  }
+
+  const candidates = getSmartListSuggestions()
+    .map(item => ({
+      item,
+      label: [item.brand, item.identifier, item.varietal, item.year]
+        .filter(v => v && v !== "N/A")
+        .join(" ")
+    }))
+    .filter(o => o.label.toLowerCase().includes(query));
+
+  if (!candidates.length) {
+    smartListSuggestions.style.display = "none";
+    return;
+  }
+
+  candidates.forEach(({ item, label }) => {
+    const row = document.createElement("div");
+    row.textContent = label;
+    row.style.padding = "12px 16px";
+    row.style.cursor = "pointer";
+
+    row.onmouseenter = () =>
+      row.style.background = "rgba(31,94,59,.08)";
+    row.onmouseleave = () =>
+      row.style.background = "";
+
+    row.onclick = () => {
+      window[activeSmartKey].push(item);
+      smartListAddInput.value = "";
+      smartListSuggestions.style.display = "none";
+      renderSmartListEditor();
+      renderItems();
+    };
+
+    smartListSuggestions.appendChild(row);
+  });
+
+  smartListSuggestions.style.display = "block";
+};
+
+document.addEventListener("click", e => {
+  if (!e.target.closest("#smartListAddInput")) {
+    smartListSuggestions.style.display = "none";
+  }
+});
+
 
 function getSmartListSuggestions() {
   const smartList = window[activeSmartKey] || [];
