@@ -1,8 +1,9 @@
+In this file, can we change the export action so that the export is opened in reference to a separate html file. This is the file:
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>Export Test</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2275,8 +2276,7 @@ exportBtn.onclick = () => {
 
   // open export page
 
-window.location.href =
-  `./export.html?source=${encodeURIComponent(Source)}`;
+window.open("./export.html", "_blank");
 
 };
 
