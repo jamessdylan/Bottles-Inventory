@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -867,7 +867,6 @@ let GroupFilter   = "None";  // None | Tier | Special
 let SubgroupFilter = "None"; // None | Color
 let ItemFilter    = "None";  // None | Special
 
-const SmartListUUIDs = {};
 
 
 const list=document.getElementById("list");
@@ -1189,10 +1188,44 @@ function applySubgroupSort(arr) {
   return nonRed.concat(red);
 }
 
-function getSmartListKey() {
-  // Example: "Wine CellarReserve", "Liquor ClosetSpecial"
-  if (!selectedSpecialtyList) return null;
-  return `${Source}${selectedSpecialtyList}`;
+function standardSort(arr) {
+  const na = v => (v === undefined || v === null || v === "" ? "N/A" : v);
+
+  return [...arr].sort((a, b) => {
+    const brandA = na(a.brand);
+    const brandB = na(b.brand);
+    if (brandA !== brandB) {
+      if (brandA === "N/A") return 1;
+      if (brandB === "N/A") return -1;
+      return brandA.localeCompare(brandB);
+    }
+
+    const idA = na(a.identifier);
+    const idB = na(b.identifier);
+    if (idA !== idB) {
+      if (idA === "N/A") return 1;
+      if (idB === "N/A") return -1;
+      return idA.localeCompare(idB);
+    }
+
+    const varA = na(a.varietal);
+    const varB = na(b.varietal);
+    if (varA !== varB) {
+      if (varA === "N/A") return 1;
+      if (varB === "N/A") return -1;
+      return varA.localeCompare(varB);
+    }
+
+    const yearA = na(a.year);
+    const yearB = na(b.year);
+    if (yearA !== yearB) {
+      if (yearA === "N/A") return 1;
+      if (yearB === "N/A") return -1;
+      return Number(yearB) - Number(yearA); // Z-A
+    }
+
+    return 0;
+  });
 }
 
 
@@ -1200,92 +1233,106 @@ function getSmartListKey() {
 async function renderItems() {
   list.innerHTML = "";
 
-  const key = `${Source}Complete`;
+  const completeKey = `${Source}Complete`;
 
-  // normalize
+  // ---------- NORMALIZE ----------
   items.forEach(i => {
     i[Source] = Math.max(0, Number(i[Source]) || 0);
-    if (typeof i[key] !== "boolean") i[key] = false;
+    if (typeof i[completeKey] !== "boolean") i[completeKey] = false;
     if (typeof i.status !== "boolean") i.status = true;
   });
 
-  // 🔑 ARCHIVE FILTER (authoritative)
-  let visibleItems = items.filter(item =>
-    ArchiveFilter === true || item.status === true
-  );
+  // ---------- ARCHIVE ----------
+  let allItems = ArchiveFilter
+    ? [...items]
+    : items.filter(i => i.status === true);
 
-  // base sort (global)
-  visibleItems.sort((a, b) => baseSort(a, b, key));
+  // ---------- GROUPING ----------
+  let group1items = [];
+  let group2items = [];
 
-  /* ---------------- GROUPING ---------------- */
-
-  // ⛔ NONE
-  if (GroupFilter === "None") {
-    const finalItems = applySubgroupSort(visibleItems); // 🔹
-    finalItems.forEach(drawItem);
-    return;
-  }
-
-  // 🟦 TIER
   if (GroupFilter === "Tier") {
-    let house = visibleItems.filter(i => i.tier === "House");
-    let reserve = visibleItems.filter(i => i.tier !== "House");
-
-    house = applySubgroupSort(house);     // 🔹
-    reserve = applySubgroupSort(reserve); // 🔹
-
-    if (house.length) {
-      drawDivider("House");
-      house.forEach(drawItem);
-    }
-
-    if (reserve.length) {
-      drawDivider("Reserve");
-      reserve.forEach(drawItem);
-    }
-
-    return;
+    group1items = allItems.filter(i => i.tier === "House");
+    group2items = allItems.filter(i => i.tier === "Reserve");
   }
 
-  // 🟨 SPECIAL
-  if (GroupFilter === "Special") {
-let suggestedUUIDs = [];
+  else if (GroupFilter === "None") {
+    group1items = [...allItems];
+    group2items = [];
+  }
 
-const smartKey = getSmartListKey();
+  else if (GroupFilter === "Special") {
+    let uuidList = [];
+    try {
+      const res = await fetch(`./${Source}.json`, { cache: "no-store" });
+      uuidList = await res.json();
+    } catch {}
 
-if (smartKey && Array.isArray(SmartListUUIDs[smartKey])) {
-  suggestedUUIDs = SmartListUUIDs[smartKey];
-}
+    group1items = allItems.filter(i => uuidList.includes(i.UUID));
+    group2items = allItems.filter(i => !uuidList.includes(i.UUID));
+  }
 
+  // ---------- COMPLETE / INCOMPLETE ----------
+  const group1incomplete = group1items.filter(i => i[completeKey] === false);
+  const group1complete   = group1items.filter(i => i[completeKey] === true);
 
-    let suggested = [];
-    let other = [];
+  const group2incomplete = group2items.filter(i => i[completeKey] === false);
+  const group2complete   = group2items.filter(i => i[completeKey] === true);
 
-    visibleItems.forEach(item => {
-      if (suggestedUUIDs.includes(item.UUID)) {
-        suggested.push(item);
-      } else {
-        other.push(item);
-      }
-    });
+  // ---------- SUBGROUP ----------
+  let subgroup1A = [], subgroup1B = [], subgroup1C = [];
+  let subgroup2A = [], subgroup2B = [], subgroup2C = [];
 
-    suggested = applySubgroupSort(suggested); // 🔹
-    other = applySubgroupSort(other);         // 🔹
+  if (SubgroupFilter === "Color") {
+    subgroup1A = group1incomplete.filter(i => i.color !== "Red");
+    subgroup1B = group1incomplete.filter(i => i.color === "Red");
 
-    if (suggested.length) {
-      drawDivider("Suggested");
-      suggested.forEach(drawItem);
+    subgroup2A = group2incomplete.filter(i => i.color !== "Red");
+    subgroup2B = group2incomplete.filter(i => i.color === "Red");
+
+    if (ItemFilter === "None") {
+      subgroup1A = standardSort(subgroup1A);
+      subgroup1B = standardSort(subgroup1B);
+      subgroup2A = standardSort(subgroup2A);
+      subgroup2B = standardSort(subgroup2B);
     }
+  }
 
-    if (other.length) {
-      drawDivider("Other");
-      other.forEach(drawItem);
-    }
+  else {
+    subgroup1A = ItemFilter === "None"
+      ? standardSort(group1incomplete)
+      : [...group1incomplete];
 
-    return;
+    subgroup2A = ItemFilter === "None"
+      ? standardSort(group2incomplete)
+      : [...group2incomplete];
+  }
+
+  subgroup1C = standardSort(group1complete);
+  subgroup2C = standardSort(group2complete);
+
+  // ---------- RENDER ----------
+  function renderGroup(label, a, b, c) {
+    if (label) drawDivider(label);
+    a.forEach(drawItem);
+    b.forEach(drawItem);
+    c.forEach(drawItem);
+  }
+
+  if (GroupFilter === "Tier") {
+    renderGroup("House", subgroup1A, subgroup1B, subgroup1C);
+    renderGroup("Reserve", subgroup2A, subgroup2B, subgroup2C);
+  }
+
+  else if (GroupFilter === "Special") {
+    renderGroup("Suggested", subgroup1A, subgroup1B, subgroup1C);
+    renderGroup("Other", subgroup2A, subgroup2B, subgroup2C);
+  }
+
+  else {
+    renderGroup(null, subgroup1A, subgroup1B, subgroup1C);
   }
 }
-
 
 
 
@@ -2123,10 +2170,3 @@ exportBtn.onclick = () => {
 
 </body>
 </html>
-
-
-
-
-
-
-
