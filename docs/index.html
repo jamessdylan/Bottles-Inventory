@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Last Try</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1599,8 +1599,11 @@ function smartItemTitle(item){
 
 
 /* ---------- INIT ---------- */
-buildSourceTabs();
-loadItems();
+document.addEventListener("DOMContentLoaded", () => {
+  buildSourceTabs();
+  loadItems();
+});
+
 
 /* ---------- ACTION STATES ---------- */
 let showArchived = false;
