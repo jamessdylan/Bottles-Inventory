@@ -307,6 +307,35 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   color:var(--green);
 }
 
+.archive-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:14px 16px;
+  margin-bottom:10px;
+  background:rgba(255,255,255,.7);
+  border-radius:14px;
+}
+
+.archive-title{
+  flex:1;
+  font-size:15px;
+}
+
+.archive-action{
+  padding:6px 10px;
+  border-radius:8px;
+  background:rgba(0,0,0,.05);
+  font-size:13px;
+  cursor:pointer;
+  user-select:none;
+}
+
+.archive-action.default{
+  color:#888;
+}
+
+
 /* ---------- SMART LIST EDITOR ---------- */
 .smart-row{
   display:flex;
@@ -369,6 +398,32 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
     <select id="yearPicker" style="font-size:18px;"></select>
   </div>
 </div>
+
+<!-- ARCHIVE CLEANUP OVERLAY -->
+<div id="archiveCleanupOverlay" class="overlay"></div>
+
+<div id="archiveCleanupSheet" style="
+  position:fixed;
+  inset:0;
+  background:rgba(255,255,255,.94);
+  backdrop-filter:blur(18px);
+  padding:calc(20px + env(safe-area-inset-top)) 16px 20px;
+  transform:translateY(100%);
+  transition:.25s ease;
+  z-index:600;
+  overflow-y:auto;
+">
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div style="font-family:'Copperplate',serif;font-size:18px;">
+      Archive Cleanup
+    </div>
+    <button id="confirmArchiveCleanup">Done</button>
+  </div>
+
+  <div id="archiveCleanupList"></div>
+</div>
+
 
 <!-- NEW BOTTLE OVERLAY -->
 <div id="newBottleOverlay" class="overlay"></div>
@@ -1447,6 +1502,30 @@ function standardSort(arr) {
   });
 }
 
+function totalQuantity(item){
+  return SOURCES.reduce((sum, src) => {
+    return sum + (Number(item[src]) || 0);
+  }, 0);
+}
+
+function defaultArchiveAction(item){
+  const qty = totalQuantity(item);
+  const active = item.status === true;
+
+  if (qty > 0 && !active) return "Make Active";
+  if (qty === 0 && active) return "Make Inactive";
+  if (qty === 0 && !active) return "Delete Item";
+  return null;
+}
+
+const ARCHIVE_ACTIONS = [
+  "Make Active",
+  "Make Inactive",
+  "Delete Item",
+  null
+];
+
+
 /* ---------------- RENDER ---------------- */
 async function renderItems() {
   list.innerHTML = "";
@@ -1760,9 +1839,30 @@ loadItems();
 let showArchived = false;
 let groupEnabled = false;
 
-archiveBtn.onclick = () => {
-  showArchived = !showArchived;
-  archiveBtn.classList.toggle("active", showArchived);
+let archiveHoldTimer = null;
+let archiveLongPressFired = false;
+
+archiveBtn.onpointerdown = e => {
+  e.preventDefault();
+  archiveLongPressFired = false;
+
+  archiveHoldTimer = setTimeout(() => {
+    archiveLongPressFired = true;
+    openArchiveCleanup();
+  }, 700);
+};
+
+archiveBtn.onpointerup = () => clearTimeout(archiveHoldTimer);
+archiveBtn.onpointerleave = () => clearTimeout(archiveHoldTimer);
+
+archiveBtn.onclick = e => {
+  if (archiveLongPressFired) {
+    e.preventDefault();
+    e.stopPropagation();
+    return;
+  }
+
+  archiveBtn.classList.toggle("active");
   updateGlobalFilters();
   renderItems();
 };
@@ -1910,7 +2010,102 @@ ItemFilter: ${ItemFilter}`;
   alert(message);
 };
 
+const archiveCleanupSheet = document.getElementById("archiveCleanupSheet");
+const archiveCleanupOverlay = document.getElementById("archiveCleanupOverlay");
+const archiveCleanupList = document.getElementById("archiveCleanupList");
+const confirmArchiveCleanup = document.getElementById("confirmArchiveCleanup");
+
+let archiveCleanupItems = [];
+
+function renderArchiveCleanup(){
+  archiveCleanupList.innerHTML = "";
+
+  archiveCleanupItems.forEach(obj => {
+    const row = document.createElement("div");
+    row.className = "archive-row";
+
+    const title = document.createElement("div");
+    title.className = "archive-title";
+    title.textContent = smartItemTitle(obj.item);
+
+    const action = document.createElement("div");
+    action.className = "archive-action default";
+    action.textContent = obj.defaultLabel || "None";
+
+    action.onclick = () => {
+      // first click → default
+      if (obj.action === null && obj.defaultLabel) {
+        obj.action = obj.defaultLabel;
+      } else {
+        const i = ARCHIVE_ACTIONS.indexOf(obj.action);
+        obj.action = ARCHIVE_ACTIONS[(i + 1) % ARCHIVE_ACTIONS.length];
+      }
+
+      if (obj.action === null) {
+        action.textContent = obj.defaultLabel || "None";
+        action.classList.add("default");
+      } else {
+        action.textContent = obj.action;
+        action.classList.remove("default");
+      }
+    };
+
+    row.appendChild(title);
+    row.appendChild(action);
+    archiveCleanupList.appendChild(row);
+  });
+}
+
+function openArchiveCleanup(){
+  archiveCleanupItems = items
+    .map(item => {
+      const qty = totalQuantity(item);
+      if (qty > 0 || item.status !== true) return null;
+
+      const def = defaultArchiveAction(item);
+      return {
+        item,
+        defaultLabel: def,
+        action: null
+      };
+    })
+    .filter(Boolean);
+
+  if (!archiveCleanupItems.length) return;
+
+  renderArchiveCleanup();
+  archiveCleanupSheet.style.transform = "translateY(0)";
+  archiveCleanupOverlay.classList.add("show");
+}
+
+confirmArchiveCleanup.onclick = () => {
+  archiveCleanupItems.forEach(obj => {
+    if (obj.action === "Delete Item") {
+      const i = items.indexOf(obj.item);
+      if (i > -1) items.splice(i, 1);
+    }
+
+    if (obj.action === "Make Active") {
+      obj.item.status = true;
+    }
+
+    if (obj.action === "Make Inactive") {
+      obj.item.status = false;
+    }
+  });
+
+  archiveCleanupSheet.style.transform = "translateY(100%)";
+  archiveCleanupOverlay.classList.remove("show");
+
+  renderItems();
+};
+
+archiveCleanupOverlay.onclick = () => {
+  archiveCleanupSheet.style.transform = "translateY(100%)";
+  archiveCleanupOverlay.classList.remove("show");
+};
   
+
 /* ---------- NEW BOTTLE ---------- */
 const newBottleBtn = document.getElementById("newBottleBtn");
 const newBottleSheet = document.getElementById("newBottleSheet");
