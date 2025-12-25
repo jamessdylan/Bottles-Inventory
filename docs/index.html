@@ -1,9 +1,8 @@
-In this file, can we change the export action so that the export is opened in reference to a separate html file. This is the file:
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Export Test</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2256,7 +2255,7 @@ confirmNewBottle.onclick = () => {
   closeNewBottle();
 };
 
-localStorage.setItem("exportItems", JSON.stringify(items));
+
 
 const exportBtn = document.getElementById("exportBtn");
 
@@ -2274,8 +2273,8 @@ exportBtn.onclick = () => {
     item: ItemFilter
   }));
 
-  // open export page
 
+localStorage.setItem("exportItems", JSON.stringify(items));
 window.open("./export.html", "_blank");
 
 };
