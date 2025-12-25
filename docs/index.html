@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM  </title>
+<title>SM  Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -822,12 +822,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
 <script>
 /* ---------- PAGE TITLE ---------- */
-const storedTitle = loadTitle();
-if (storedTitle) {
-  pageTitle = storedTitle;
-  pageTitleEl.textContent = pageTitle;
-}
-
+const pageTitleEl=document.getElementById("pageTitle");
 
 function defaultTitle(){
   const d=new Date();
@@ -875,14 +870,12 @@ cancelDate.onclick=()=>{
   pickerOverlay.classList.remove("show");
 };
 
-confirmDate.onclick = () => {
-  pageTitle = `${monthPicker.value} ${yearPicker.value} Wine Inventory`;
-  pageTitleEl.textContent = pageTitle;
-  saveTitle();
+confirmDate.onclick=()=>{
+  pageTitle=`${monthPicker.value} ${yearPicker.value} Wine Inventory`;
+  pageTitleEl.textContent=pageTitle;
   cancelDate.onclick();
 };
-
-
+;
 
 /* ---------------- STATE ---------------- */
 const SOURCES=[
@@ -910,51 +903,22 @@ let GroupFilter   = "None";  // None | Tier | Special
 let SubgroupFilter = "None"; // None | Color
 let ItemFilter    = "None";  // None | Special
 
-/* ---------- PERSISTENCE ---------- */
-const STORAGE_KEYS = {
-  ITEMS: "SM_ITEMS",
-  SMART: src => `SM_SMART_${src}`,
-  TITLE: "SM_TITLE"
-};
-
-function saveItems() {
-  localStorage.setItem(
-    STORAGE_KEYS.ITEMS,
-    JSON.stringify(items)
-  );
-}
-
-function loadItemsFromStorage() {
-  const raw = localStorage.getItem(STORAGE_KEYS.ITEMS);
-  return raw ? JSON.parse(raw) : null;
-}
-
-function saveSmartList(source, list) {
-  const uuids = list.map(i => i.UUID);
-  localStorage.setItem(
-    STORAGE_KEYS.SMART(source),
-    JSON.stringify(uuids)
-  );
-}
-
-function loadSmartList(source) {
-  const raw = localStorage.getItem(STORAGE_KEYS.SMART(source));
-  return raw ? JSON.parse(raw) : [];
-}
-
-function saveTitle() {
-  localStorage.setItem(STORAGE_KEYS.TITLE, pageTitle);
-}
-
-function loadTitle() {
-  return localStorage.getItem(STORAGE_KEYS.TITLE);
-}
-
-
 
 
 const list=document.getElementById("list");
 const tabsEl=document.getElementById("sourceTabs");
+
+/* ---------- LOCAL STORAGE ---------- */
+const STORAGE_KEY_ITEMS = "SM_ITEMS";
+
+function saveItems() {
+  localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(items));
+}
+
+function loadItemsFromStorage() {
+  const raw = localStorage.getItem(STORAGE_KEY_ITEMS);
+  return raw ? JSON.parse(raw) : null;
+}
 
 
 const drawer = document.getElementById("drawer");
@@ -965,12 +929,12 @@ const overlay = document.getElementById("overlay");
 async function loadItems(){
   const stored = loadItemsFromStorage();
 
-  if (stored) {
+  if (stored && Array.isArray(stored)) {
     items = stored;
   } else {
     const res = await fetch("./items.json", { cache:"no-store" });
     items = await res.json();
-    saveItems(); // seed storage
+    saveItems(); // seed localStorage once
   }
 
   renderItems();
@@ -1014,13 +978,24 @@ tab.onclick = async () => {
 
 async function loadSmartListForSource(source) {
   const smartKey = `${source}SmartList`;
+  const fileName = `${source}.json`;
 
-  const uuidList = loadSmartList(source);
-  window[smartKey] = items.filter(i =>
-    uuidList.includes(i.UUID)
-  );
+  try {
+    const res = await fetch(`./${fileName}`, { cache: "no-store" });
+    if (!res.ok) throw new Error("No file");
+
+    const uuidList = await res.json();
+
+    // Match UUIDs to actual item objects
+    window[smartKey] = items.filter(i =>
+      uuidList.includes(i.UUID)
+    );
+
+  } catch {
+    // No file or error → empty smart list
+    window[smartKey] = [];
+  }
 }
-
 
 const smartListEditor = document.getElementById("smartListEditor");
 const smartListOverlay = document.getElementById("smartListOverlay");
@@ -1083,9 +1058,7 @@ function renderSmartListEditor() {
     row.querySelector(".smart-delete").onclick = e => {
       e.stopPropagation();
       list.splice(index, 1);
-saveSmartList(Source, window[activeSmartKey]);
       renderSmartListEditor();
-
       renderItems(); // reflect immediately
     };
 
@@ -1110,9 +1083,7 @@ saveSmartList(Source, window[activeSmartKey]);
       const moved = list.splice(dragIndex, 1)[0];
       list.splice(index, 0, moved);
 
-saveSmartList(Source, window[activeSmartKey]);
       renderSmartListEditor();
-
       renderItems();
     });
 
@@ -1512,7 +1483,6 @@ saveItems();
         );
 saveItems();
         renderItems();
-
       }
     }, 450);
   };
@@ -1717,7 +1687,7 @@ smartListAddInput.onkeydown = e => {
   smartListAddInput.value = "";
   smartListSelectedItem = null;
   smartListAddSuggestions.style.display = "none";
-saveSmartList(Source, list);
+
   renderSmartListEditor();
   renderItems(); // reflect immediately
 };
@@ -1823,11 +1793,13 @@ confirmArchiveCleanup.onclick = () => {
     if (obj.action === "Make Inactive") {
       obj.item.status = false;
     }
+saveItems();
+renderItems();
+
   });
 
   archiveCleanupSheet.style.transform = "translateY(100%)";
   archiveCleanupOverlay.classList.remove("show");
-saveItems();
 
   renderItems();
 };
@@ -2225,7 +2197,6 @@ deleteBottleBtn.onclick = () => {
   items = items.filter(i => i !== editingItem);
   editingItem = null;
 saveItems();
-
   renderItems();
   closeNewBottle();
 };
@@ -2263,12 +2234,11 @@ confirmNewBottle.onclick = () => {
     });
     items.push(target);
   }
-
   editingItem = null;
 saveItems();
+renderItems();
+closeNewBottle();
 
-  renderItems();
-  closeNewBottle();
 };
 
 
