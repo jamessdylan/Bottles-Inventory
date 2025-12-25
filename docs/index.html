@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM  fInventory</title>
+<title>SM  Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1514,10 +1514,47 @@ function smartItemTitle(item){
     .join(" ");
 }
 
-
 /* ---------- INIT ---------- */
 buildSourceTabs();
 loadItems();
+showWelcomeMessage();
+
+function showWelcomeMessage() {
+  const hasLocalData = localStorage.length > 0;
+
+  const message = hasLocalData ? "Welcome Back" : "Welcome";
+
+  // simple, non-blocking message
+  const banner = document.createElement("div");
+  banner.textContent = message;
+
+  banner.style.position = "fixed";
+  banner.style.top = "calc(16px + env(safe-area-inset-top))";
+  banner.style.left = "50%";
+  banner.style.transform = "translateX(-50%)";
+  banner.style.padding = "10px 16px";
+  banner.style.borderRadius = "14px";
+  banner.style.background = "rgba(31,94,59,.9)";
+  banner.style.color = "white";
+  banner.style.fontSize = "14px";
+  banner.style.zIndex = "1000";
+  banner.style.opacity = "0";
+  banner.style.transition = "opacity .25s ease";
+
+  document.body.appendChild(banner);
+
+  // fade in
+  requestAnimationFrame(() => {
+    banner.style.opacity = "1";
+  });
+
+  // auto-remove
+  setTimeout(() => {
+    banner.style.opacity = "0";
+    setTimeout(() => banner.remove(), 300);
+  }, 1800);
+}
+
 
 /* ---------- ACTION STATES ---------- */
 let showArchived = false;
