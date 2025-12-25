@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM clean Inventory</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -711,7 +711,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   <!-- Drawer Content -->
   <div class="drawer" id="drawer">
     <div class="drawer-title" id="pageTitle"></div>
-    <button>New Project</button>
+    <button id=“newProjectBtn">New Project</button>
     <button id="reserveListBtn">Reserve List</button>
     <button id="salesReportBtn">Sales Report</button>
     <!-- Fixing the ID for dictionaryFileBtn -->
@@ -923,16 +923,27 @@ const tabsEl=document.getElementById("sourceTabs");
     };
 
     /* Drawer Button Functions */
+    const newProjectBtn = document.getElementById(“newProjectB”tn);
     const reserveListBtn = document.getElementById("reserveListBtn");
     const salesReportBtn = document.getElementById("salesReportBtn");
     const dictionaryFileBtn = document.getElementById("dictionaryFileBtn");
     const exportBtn = document.getElementById("exportBtn");
+
+newProjectBtn.onclick = () => {
+  drawer.classList.remove("open");
+  overlay.classList.remove("show");
+ let message = cleanedItemsJson 
+  // Show the items in an alert (this could be adapted to save to a file, send to a server, etc.)
+  alert(message);
+};
 
     // Handle the "Reserve List" button click
     reserveListBtn.onclick = () => {
       drawer.classList.remove("open");
       overlay.classList.remove("show");
       const itemsPatch = localStorage.getItem("itemsPatch.json");
+
+
 
   if (itemsPatch) {
     // If itemsPatch exists in localStorage, display it
