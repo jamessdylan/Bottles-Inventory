@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SMWine Inventory</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -912,11 +912,26 @@ const overlay = document.getElementById("overlay");
 
 
 /* ---------------- LOAD ---------------- */
-async function loadItems(){
-  const res=await fetch("./items.json",{cache:"no-store"});
-  items=await res.json();
+async function loadItems() {
+  const local = localStorage.getItem("items.json");
+
+  if (local) {
+    try {
+      items = JSON.parse(local);
+      renderItems();
+      return;
+    } catch (e) {
+      console.warn("Corrupt local items.json, falling back to GitHub file");
+      localStorage.removeItem("items.json");
+    }
+  }
+
+  // Fallback to GitHub file
+  const res = await fetch("./items.json", { cache: "no-store" });
+  items = await res.json();
   renderItems();
 }
+
 
 /* ---------------- TABS ---------------- */
 function buildSourceTabs(){
@@ -1077,6 +1092,10 @@ function renderSmartListEditor() {
 
 
 /* ---------------- HELPERS ---------------- */
+function saveItemsToLocal() {
+  localStorage.setItem("items.json", JSON.stringify(items));
+}
+
 const round=v=>Math.round(v*10)/10;
 const naLast=(a,b)=>a==="N/A"?1:b==="N/A"?-1:a.localeCompare(b);
 function baseSort(a,b,key){
