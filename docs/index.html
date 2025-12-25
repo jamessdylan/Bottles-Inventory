@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>SM Sort 2</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1166,13 +1166,38 @@ let smartSortItems = []; // ordered array of item objects
 /* ---------------- HELPERS ---------------- */
 const round=v=>Math.round(v*10)/10;
 const naLast=(a,b)=>a==="N/A"?1:b==="N/A"?-1:a.localeCompare(b);
-function baseSort(a,b,key){
-  if(a[key]!==b[key]) return a[key]?1:-1;
-  return naLast(a.brand,b.brand)
-    ||naLast(a.identifier,b.identifier)
-    ||naLast(a.varietal,b.varietal)
-    ||naLast(b.year,a.year);
+
+function normalize(v){
+  return (v === undefined || v === null || v === "" || v === "N/A")
+    ? null
+    : String(v).toLowerCase();
 }
+
+function standardSort(items){
+  return [...items].sort((a, b) => {
+    const keys = ["brand", "identifier", "varietal"];
+
+    for (const k of keys) {
+      const av = normalize(a[k]);
+      const bv = normalize(b[k]);
+      if (av === null && bv !== null) return 1;
+      if (av !== null && bv === null) return -1;
+      if (av !== null && bv !== null && av !== bv)
+        return av.localeCompare(bv);
+    }
+
+    // year Z–A, N/A last
+    const ay = a.year === "N/A" || a.year == null ? null : Number(a.year);
+    const by = b.year === "N/A" || b.year == null ? null : Number(b.year);
+
+    if (ay === null && by !== null) return 1;
+    if (ay !== null && by === null) return -1;
+    if (ay !== null && by !== null) return by - ay;
+
+    return 0;
+  });
+}
+
 
 function wineTitle(item){
   return [item.brand,item.identifier,item.varietal,item.year]
@@ -1534,26 +1559,119 @@ function updateGlobalFilters() {
 }
 
 /* ---------------- RENDER ---------------- */
-function renderItems(){
+async function renderItems(){
   list.innerHTML = "";
 
-  const key = `${Source}Complete`;
+  const completeKey = `${Source}Complete`;
 
-  // normalize values
+  // normalize item fields
   items.forEach(i => {
     i[Source] = Math.max(0, Number(i[Source]) || 0);
-    if (typeof i[key] !== "boolean") i[key] = false;
+    if (typeof i[completeKey] !== "boolean") i[completeKey] = false;
     if (typeof i.status !== "boolean") i.status = true;
   });
 
-  // 🔑 FILTER RULE
-  const visibleItems = items.filter(item =>
-    showArchived || item.status === true
-  );
+  /* ---------- ALL ITEMS ---------- */
+  let allItems = ArchiveFilter
+    ? [...items]
+    : items.filter(i => i.status === true);
 
-  visibleItems.sort((a, b) => baseSort(a, b, key));
-  visibleItems.forEach(drawItem);
+  /* ---------- GROUPING ---------- */
+  let group1items = [];
+  let group2items = [];
+
+  if (GroupFilter === "Tier") {
+    group1items = allItems.filter(i => i.tier === "House");
+    group2items = allItems.filter(i => i.tier === "Reserve");
+  }
+
+  else if (GroupFilter === "Special") {
+    const uuids = await fetchSourceValues(Source);
+    const uuidSet = new Set(uuids);
+
+    group1items = allItems.filter(i => uuidSet.has(i.UUID));
+    group2items = allItems.filter(i => !uuidSet.has(i.UUID));
+  }
+
+  else { // None
+    group1items = [...allItems];
+    group2items = [];
+  }
+
+  /* ---------- COMPLETE / INCOMPLETE ---------- */
+  const splitByComplete = arr => {
+    if (!arr || !arr.length) return { incomplete: [], complete: [] };
+    return {
+      incomplete: arr.filter(i => i[completeKey] === false),
+      complete: arr.filter(i => i[completeKey] === true)
+    };
+  };
+
+  const g1 = splitByComplete(group1items);
+  const g2 = splitByComplete(group2items);
+
+  let subgroup1A = [], subgroup1B = [], subgroup1C = [];
+  let subgroup2A = [], subgroup2B = [], subgroup2C = [];
+
+  /* ---------- SUBGROUP ---------- */
+  if (SubgroupFilter === "Color") {
+
+    subgroup1A = g1.incomplete.filter(i => i.color !== "Red");
+    subgroup1B = g1.incomplete.filter(i => i.color === "Red");
+
+    subgroup2A = g2.incomplete.filter(i => i.color !== "Red");
+    subgroup2B = g2.incomplete.filter(i => i.color === "Red");
+
+    if (ItemFilter === "None") {
+      subgroup1A = standardSort(subgroup1A);
+      subgroup1B = standardSort(subgroup1B);
+      subgroup2A = standardSort(subgroup2A);
+      subgroup2B = standardSort(subgroup2B);
+    }
+
+  } else {
+    subgroup1A = ItemFilter === "None"
+      ? standardSort(g1.incomplete)
+      : [...g1.incomplete];
+
+    subgroup2A = ItemFilter === "None"
+      ? standardSort(g2.incomplete)
+      : [...g2.incomplete];
+  }
+
+  /* ---------- COMPLETE ALWAYS SORTED ---------- */
+  subgroup1C = standardSort(g1.complete);
+  subgroup2C = standardSort(g2.complete);
+
+  /* ---------- RENDER ---------- */
+  const renderGroup = (label, A, B, C) => {
+    if (!A.length && !B.length && !C.length) return;
+
+    const divider = document.createElement("div");
+    divider.style.margin = "22px 0 10px";
+    divider.style.fontFamily = "Copperplate, serif";
+    divider.style.fontSize = "18px";
+    divider.textContent = label;
+    list.appendChild(divider);
+
+    [...A, ...B, ...C].forEach(drawItem);
+  };
+
+  if (GroupFilter === "Tier") {
+    renderGroup("House", subgroup1A, subgroup1B, subgroup1C);
+    renderGroup("Reserve", subgroup2A, subgroup2B, subgroup2C);
+  }
+
+  else if (GroupFilter === "Special") {
+    renderGroup("Suggested", subgroup1A, subgroup1B, subgroup1C);
+    renderGroup("Other", subgroup2A, subgroup2B, subgroup2C);
+  }
+
+  else {
+    renderGroup("", subgroup1A, subgroup1B, subgroup1C);
+  }
 }
+
 
 
 /* ---------------- DRAW ITEM ---------------- */
