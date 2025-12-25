@@ -1865,11 +1865,7 @@ row.onpointerleave = () => clearTimeout(rowHoldTimer);
   list.appendChild(row);
 }
 
-/* ---------- INIT ---------- */
-buildSourceTabs();
-updateSort(Source);
-updateGlobalFilters();   // ✅ ADD THIS
-loadItems();
+
 
 
 /* ---------- ACTION STATES ---------- */
@@ -2403,7 +2399,11 @@ document.getElementById("confirmArchive").onclick = () => {
 };
 
 
-
+/* ---------- INIT ---------- */
+buildSourceTabs();
+updateSort(Source);
+updateGlobalFilters();   // ✅ ADD THIS
+loadItems();
 
 /*---------EXPORT---------------*/
   
