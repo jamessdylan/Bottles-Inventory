@@ -715,7 +715,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   <button id="reserveListBtn">Reserve List</button>
 
 <button id="salesReportBtn">Sales Report</button>
-  <button>Dictionary File</button>
+<button id=“dictionaryFileBtn">Sales Report</button>
   <button id="exportBtn">Export</button>
 </div>
 
@@ -2320,6 +2320,18 @@ confirmNewBottle.onclick = () => {
   renderItems();
   closeNewBottle();
 };
+
+// Adding event listener for the "Dictionary File" button
+const dictionaryFileBtn = document.querySelector('button:contains("Dictionary File")');
+dictionaryFileBtn.onclick = () => {
+  // Display the current items as JSON
+  const jsonContent = JSON.stringify(items, null, 2);  // Pretty-printing the JSON with 2 spaces indentation
+  // You can display it in a new window, modal, or as an alert
+  const jsonWindow = window.open('', '_blank');
+  jsonWindow.document.write('<pre>' + jsonContent + '</pre>');
+  jsonWindow.document.close();
+};
+
 
 
 const exportBtn = document.getElementById("exportBtn");
