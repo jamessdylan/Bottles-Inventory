@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>SM drawer Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -948,20 +948,21 @@ const tabsEl=document.getElementById("sourceTabs");
     salesReportBtn.onclick = () => {
       drawer.classList.remove("open");
       overlay.classList.remove("show");
-// Handle "Sales Report" button click
 salesReportBtn.onclick = () => {
   drawer.classList.remove("open");
   overlay.classList.remove("show");
 
-  // Generate current items
-  const currentItems = createCurrentItems();
+  const message =
+`Sales Report Filters:
 
-  // Pretty-print the current items as a JSON string
-  const jsonContent = JSON.stringify(currentItems, null, 2); 
+ArchiveFilter: ${ArchiveFilter}
+GroupFilter: ${GroupFilter}
+SubgroupFilter: ${SubgroupFilter}
+ItemFilter: ${ItemFilter}`;
 
-  // Show the current items in an alert (this could be adapted to save to a file, send to a server, etc.)
-  alert("Sales Report Filters:\n\n" + jsonContent);
-}:
+  alert(message);
+};
+    };
 
     // Handle the "Dictionary File" button click
     dictionaryFileBtn.onclick = () => {
@@ -1367,35 +1368,6 @@ else if (GroupFilter === "Special") {
   group1items = allItems.filter(i => smartSet.has(i.UUID));
   group2items = allItems.filter(i => !smartSet.has(i.UUID));
 }
-
-// Function to create current items (in the format of items.json)
-function createCurrentItems() {
-  return items.map(item => {
-    return {
-      UUID: item.UUID,
-      brand: item.brand || "N/A",
-      identifier: item.identifier || "N/A",
-      varietal: item.varietal || "N/A",
-      year: item.year || "N/A",
-      price: item.price || 0,
-      color: item.color || "White",
-      status: item.status || true,
-      tier: item.tier || "House",
-      featured: item.featured || "",
-      distributor: item.distributor || "N/A",
-      note: item.note || "",
-      base64: item.base64 || false,
-      icon: item.icon || (item.color === "White" ? "#c9b037" : item.color === "Rose" ? "#d97c8a" : "#7b1e1e"),
-      ...SOURCES.reduce((acc, source) => {
-        acc[source] = item[source] || 0;
-        acc[`${source}Complete`] = item[`${source}Complete`] || false;
-        return acc;
-      }, {})
-    };
-  });
-}
-
-
 
   // ---------- COMPLETE / INCOMPLETE ----------
   const group1incomplete = group1items.filter(i => i[completeKey] === false);
