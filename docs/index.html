@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine </title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1569,16 +1569,41 @@ archiveBtn.onclick = () => {
   renderItems();
 };
 
-let groupHoldTimer;
+let groupHoldTimer = null;
+let groupLongPressFired = false;
 
-groupBtn.onpointerdown = () => {
+groupBtn.addEventListener("pointerdown", e => {
+  e.preventDefault();            // 🔑 critical for iOS
+  groupLongPressFired = false;
+
   groupHoldTimer = setTimeout(() => {
-    openSmartListEditor();
+    groupLongPressFired = true;
+    openSmartListEditor();        // ✅ LONG PRESS ACTION
   }, 700);
-};
+});
 
-groupBtn.onpointerup = () => clearTimeout(groupHoldTimer);
-groupBtn.onpointerleave = () => clearTimeout(groupHoldTimer);
+groupBtn.addEventListener("pointerup", () => {
+  clearTimeout(groupHoldTimer);
+});
+
+groupBtn.addEventListener("pointerleave", () => {
+  clearTimeout(groupHoldTimer);
+});
+
+groupBtn.addEventListener("click", e => {
+  // ❌ block click if long-press already fired
+  if (groupLongPressFired) {
+    e.preventDefault();
+    e.stopPropagation();
+    return;
+  }
+
+  // ✅ normal short tap behavior
+  groupBtn.classList.toggle("active");
+  updateGlobalFilters();
+  renderItems();
+});
+
 
 groupBtn.onclick = () => {
   clearTimeout(groupHoldTimer);
