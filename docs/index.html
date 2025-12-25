@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM  Inventory</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -306,6 +306,35 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   font-size:16px;
   color:var(--green);
 }
+
+/* ---------- SMART LIST EDITOR ---------- */
+.smart-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:14px 16px;
+  margin-bottom:10px;
+  background:rgba(255,255,255,.7);
+  border-radius:14px;
+  cursor:grab;
+}
+
+.smart-row.dragging{
+  opacity:.6;
+}
+
+.smart-label{
+  flex:1;
+  font-size:15px;
+}
+
+.smart-delete{
+  font-size:18px;
+  color:#b00020;
+  cursor:pointer;
+  padding:4px 8px;
+}
+
 
 </style>
 </head>
@@ -710,6 +739,32 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
 <div class="overlay" id="overlay"></div>
 
+<!-- SMART LIST EDITOR OVERLAY -->
+<div id="smartListOverlay" class="overlay"></div>
+
+<div id="smartListEditor" style="
+  position:fixed;
+  inset:0;
+  background:rgba(255,255,255,.94);
+  backdrop-filter:blur(18px);
+  padding:calc(20px + env(safe-area-inset-top)) 16px 20px;
+  transform:translateY(100%);
+  transition:.25s ease;
+  z-index:550;
+  overflow-y:auto;
+">
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div style="font-family:'Copperplate',serif;font-size:18px;">
+      Smart List Editor
+    </div>
+    <button id="closeSmartList">Done</button>
+  </div>
+
+  <div id="smartListContainer"></div>
+</div>
+
+
 <!-- SPECIALTY LIST OVERLAY -->
 <div id="specialtyOverlay" class="overlay"></div>
 
@@ -1111,6 +1166,97 @@ async function loadSmartListForSource(source) {
     // No file or error → empty smart list
     window[smartKey] = [];
   }
+}
+
+const smartListEditor = document.getElementById("smartListEditor");
+const smartListOverlay = document.getElementById("smartListOverlay");
+const smartListContainer = document.getElementById("smartListContainer");
+const closeSmartList = document.getElementById("closeSmartList");
+
+let activeSmartKey = null;
+let dragIndex = null;
+
+function openSmartListEditor() {
+  const smartKey = `${Source}SmartList`;
+  const smartItems = window[smartKey];
+
+  if (!Array.isArray(smartItems) || smartItems.length === 0) {
+    alert("Error");
+    return;
+  }
+
+  activeSmartKey = smartKey;
+  renderSmartListEditor();
+
+  smartListEditor.style.transform = "translateY(0)";
+  smartListOverlay.classList.add("show");
+}
+
+function closeSmartListEditorFn() {
+  smartListEditor.style.transform = "translateY(100%)";
+  smartListOverlay.classList.remove("show");
+
+  activeSmartKey = null;
+  dragIndex = null;
+}
+
+closeSmartList.onclick = closeSmartListEditorFn;
+smartListOverlay.onclick = closeSmartListEditorFn;
+
+function renderSmartListEditor() {
+  smartListContainer.innerHTML = "";
+
+  const list = window[activeSmartKey];
+
+  list.forEach((item, index) => {
+    const row = document.createElement("div");
+    row.className = "smart-row";
+    row.draggable = true;
+
+    row.innerHTML = `
+      <div class="smart-label">
+        ${[item.brand, item.identifier, item.varietal, item.year]
+          .filter(v => v && v !== "N/A")
+          .join(" ")}
+      </div>
+      <div class="smart-delete">✕</div>
+    `;
+
+    /* ❌ DELETE */
+    row.querySelector(".smart-delete").onclick = e => {
+      e.stopPropagation();
+      list.splice(index, 1);
+      renderSmartListEditor();
+      renderItems(); // reflect immediately
+    };
+
+    /* ☰ DRAG REORDER */
+    row.addEventListener("dragstart", () => {
+      dragIndex = index;
+      row.classList.add("dragging");
+    });
+
+    row.addEventListener("dragend", () => {
+      dragIndex = null;
+      row.classList.remove("dragging");
+    });
+
+    row.addEventListener("dragover", e => {
+      e.preventDefault();
+    });
+
+    row.addEventListener("drop", () => {
+      if (dragIndex === null || dragIndex === index) return;
+
+      const moved = list.splice(dragIndex, 1)[0];
+      list.splice(index, 0, moved);
+
+      renderSmartListEditor();
+      renderItems();
+    });
+
+    smartListContainer.appendChild(row);
+  });
 }
 
 
@@ -1577,28 +1723,11 @@ groupBtn.onpointerdown = e => {
   e.preventDefault(); // iOS safety
   groupLongPressFired = false;
 
-  groupHoldTimer = setTimeout(() => {
-    groupLongPressFired = true;
+groupHoldTimer = setTimeout(() => {
+  groupLongPressFired = true;
+  openSmartListEditor();
+}, 700);
 
-    const smartKey = `${Source}SmartList`;
-    const smartItems = window[smartKey];
-
-    if (!Array.isArray(smartItems) || smartItems.length === 0) {
-      alert("Error");
-      return;
-    }
-
-    const message = smartItems
-      .map(i =>
-        [i.brand, i.identifier, i.varietal, i.year]
-          .filter(v => v && v !== "N/A")
-          .join(" ")
-      )
-      .join("\n");
-
-    alert(message);
-
-  }, 700); // long-press threshold
 };
 
 groupBtn.onpointerup = () => {
