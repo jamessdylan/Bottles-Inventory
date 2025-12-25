@@ -2275,7 +2275,9 @@ exportBtn.onclick = () => {
 
   // open export page
 
-  window.location.href = "./export.html";
+window.location.href =
+  `./export.html?source=${encodeURIComponent(Source)}`;
+
 };
 
 </script>
