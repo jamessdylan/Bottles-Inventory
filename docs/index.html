@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>SM Wine </title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1125,8 +1125,8 @@ async function cleanItemsFile() {
 
 // Function to compare and clean the createItemsList based on the cleanItemsFile
 function compareAndCleanItems(createItemsListJson, cleanItemsJson) {
-  const createItemsList = createItemsList();
-  const cleanItems = cleanItemsFile;
+  const createItemsList = JSON.parse(createItemsListJson); // Convert JSON string to object
+  const cleanItems = JSON.parse(cleanItemsJson);           // Convert JSON string to object
 
   // Iterate through each item in the createItemsList
   createItemsList.forEach(item => {
@@ -1149,11 +1149,10 @@ function compareAndCleanItems(createItemsListJson, cleanItemsJson) {
     }
   });
 
-  // Return the updated list with a new variable name
-  const cleanedCreateItemsList = JSON.stringify(createItemsList, null, 2);
- console.log("Updated items.json content:", cleanedCreateItemsList);
-  return cleanedCreateItemsList;
+  // Return the updated createItemsList as a JSON string
+  return JSON.stringify(createItemsList, null, 2);
 }
+
 
 const smartListEditor = document.getElementById("smartListEditor");
 const smartListOverlay = document.getElementById("smartListOverlay");
