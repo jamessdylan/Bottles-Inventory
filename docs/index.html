@@ -822,6 +822,34 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
 
 <script>
+
+const STORAGE_KEY = "SM_WINE_INVENTORY_V1";
+
+function saveToLocal() {
+  const payload = {
+    pageTitle,
+    Source,
+    items
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+}
+
+function loadFromLocal() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (!saved) return;
+
+  try {
+    const data = JSON.parse(saved);
+    pageTitle = data.pageTitle || pageTitle;
+    Source = data.Source || Source;
+    items = Array.isArray(data.items) ? data.items : [];
+    pageTitleEl.textContent = pageTitle;
+  } catch {
+    console.warn("Failed to load local data");
+  }
+}
+
+
 /* ---------- PAGE TITLE ---------- */
 const pageTitleEl=document.getElementById("pageTitle");
 
@@ -919,6 +947,12 @@ async function loadItems(){
   items=await res.json();
   renderItems();
 }
+
+function loadItems(){
+  loadFromLocal();
+  renderItems();
+}
+
 
 function openDictionaryFile() {
   const dictionary = {
@@ -1272,6 +1306,7 @@ const ARCHIVE_ACTIONS = [
 
 /* ---------------- RENDER ---------------- */
 async function renderItems() {
+saveToLocal();
   list.innerHTML = "";
 
   const completeKey = `${Source}Complete`;
@@ -1372,6 +1407,7 @@ else if (GroupFilter === "Special") {
   else {
     renderGroup(null, subgroup1A, subgroup1B, subgroup1C);
   }
+
 }
 
 
@@ -1577,6 +1613,7 @@ function smartItemTitle(item){
 /* ---------- INIT ---------- */
 buildSourceTabs();
 loadItems();
+
 
 /* ---------- ACTION STATES ---------- */
 let showArchived = false;
