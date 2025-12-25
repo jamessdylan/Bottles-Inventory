@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>Compare and Clean</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -951,7 +951,7 @@ salesReportBtn.onclick = () => {
   overlay.classList.remove("show");
 
   // Generate the list of items in the proper format
-  const itemsListJson = cleanItemsFile();
+  const itemsListJson = compareAndCleanItems();
  let message = itemsListJson
   // Show the items in an alert (this could be adapted to save to a file, send to a server, etc.)
   alert(message);
@@ -1123,6 +1123,36 @@ async function cleanItemsFile() {
   return cleanedItemsJson;
 }
 
+// Function to compare and clean the createItemsList based on the cleanItemsFile
+function compareAndCleanItems(createItemsListJson, cleanItemsJson) {
+  const createItemsList = JSON.parse(createItemsListJson); // Convert JSON string to object
+  const cleanItems = JSON.parse(cleanItemsJson);           // Convert JSON string to object
+
+  // Iterate through each item in the createItemsList
+  createItemsList.forEach(item => {
+    const matchingItem = cleanItems.find(cleanItem => cleanItem.UUID === item.UUID);
+    
+    if (matchingItem) {
+      // Iterate through each key in the current create item
+      Object.keys(item).forEach(key => {
+        // Check if the key exists in the clean item and if the value matches
+        if (
+          !matchingItem.hasOwnProperty(key) || // Key does not exist in clean item
+          matchingItem[key] !== item[key]     // Value doesn't match
+        ) {
+          // Keep the key-value pair in createItemsList (do nothing)
+        } else {
+          // Delete the key from createItemsList if the value matches in cleanItems
+          delete item[key];
+        }
+      });
+    }
+  });
+
+  // Return the updated list with a new variable name
+  const cleanedCreateItemsList = JSON.stringify(createItemsList, null, 2);
+  return cleanedCreateItemsList;
+}
 
 const smartListEditor = document.getElementById("smartListEditor");
 const smartListOverlay = document.getElementById("smartListOverlay");
