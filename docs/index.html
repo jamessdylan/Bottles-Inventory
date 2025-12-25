@@ -944,25 +944,24 @@ const tabsEl=document.getElementById("sourceTabs");
   }
     };
 
-    // Handle the "Sales Report" button click
-    salesReportBtn.onclick = () => {
-      drawer.classList.remove("open");
-      overlay.classList.remove("show");
 salesReportBtn.onclick = () => {
   drawer.classList.remove("open");
   overlay.classList.remove("show");
 
-  const message =
-`Sales Report Filters:
+  // Build the itemsPatch array
+  const itemsPatch = items.map(item => {
+    return { [item.UUID]: "" }; // Each dictionary will have the UUID as key and an empty value
+  });
 
-ArchiveFilter: ${ArchiveFilter}
-GroupFilter: ${GroupFilter}
-SubgroupFilter: ${SubgroupFilter}
-ItemFilter: ${ItemFilter}`;
+  // Save the itemsPatch array to localStorage
+  localStorage.setItem("itemsPatch", JSON.stringify(itemsPatch));
 
-  alert(message);
+  // Optionally, log the result to check
+  console.log("itemsPatch saved to localStorage:", itemsPatch);
+
+  // Notify the user that the report is saved
+  alert("Sales report saved to localStorage.");
 };
-    };
 
     // Handle the "Dictionary File" button click
     dictionaryFileBtn.onclick = () => {
@@ -985,31 +984,11 @@ ItemFilter: ${ItemFilter}`;
 
 
 /* ---------------- LOAD ---------------- */
-// Load items from the server (or a local file)
-async function loadItems() {
-  const res = await fetch("./items.json", { cache: "no-store" });
-  items = await res.json();
+async function loadItems(){
+  const res=await fetch("./items.json",{cache:"no-store"});
+  items=await res.json();
   renderItems();
-
-  // Check if itemsPatch exists in localStorage
-  const itemsPatch = localStorage.getItem("itemsPatch");
-
-  if (!itemsPatch) {
-    // Create the itemsPatch array if not available in localStorage
-    const itemsPatchArray = items.map(item => {
-      return { [item.UUID]: item[Source] }; // Each dictionary has UUID as key and item[Source] as value
-    });
-
-    // Save the new array to localStorage as itemsPatch
-    localStorage.setItem("itemsPatch", JSON.stringify(itemsPatchArray));
-
-    console.log("itemsPatch saved to localStorage:", itemsPatchArray);
-  } else {
-    console.log("itemsPatch found in localStorage:", JSON.parse(itemsPatch));
-  }
 }
-
-
 
 /* ---------------- TABS ---------------- */
 function buildSourceTabs(){
