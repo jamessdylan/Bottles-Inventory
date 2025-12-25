@@ -937,7 +937,7 @@ const tabsEl=document.getElementById("sourceTabs");
 
   if (itemsPatch) {
     // If itemsPatch exists in localStorage, display it
-    const jsonContent = JSON.stringify(JSON.parse(itemsPatch), null, 2); // Pretty-print JSON
+    const jsonContent = JSON.stringify(JSON.parse(patchItems), null, 2); // Pretty-print JSON
     alert("Items Patch Loaded: \n\n" + jsonContent); // Display in alert (could be a modal in the future)
   } else {
     // If itemsPatch does not exist, show an error message
