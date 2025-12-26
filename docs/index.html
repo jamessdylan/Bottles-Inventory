@@ -1207,6 +1207,43 @@ function rebuildCurrentItems() {
   });
 }
 
+
+function buildPatchItems() {
+  const templateByUUID = new Map(
+    filterItemsByUUID().map(item => [item.UUID, item])
+  );
+
+  const patchArray = [];
+
+  currentItems.forEach(currentItem => {
+    const templateItem = templateByUUID.get(currentItem.UUID);
+
+    // Always start with UUID inside the dictionary
+    const diff = { UUID: currentItem.UUID };
+
+    Object.keys(currentItem).forEach(key => {
+      if (key === "UUID") return;
+
+      // If no template OR value changed OR key missing in template
+      if (
+        !templateItem ||
+        !templateItem.hasOwnProperty(key) ||
+        currentItem[key] !== templateItem[key]
+      ) {
+        diff[key] = currentItem[key];
+      }
+    });
+
+    // Only keep entries that actually changed
+    if (Object.keys(diff).length > 1) {
+      patchArray.push(diff);
+    }
+  });
+
+  return patchArray;
+}
+
+
 const round=v=>Math.round(v*10)/10;
 const naLast=(a,b)=>a==="N/A"?1:b==="N/A"?-1:a.localeCompare(b);
 function baseSort(a,b,key){
@@ -1392,22 +1429,6 @@ function persistSmartListUUIDs() {
 async function renderItems() {
   // Update the global "current" variable by making a deep copy of "items"
   currentItems = JSON.parse(JSON.stringify(items)); // Deep copy to match items.json format
-rebuildCurrentItems();
-
-// Remove keys that match templateItems
-const filteredCurrentItems = filterCurrentItems();
-
-// Save to localStorage as patchItems
-localStorage.setItem(
-  "patchItems",
-  JSON.stringify(filteredCurrentItems, null, 2)
-);
-
-// Debug output
-console.log("patchItems:");
-console.log(filteredCurrentItems);
-  list.innerHTML = "";
-
   const completeKey = `${Source}Complete`;
 
   // ---------- NORMALIZE ----------
@@ -1508,6 +1529,19 @@ console.log(filteredCurrentItems);
   }
 
 // ---------- PATCH GENERATION ----------
+rebuildCurrentItems();
+
+const patchItems = buildPatchItems();
+
+// Save as ARRAY (never dictionary)
+localStorage.setItem(
+  "patchItems",
+  JSON.stringify(patchItems, null, 2)
+);
+
+// Debug
+console.log("patchItems (array of dictionaries):");
+console.log(patchItems);
 
 }
 
