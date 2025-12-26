@@ -1392,7 +1392,20 @@ function persistSmartListUUIDs() {
 async function renderItems() {
   // Update the global "current" variable by making a deep copy of "items"
   currentItems = JSON.parse(JSON.stringify(items)); // Deep copy to match items.json format
+rebuildCurrentItems();
 
+// Remove keys that match templateItems
+const filteredCurrentItems = filterCurrentItems();
+
+// Save to localStorage as patchItems
+localStorage.setItem(
+  "patchItems",
+  JSON.stringify(filteredCurrentItems, null, 2)
+);
+
+// Debug output
+console.log("patchItems:");
+console.log(filteredCurrentItems);
   list.innerHTML = "";
 
   const completeKey = `${Source}Complete`;
@@ -1495,20 +1508,7 @@ async function renderItems() {
   }
 
 // ---------- PATCH GENERATION ----------
-rebuildCurrentItems();
 
-// Remove keys that match templateItems
-const filteredCurrentItems = filterCurrentItems();
-
-// Save to localStorage as patchItems
-localStorage.setItem(
-  "patchItems",
-  JSON.stringify(filteredCurrentItems, null, 2)
-);
-
-// Debug output
-console.log("patchItems:");
-console.log(filteredCurrentItems);
 }
 
 
