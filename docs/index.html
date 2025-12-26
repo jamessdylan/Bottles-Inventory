@@ -1,3 +1,4 @@
+Drawer Fixed
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -895,6 +896,9 @@ const SOURCE_ICONS = {
 let items=[];
 let Source="Emporio";
 
+let templateItems = [];
+let currentItems = [];
+
 // ---------- GLOBAL FILTERS ----------
 let ArchiveFilter = false;   // true | false
 let GroupFilter   = "None";  // None | Tier | Special
@@ -944,19 +948,25 @@ const tabsEl=document.getElementById("sourceTabs");
   }
     };
 
-
-// Example usage for handling the "Sales Report" button click
+    // Handle the "Sales Report" button click
+    salesReportBtn.onclick = () => {
+      drawer.classList.remove("open");
+      overlay.classList.remove("show");
 salesReportBtn.onclick = () => {
   drawer.classList.remove("open");
   overlay.classList.remove("show");
 
-  // Generate the list of items in the proper format
-  const itemsListJson = createItemsList();
- let message = itemsListJson
-  // Show the items in an alert (this could be adapted to save to a file, send to a server, etc.)
+  const message =
+`Sales Report Filters:
+
+ArchiveFilter: ${ArchiveFilter}
+GroupFilter: ${GroupFilter}
+SubgroupFilter: ${SubgroupFilter}
+ItemFilter: ${ItemFilter}`;
+
   alert(message);
 };
-
+    };
 
     // Handle the "Dictionary File" button click
     dictionaryFileBtn.onclick = () => {
@@ -979,25 +989,16 @@ salesReportBtn.onclick = () => {
 
 
 /* ---------------- LOAD ---------------- */
-let templateItems = []; // Global variable to store the dictionary from items.json
 
-// Modified loadItems function to load and store data in templateItems
 async function loadItems() {
-  try {
-    const res = await fetch("./items.json", { cache: "no-store" });
-    templateItems = await res.json(); // Store the fetched data in templateItems
-console.log(“template”);
-console.log(templateItems)
-    items = [...templateItems]; // Copy the data to the items array for use in rendering
-    renderItems();
-  } catch (error) {
-    console.error("Failed to load items:", error);
-  }
+  const res = await fetch("./items.json", { cache: "no-store" });
+  templateItems = await res.json();
+
+  // Clone template → live working items
+  items = structuredClone(templateItems);
+
+  renderItems();
 }
-
-// Call loadItems to load the dictionary
-loadItems();
-
 
 /* ---------------- TABS ---------------- */
 function buildSourceTabs(){
@@ -1033,6 +1034,9 @@ tab.onclick = async () => {
     tabsEl.appendChild(tab);
   });
 }
+
+
+
 
 
 async function loadSmartListForSource(source) {
@@ -1165,84 +1169,53 @@ function baseSort(a,b,key){
     ||naLast(b.year,a.year);
 }
 
-// Function to create items list and return it as a JSON string, formatted like items.json
-function createItemsList() {
-  const itemsList = [];
-
-  // Loop through all items and format them similarly to items.json
-  items.forEach(item => {
-    // Create a new object for each item without base keys
-    const currentItem = {};
-
-    // Dynamically copy all keys from the item (including 'UUID' key explicitly)
+function rebuildCurrentItems() {
+  currentItems = items.map(item => {
+    const obj = {};
     Object.keys(item).forEach(key => {
-      if (key !== 'UUID') {  // We will ensure 'UUID' is included
-        currentItem[key] = item[key] || (key.includes('color') ? "White" : "N/A"); // Default values for missing properties
+      obj[key] = item[key];
+    });
+    return obj;
+  });
+}
+
+function buildPatchItems() {
+  const templateByUUID = new Map(
+    templateItems.map(item => [item.UUID, item])
+  );
+
+  const patchArray = [];
+
+  currentItems.forEach(current => {
+    const template = templateByUUID.get(current.UUID);
+
+    // Always include UUID inside the dictionary
+    const diff = { UUID: current.UUID };
+
+    Object.keys(current).forEach(key => {
+      if (key === "UUID") return;
+
+      // Keep key if:
+      // - template does not exist (new item)
+      // - key does not exist in template
+      // - value differs
+      if (
+        !template ||
+        !template.hasOwnProperty(key) ||
+        current[key] !== template[key]
+      ) {
+        diff[key] = current[key];
       }
     });
 
-    // Ensure the properties for the SOURCES and their 'Complete' versions are added dynamically
-    SOURCES.forEach(source => {
-      currentItem[source] = item[source] || 0;
-      currentItem[`${source}Complete`] = item[`${source}Complete`] || false;
-    });
-
-    // Add the base64 and icon properties directly from the item
-    currentItem.base64 = item.base64 || false;  // Default to false if base64 is not defined
-    currentItem.icon = item.icon || null;      // Default to null if icon is not defined
-
-    // Add UUID explicitly to each item
-    currentItem.UUID = item.UUID;
-
-    // Add the formatted item to the list
-    itemsList.push(currentItem);
+    // Only keep if something actually changed
+    if (Object.keys(diff).length > 1) {
+      patchArray.push(diff);
+    }
   });
 
-  // Convert the items list to a JSON string and return it
-  return JSON.stringify(itemsList, null, 2);
+  return patchArray;
 }
-
-// Function to retrieve UUID values from the items list
-function getUUIDsFromItemsList() {
-  // Get the current items list as a JSON string from the createItemsList function
-  const itemsListJson = createItemsList();
-  
-  // Parse the JSON string into an array of item objects
-  const itemsList = JSON.parse(itemsListJson);
-
-  // Extract the UUID values from each item in the list and return them as an array
-  const uuidList = itemsList.map(item => item.UUID);
-
-  return uuidList;
-}
-
-async function cleanItemsFile() {
-  // Retrieve the current list of UUIDs from createItemsList
-  const validUUIDs = getUUIDsFromItemsList();
-
-  // Fetch the items.json file (this assumes it's in the same directory or accessible)
-  const response = await fetch('./items.json');
-  const itemsJson = await response.json();
-
-  // Filter out any items whose UUID is not in the validUUIDs list
-  const cleanedItems = itemsJson.filter(item => validUUIDs.includes(item.UUID));
-
-  // Optional: Print the cleaned list for debugging purposes
-  console.log("Cleaned Items List:", cleanedItems);
-
-  // Now save the cleaned items back into items.json (this part depends on your environment)
-  // In a real environment, this would be done on the server-side.
-  // Here we'll simulate saving it to a file by converting it back to JSON
-  const cleanedItemsJson = JSON.stringify(cleanedItems, null, 2);
-
-  // Simulate saving to localStorage or send the updated data to a server
-  // Example: localStorage.setItem('items.json', cleanedItemsJson); 
-
-  // In this browser-based context, we'll log the updated list to the console.
-  console.log("Updated items.json content:", cleanedItemsJson);
-
-}
-
 
 
 
@@ -1515,6 +1488,20 @@ else if (GroupFilter === "Special") {
   else {
     renderGroup(null, subgroup1A, subgroup1B, subgroup1C);
   }
+
+// ---------- PATCH PIPELINE ----------
+rebuildCurrentItems();
+
+const patchItems = buildPatchItems();
+
+localStorage.setItem(
+  "patchItems",
+  JSON.stringify(patchItems, null, 2)
+);
+
+console.log("patchItems (diff-only):");
+console.log(patchItems);
+
 }
 
 
