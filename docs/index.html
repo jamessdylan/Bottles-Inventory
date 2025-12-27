@@ -586,9 +586,11 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   <div style="font-family:'Copperplate',serif;">Price</div>
   <input
     id="priceInput"
-    type="text"
+  type="number"
+  inputmode="decimal"
+  step="0.01"
+  min="0"
     placeholder="e.g. 42.50"
-    inputmode="decimal"
     style="
       padding:12px 14px;
       border-radius:10px;
