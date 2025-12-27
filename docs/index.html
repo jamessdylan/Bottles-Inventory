@@ -816,6 +816,8 @@ let Source="Emporio";
 const undoStack = [];
 const UNDO_LIMIT = 5;
 
+let activeSmartSource = null;
+let activeSmartItems = [];
 
 
 let templateItems = [];
@@ -953,6 +955,41 @@ async function loadItems() {
   items = applyPatchToTemplate(templateItems, patchItems);
 
   renderItems();
+}
+
+async function loadSmartListForSource(Source) {
+  // 1️⃣ Check localStorage
+  const stored = localStorage.getItem(Source);
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {}
+  }
+
+  // 2️⃣ Fetch from GitHub
+  try {
+    const res = await fetch(`./${Source}.json`);
+    if (!res.ok) throw new Error("Not found");
+
+    const uuidArray = await res.json();
+    if (!Array.isArray(uuidArray)) throw new Error("Invalid format");
+
+    // Match UUIDs to items
+    const matchedItems = items.filter(item =>
+      uuidArray.includes(item.UUID)
+    );
+
+    if (!matchedItems.length) throw new Error("No matches");
+
+    // Save to localStorage
+    localStorage.setItem(Source, JSON.stringify(matchedItems));
+
+    return matchedItems;
+  } catch (err) {
+    alert(`No Smart List found for "${Source}"`);
+    return null;
+  }
 }
 
 
@@ -1206,6 +1243,7 @@ function onDeleteItem(item) {
 
   // 2. Remove from live in-memory items
   items = items.filter(i => i.UUID !== item.UUID);
+removeDeletedItemFromAllSmartLists(item.UUID);
 
   // 3. Re-render
   renderItems();
@@ -1228,6 +1266,109 @@ function handleQuantityChange(item, newValue) {
 }
 
 
+
+function openSmartListPopup(source, list) {
+  activeSmartSource = source;
+  activeSmartItems = [...list];
+
+  const popup = document.getElementById("smartListPopup");
+  const listEl = popup.querySelector(".list");
+
+  listEl.innerHTML = "";
+
+  activeSmartItems.forEach((item, index) => {
+    const row = document.createElement("div");
+    row.className = "smart-row";
+    row.draggable = true;
+
+    row.innerHTML = `
+      <button class="remove">✕</button>
+      <span>${smartTitle(item)}</span>
+    `;
+
+    // Remove
+    row.querySelector(".remove").onclick = () => {
+      activeSmartItems.splice(index, 1);
+      saveActiveSmartList();
+      openSmartListPopup(activeSmartSource, activeSmartItems);
+    };
+
+    // Drag reorder
+    row.ondragstart = e => {
+      e.dataTransfer.setData("index", index);
+    };
+    row.ondragover = e => e.preventDefault();
+    row.ondrop = e => {
+      const from = Number(e.dataTransfer.getData("index"));
+      const to = index;
+      const [moved] = activeSmartItems.splice(from, 1);
+      activeSmartItems.splice(to, 0, moved);
+      saveActiveSmartList();
+      openSmartListPopup(activeSmartSource, activeSmartItems);
+    };
+
+    listEl.appendChild(row);
+  });
+
+  renderSmartListAdder(popup);
+
+  popup.style.display = "block";
+}
+
+function saveActiveSmartList() {
+  localStorage.setItem(
+    activeSmartSource,
+    JSON.stringify(activeSmartItems)
+  );
+}
+
+function renderSmartListAdder(popup) {
+  const input = popup.querySelector("input");
+  const suggestions = popup.querySelector(".suggestions");
+
+  input.value = "";
+  suggestions.innerHTML = "";
+
+  const existingUUIDs = activeSmartItems.map(i => i.UUID);
+  const availableItems = items.filter(
+    i => !existingUUIDs.includes(i.UUID)
+  );
+
+  input.oninput = () => {
+    const v = input.value.toLowerCase();
+    suggestions.innerHTML = "";
+
+    availableItems
+      .filter(i => smartTitle(i).toLowerCase().includes(v))
+      .forEach(item => {
+        const opt = document.createElement("div");
+        opt.textContent = smartTitle(item);
+        opt.onclick = () => {
+          activeSmartItems.push(item);
+          saveActiveSmartList();
+          openSmartListPopup(activeSmartSource, activeSmartItems);
+        };
+        suggestions.appendChild(opt);
+      });
+  };
+}
+
+function removeDeletedItemFromAllSmartLists(deletedUUID) {
+  Object.keys(localStorage).forEach(key => {
+    try {
+      const list = JSON.parse(localStorage.getItem(key));
+      if (!Array.isArray(list)) return;
+
+      const filtered = list.filter(
+        item => item.UUID !== deletedUUID
+      );
+
+      if (filtered.length !== list.length) {
+        localStorage.setItem(key, JSON.stringify(filtered));
+      }
+    } catch {}
+  });
+}
 
 
 
@@ -1996,23 +2137,19 @@ archiveBtn.onclick = e => {
 let groupHoldTimer = null;
 let groupLongPressFired = false;
 
-groupBtn.onpointerdown = e => {
-  e.preventDefault(); // iOS safety
-  groupLongPressFired = false;
+groupButton.onpointerdown = () => {
+  holdTimer = setTimeout(async () => {
+    const list = await loadSmartListForSource(Source);
+    if (!list) return;
 
-groupHoldTimer = setTimeout(() => {
-  groupLongPressFired = true;
-}, 700);
-
+    openSmartListPopup(Source, list);
+  }, 600);
 };
 
-groupBtn.onpointerup = () => {
-  clearTimeout(groupHoldTimer);
-};
+groupButton.onpointerup = () => clearTimeout(holdTimer);
+groupButton.onpointerleave = () => clearTimeout(holdTimer);
 
-groupBtn.onpointerleave = () => {
-  clearTimeout(groupHoldTimer);
-};
+
 
 groupBtn.onclick = e => {
   // 🚫 suppress click if long-press fired
