@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>new ghost</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1532,6 +1532,15 @@ function getSourceDisplay(item, source) {
   };
 }
 
+function commitGhostValue(item, source) {
+  const prevKey = `${source}Prev`;
+
+  if (!item.hasOwnProperty(prevKey)) return;
+
+  handleQuantityChange(item, item[prevKey]);
+}
+
+
 
 function defaultArchiveAction(item){
   const qty = totalQuantity(item);
@@ -1838,6 +1847,13 @@ row.innerHTML=`
   /* 🔹 RESTORED LONG-PRESS EDIT 🔹 */
   let pressTimer;
   const valueEl=row.querySelector(".value");
+
+valueEl.onclick = () => {
+  // Only act on ghost values
+  if (!valueEl.classList.contains("ghost")) return;
+
+  commitGhostValue(item, Source);
+};
 
   valueEl.onpointerdown=()=>{
     pressTimer=setTimeout(()=>{
