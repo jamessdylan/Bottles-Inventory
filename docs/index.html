@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>SM Keypad</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1209,6 +1209,56 @@ function baseSort(a,b,key){
     ||naLast(b.year,a.year);
 }
 
+function promptNumber(label, initialValue, callback) {
+  const overlay = document.createElement("div");
+  overlay.style.cssText = `
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  `;
+
+  const box = document.createElement("div");
+  box.style.cssText = `
+    background: #fff;
+    padding: 16px;
+    border-radius: 12px;
+    width: 260px;
+  `;
+
+  box.innerHTML = `
+    <div style="margin-bottom:8px;font-weight:600">${label}</div>
+    <input
+      type="number"
+      inputmode="decimal"
+      step="1"
+      value="${initialValue ?? 0}"
+      style="width:100%;font-size:16px;padding:6px"
+    />
+    <div style="margin-top:12px;text-align:right">
+      <button id="cancel">Cancel</button>
+      <button id="ok">OK</button>
+    </div>
+  `;
+
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+
+  const input = box.querySelector("input");
+  input.focus();
+  input.select();
+
+  box.querySelector("#cancel").onclick = () => overlay.remove();
+  box.querySelector("#ok").onclick = () => {
+    const val = Number(input.value);
+    if (!isNaN(val)) callback(val);
+    overlay.remove();
+  };
+}
+
 function rebuildCurrentItems() {
   currentItems = items.map(item => {
     const obj = {};
@@ -1959,11 +2009,10 @@ valueEl.onclick = () => {
 
   valueEl.onpointerdown=()=>{
     pressTimer=setTimeout(()=>{
-const v = prompt("Enter value:", item[Source]);
-if (v !== null && !isNaN(v)) {
-  handleQuantityChange(item, Number(v));
+promptNumber("Enter value", item[Source], v => {
+  handleQuantityChange(item, v);
+});
 }
-
     },450);
   };
 
@@ -1983,10 +2032,10 @@ minusBtn.onclick = () => {
 
   minusBtn.onpointerdown = () => {
   holdTimerBtn = setTimeout(() => {
-    const v = prompt("Subtract how many?", 0);
-    if (v !== null && !isNaN(v)) {
-      handleQuantityChange(item, item[Source] - Number(v));
-    }
+   promptNumber("Subtract how many?", 0, v => {
+  handleQuantityChange(item, item[Source] - v);
+});
+}
   }, 450);
 };
 
@@ -2002,9 +2051,9 @@ plusBtn.onclick = () => {
 
 plusBtn.onpointerdown  = () => {
   holdTimerBtn = setTimeout(() => {
-    const v = prompt("Add how many?", 0);
-    if (v !== null && !isNaN(v)) {
-      handleQuantityChange(item, item[Source] + Number(v));
+promptNumber("Enter value", item[Source], v => {
+  handleQuantityChange(item, v);
+});
     }
   }, 450);
 };
