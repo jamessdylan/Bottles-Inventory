@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>ghost</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -291,6 +291,12 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   color:#b00020;
   cursor:pointer;
   padding:4px 8px;
+}
+
+.value.ghost {
+  color: #9a9a9a;
+  opacity: 0.6;
+  font-style: italic;
 }
 
 
@@ -1504,6 +1510,28 @@ function startNewProject() {
   renderItems();
 }
 
+function getSourceDisplay(item, source) {
+  const value = Number(item[source]) || 0;
+  const completeKey = `${source}Complete`;
+  const prevKey = `${source}Prev`;
+
+  if (
+    value === 0 &&
+    item[completeKey] === false &&
+    item.hasOwnProperty(prevKey)
+  ) {
+    return {
+      text: item[prevKey],
+      ghost: true
+    };
+  }
+
+  return {
+    text: value,
+    ghost: false
+  };
+}
+
 
 function defaultArchiveAction(item){
   const qty = totalQuantity(item);
@@ -1750,7 +1778,29 @@ deleteBottleBtn.style.display = "block";
   newBottleOverlay.classList.add("show");
 }
 
+function getSourceDisplay(item, source) {
+  const value = Number(item[source]) || 0;
+  const completeKey = `${source}Complete`;
+  const prevKey = `${source}Prev`;
 
+  if (
+    value === 0 &&
+    item[completeKey] === false &&
+    item.hasOwnProperty(prevKey)
+  ) {
+    return {
+      text: item[prevKey],
+      ghost: true
+    };
+  }
+
+  return {
+    text: value,
+    ghost: false
+  };
+}
+
+This is my current drawItem function: 
 function drawItem(item){
   const key=`${Source}Complete`;
   const iconHTML=item.base64
@@ -1759,27 +1809,32 @@ function drawItem(item){
 
   const row=document.createElement("div");
   row.className="item";
-  row.innerHTML=`
-    <div class="left">
-      <div class="icon">${iconHTML}</div>
-      <div class="text-stack">
-        <div class="title" style="color:${item.status?'#000':'#ccc'}">
-          ${[item.brand,item.identifier,item.varietal,item.year].filter(v=>v&&v!=="N/A").join(" ")}
-        </div>
-        <div class="sub-row">
-          <div class="subtitle">${item.tier||""}</div>
-          <div class="controls">
-            <button class="minus">−</button>
-            <div class="value">${item[Source]}</div>
-            <button class="plus">+</button>
+ const display = getSourceDisplay(item, Source);
+
+row.innerHTML=`
+  <div class="left">
+    <div class="icon">${iconHTML}</div>
+    <div class="text-stack">
+      <div class="title" style="color:${item.status?'#000':'#ccc'}">
+        ${[item.brand,item.identifier,item.varietal,item.year].filter(v=>v&&v!=="N/A").join(" ")}
+      </div>
+      <div class="sub-row">
+        <div class="subtitle">${item.tier||""}</div>
+        <div class="controls">
+          <button class="minus">−</button>
+          <div class="value ${display.ghost ? 'ghost' : ''}">
+            ${display.text}
           </div>
+          <button class="plus">+</button>
         </div>
       </div>
     </div>
-    <div class="toggle">
-      ${item[key]?`<span class="toggle-check">✔</span>`:`<div class="toggle-circle"></div>`}
-    </div>
-  `;
+  </div>
+  <div class="toggle">
+    ${item[key]?`<span class="toggle-check">✔</span>`:`<div class="toggle-circle"></div>`}
+  </div>
+`;
+
 
   /* 🔹 RESTORED LONG-PRESS EDIT 🔹 */
   let pressTimer;
