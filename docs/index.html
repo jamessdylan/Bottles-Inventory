@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine key</title>
+<title>SM Wine</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -904,6 +904,10 @@ const SOURCE_ICONS = {
 let items=[];
 let Source="Emporio";
 
+const undoStack = [];
+const UNDO_LIMIT = 5;
+
+
 let templateItems = [];
 let currentItems = [];
 const patchItems = JSON.parse(
@@ -1079,6 +1083,7 @@ tab.onclick = async () => {
 
 
 
+document.getElementById("undoBtn").onclick = undoLastAction;
 
 
 async function loadSmartListForSource(source) {
@@ -1211,6 +1216,8 @@ function baseSort(a,b,key){
     ||naLast(b.year,a.year);
 }
 
+
+
 function promptNumber(label, initialValue, callback) {
   const overlay = document.createElement("div");
   overlay.style.cssText = `
@@ -1260,6 +1267,21 @@ function promptNumber(label, initialValue, callback) {
     overlay.remove();
   };
 }
+
+function logUndo(item, key, prevValue) {
+  undoStack.push({
+    item,
+    key,
+    prevValue
+  });
+
+  // Keep only last 5
+  if (undoStack.length > UNDO_LIMIT) {
+    undoStack.shift();
+  }
+}
+
+
 
 function rebuildCurrentItems() {
   currentItems = items.map(item => {
@@ -1401,6 +1423,32 @@ function handleQuantityChange(item, newValue) {
 
   // 🔹 Apply quantity change
   item[Source] = Math.max(0, round(newValue));
+
+  const key = Source;
+  const oldValue = Number(item[key]) || 0;
+  const clamped = Math.max(0, newValue);
+
+  // 🔒 Do nothing if no actual change
+  if (oldValue === clamped) return;
+
+  // 🔹 LOG UNDO (item OR source change)
+  logUndo(item, key, oldValue);
+
+  // 🔹 APPLY CHANGE
+  item[key] = clamped;
+
+  renderItems();
+}
+
+
+
+function undoLastAction() {
+  const action = undoStack.pop();
+  if (!action) return;
+
+  const { item, key, prevValue } = action;
+
+  item[key] = prevValue;
 
   renderItems();
 }
