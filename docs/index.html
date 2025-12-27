@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Prev Qty Inventory</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1313,6 +1313,9 @@ function buildPreviousQtyPatch() {
   const prevPatch = [];
 
   items.forEach(item => {
+    // 🔒 ONLY Reserve items get previous quantities
+    if (item.tier !== "Reserve") return;
+
     const entry = { UUID: item.UUID };
     let hasAny = false;
 
@@ -1331,6 +1334,7 @@ function buildPreviousQtyPatch() {
 
   return prevPatch;
 }
+
 
 function savePreviousQtyPatch(patch) {
   localStorage.setItem(
