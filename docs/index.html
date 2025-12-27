@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine </title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1234,26 +1234,66 @@ function applyPatchToTemplate(templateItems, patchItems) {
   patchItems.forEach(patch => {
     const uuid = patch.UUID;
 
-    // Existing item → merge
+    // 🔥 Explicit deletion
+    if (patch.__deleted === true) {
+      templateByUUID.delete(uuid);
+      return;
+    }
+
+    // Merge existing item
     if (templateByUUID.has(uuid)) {
       const target = templateByUUID.get(uuid);
 
       Object.keys(patch).forEach(key => {
-        if (key === "UUID") return;
+        if (key === "UUID" || key === "__deleted") return;
         target[key] = patch[key];
       });
-
-    } 
-    // New item → add entire patch as base
+    }
+    // New item
     else {
-      templateByUUID.set(uuid, structuredClone(patch));
+      const newItem = structuredClone(patch);
+      delete newItem.__deleted;
+      templateByUUID.set(uuid, newItem);
     }
   });
 
-  // Return merged items as array
   return Array.from(templateByUUID.values());
 }
 
+
+
+function isItemDeleted(uuid) {
+  const patchItems = JSON.parse(
+    localStorage.getItem("patchItems") || "[]"
+  );
+
+  return patchItems.some(
+    p => p.UUID === uuid && p.__deleted === true
+  );
+}
+
+
+function markItemDeleted(uuid) {
+  const patchItems = JSON.parse(
+    localStorage.getItem("patchItems") || "[]"
+  );
+
+  // Remove any existing patch for this UUID
+  const filtered = patchItems.filter(p => p.UUID !== uuid);
+
+  // Add deletion marker
+  filtered.push({
+    UUID: uuid,
+    "__deleted": true
+  });
+
+  localStorage.setItem(
+    "patchItems",
+    JSON.stringify(filtered, null, 2)
+  );
+
+  console.log(`Item ${uuid} marked for deletion`);
+}
 
 
 function updateGlobalFilters() {
@@ -2036,8 +2076,15 @@ confirmArchiveCleanup.onclick = () => {
   archiveCleanupSheet.style.transform = "translateY(100%)";
   archiveCleanupOverlay.classList.remove("show");
 
-  // Force the page to re-render the updated items list
-  renderItems(); // This will update the UI immediately with the modified items
+function onDeleteItem(item) {
+  markItemDeleted(item.UUID);
+
+  // Remove from live UI items
+  items = items.filter(i => i.UUID !== item.UUID);
+
+  renderItems();
+}
+
 };
 
 
@@ -2437,7 +2484,15 @@ deleteBottleBtn.onclick = () => {
   items = items.filter(i => i !== editingItem);
   editingItem = null;
 
+function onDeleteItem(item) {
+  markItemDeleted(item.UUID);
+
+  // Remove from live UI items
+  items = items.filter(i => i.UUID !== item.UUID);
+
   renderItems();
+}
+
   closeNewBottle();
 };
 
