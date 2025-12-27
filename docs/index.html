@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine </title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -291,20 +291,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   color:#b00020;
   cursor:pointer;
   padding:4px 8px;
-}
-
-
-.drawer-toggle {
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(0,0,0,0.1);
-}
-
-.toggle-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 14px;
 }
 
 
@@ -731,18 +717,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
     <!-- Fixing the ID for dictionaryFileBtn -->
     <button id="dictionaryFileBtn">Dictionary File</button>
     <button id="exportBtn">Export</button>
-
-
-<div class="drawer-toggle">
-  <label class="toggle-row">
-    <span>Display Previous Quantities</span>
-    <input
-      type="checkbox"
-      id="togglePreviousQuantities"
-    />
-  </label>
-</div>
-
   </div>
 
   <div class="overlay" id="overlay"></div>
@@ -945,9 +919,6 @@ const tabsEl=document.getElementById("sourceTabs");
     const drawer = document.getElementById("drawer");
     const overlay = document.getElementById("overlay");
 
-let showPreviousQuantities = false;
-
-
     // Open the drawer when the drawer tab is clicked
     drawerTab.onclick = () => {
       drawer.classList.add("open");
@@ -1020,20 +991,6 @@ ItemFilter: ${ItemFilter}`;
       alert("Export button clicked!");
     };
 
-const prevToggle = document.getElementById("togglePreviousQuantities");
-
-prevToggle.checked = showPreviousQuantities;
-
-prevToggle.addEventListener("change", () => {
-  showPreviousQuantities = prevToggle.checked;
-
-  console.log(
-    "Display Previous Quantities:",
-    showPreviousQuantities
-  );
-
-  renderItems(); // or whatever your main render function is
-});
 
 
 /* ---------------- LOAD ---------------- */
@@ -1050,16 +1007,6 @@ async function loadItems() {
 
   renderItems();
 }
-
-const previousQtyPatch = JSON.parse(
-  localStorage.getItem("previousQtyPatch") || "[]"
-);
-
-const previousQtyByUUID = {};
-previousQtyPatch.forEach(p => {
-  previousQtyByUUID[p.UUID] = p;
-});
-
 
 
 /* ---------------- TABS ---------------- */
@@ -1362,44 +1309,6 @@ function onDeleteItem(item) {
 }
 
 
-function buildPreviousQtyPatch() {
-  const prevPatch = [];
-
-  items.forEach(item => {
-    // 🔒 ONLY Reserve items get previous quantities
-    if (item.tier !== "Reserve") return;
-
-    const entry = { UUID: item.UUID };
-    let hasAny = false;
-
-    SOURCES.forEach(src => {
-      const qty = Number(item[src]) || 0;
-      if (qty > 0) {
-        entry[`${src}Prev`] = qty;
-        hasAny = true;
-      }
-    });
-
-    if (hasAny) {
-      prevPatch.push(entry);
-    }
-  });
-
-  return prevPatch;
-}
-
-
-function savePreviousQtyPatch(patch) {
-  localStorage.setItem(
-    "previousQtyPatch",
-    JSON.stringify(patch, null, 2)
-  );
-
-  console.log("Saved previousQtyPatch:");
-  console.log(patch);
-}
-
-
 function updateGlobalFilters() {
   /* ---------- ARCHIVE ---------- */
   ArchiveFilter = archiveBtn.classList.contains("active");
@@ -1676,8 +1585,6 @@ rebuildCurrentItems();
 const patchItems = buildPatchItems();
 savePatchItems(patchItems);
 
-const previousQtyPatch = buildPreviousQtyPatch();
-savePreviousQtyPatch(previousQtyPatch);
 
 console.log("patchItems (diff-only):");
 console.log(patchItems);
@@ -1709,8 +1616,6 @@ function savePatchItems(newPatches) {
   console.log("Saved patchItems:");
   console.log(merged);
 }
-
-
 
 
 /* ---------------- DRAW ITEM ---------------- */
@@ -1787,7 +1692,7 @@ deleteBottleBtn.style.display = "block";
   newBottleOverlay.classList.add("show");
 }
 
-This is my drawItem function:
+
 function drawItem(item){
   const key=`${Source}Complete`;
   const iconHTML=item.base64
@@ -1807,7 +1712,7 @@ function drawItem(item){
           <div class="subtitle">${item.tier||""}</div>
           <div class="controls">
             <button class="minus">−</button>
-            <div class="value"></div>
+            <div class="value">${item[Source]}</div>
             <button class="plus">+</button>
           </div>
         </div>
@@ -1822,35 +1727,6 @@ function drawItem(item){
   let pressTimer;
   const valueEl=row.querySelector(".value");
 
-/* ---------- DISPLAY PREVIOUS QTY (DRAWER-GATED) ---------- */
-const actualQty = Number(item[Source]) || 0;
-const isComplete = !!item[key];
-let showPreviousQuantities = false;
-let displayQty = actualQty;
-let showingPrevious = false;
-
-if (showPreviousQuantities && Source) {
-  const prevEntry = previousQtyByUUID
-    ? previousQtyByUUID[item.UUID]
-    : undefined;
-
-  const prevQty = prevEntry?.[`${Source}Prev`];
-
-  if (
-    actualQty === 0 &&
-    !isComplete &&
-    prevQty !== undefined
-  ) {
-    displayQty = prevQty;
-    showingPrevious = true;
-  }
-}
-
-
-valueEl.textContent = displayQty;
-valueEl.style.color = showingPrevious ? "#b0b0b0" : "";
-
-
   valueEl.onpointerdown=()=>{
     pressTimer=setTimeout(()=>{
       const v=prompt("Enter value:",item[Source]);
@@ -1860,19 +1736,6 @@ valueEl.style.color = showingPrevious ? "#b0b0b0" : "";
       }
     },450);
   };
-
-valueEl.onclick = () => {
-  if (!showingPrevious) return;
-
-  const prevQty =
-    previousQtyByUUID[item.UUID]?.[`${Source}Prev`];
-
-  if (prevQty !== undefined) {
-    item[Source] = prevQty;
-    renderItems();
-  }
-};
-
   valueEl.onpointerup=()=>clearTimeout(pressTimer);
   valueEl.onpointerleave=()=>clearTimeout(pressTimer);
 
@@ -1951,7 +1814,6 @@ function smartItemTitle(item){
     .filter(v => v && v !== "N/A")
     .join(" ");
 }
-
 
 
 /* ---------- INIT ---------- */
