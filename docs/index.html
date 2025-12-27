@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Keypad</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2012,7 +2012,6 @@ valueEl.onclick = () => {
 promptNumber("Enter value", item[Source], v => {
   handleQuantityChange(item, v);
 });
-}
     },450);
   };
 
@@ -2035,7 +2034,6 @@ minusBtn.onclick = () => {
    promptNumber("Subtract how many?", 0, v => {
   handleQuantityChange(item, item[Source] - v);
 });
-}
   }, 450);
 };
 
@@ -2054,7 +2052,6 @@ plusBtn.onpointerdown  = () => {
 promptNumber("Enter value", item[Source], v => {
   handleQuantityChange(item, v);
 });
-    }
   }, 450);
 };
 
