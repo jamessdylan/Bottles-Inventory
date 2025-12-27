@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine key</title>
+<title>SM Wine</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -816,12 +816,32 @@ let Source="Emporio";
 const undoStack = [];
 const UNDO_LIMIT = 5;
 
-const SmartLists = [
+const DEFAULT_SMART_LISTS = [
   "Wine Cellar",
   "Liquor Closet"
 ];
 
+function initializeSmartListsIndex() {
+  const stored = localStorage.getItem("Smart Lists");
 
+  console.log("Smart Lists (raw from localStorage):", stored);
+
+  if (!stored) {
+    localStorage.setItem(
+      "Smart Lists",
+      JSON.stringify(DEFAULT_SMART_LISTS)
+    );
+
+    console.log("Smart Lists initialized to default:", DEFAULT_SMART_LISTS);
+  } else {
+    try {
+      const parsed = JSON.parse(stored);
+      console.log("Smart Lists parsed from localStorage:", parsed);
+    } catch {
+      console.warn("Smart Lists exists but could not be parsed");
+    }
+  }
+}
 
 
 let templateItems = [];
@@ -831,6 +851,75 @@ const patchItems = JSON.parse(
 );
 
 const mergedItems = applyPatchToTemplate(templateItems, patchItems);
+
+async function resolveSmartLists() {
+  const stored = localStorage.getItem("Smart Lists");
+
+  if (!stored) {
+    console.warn("Smart Lists not found in localStorage");
+    return;
+  }
+
+  let smartLists;
+  try {
+    smartLists = JSON.parse(stored);
+  } catch {
+    console.error("Smart Lists could not be parsed");
+    return;
+  }
+
+  if (!Array.isArray(smartLists)) return;
+
+  for (const name of smartLists) {
+    /* ---------- 1️⃣ Check localStorage ---------- */
+    const localValue = localStorage.getItem(name);
+
+    if (localValue) {
+      console.log(name, "retrieved from local");
+
+      try {
+        const parsed = JSON.parse(localValue);
+        console.log(name, parsed);
+      } catch {
+        console.warn(name, "exists locally but could not be parsed");
+      }
+
+      continue;
+    }
+
+    /* ---------- 2️⃣ Attempt GitHub file ---------- */
+    const fileName = `${name}.json`;
+
+    try {
+      const response = await fetch(`./${fileName}`);
+
+      if (!response.ok) {
+        console.log("file not found:", fileName);
+        continue;
+      }
+
+      console.log("found file:", fileName);
+
+      const raw = await response.json();
+      if (!Array.isArray(raw)) continue;
+
+      const uuids = raw.map(v => v.UUID ?? v);
+
+      /* ---------- 3️⃣ Match to items ---------- */
+      const matched = items.filter(item =>
+        uuids.includes(item.UUID)
+      );
+
+      /* ---------- 4️⃣ Save & log ---------- */
+      localStorage.setItem(name, JSON.stringify(matched));
+
+      console.log(name, matched);
+
+    } catch {
+      console.log("file not found:", fileName);
+    }
+  }
+}
 
 
 // ---------- GLOBAL FILTERS ----------
@@ -957,42 +1046,10 @@ async function loadItems() {
   );
 
   items = applyPatchToTemplate(templateItems, patchItems);
-
+initializeSmartListsIndex();
   renderItems();
-initializeSmartLists();
+resolveSmartLists();
 
-}
-
-async function initializeSmartLists() {
-  for (const name of SmartLists) {
-    try {
-      const response = await fetch(`./${name}.json`);
-      if (!response.ok) continue;
-
-      const raw = await response.json();
-      if (!Array.isArray(raw)) continue;
-
-      // raw may be UUIDs or objects containing UUID
-      const uuids = raw.map(v => v.UUID ?? v);
-
-      const matched = items.filter(item =>
-        uuids.includes(item.UUID)
-      );
-
-      if (!matched.length) continue;
-
-      // 🔹 Set runtime variable
-      window[name] = matched;
-
-      // 🔹 Persist
-      localStorage.setItem(name, JSON.stringify(matched));
-
-      console.log(`Smart List initialized: ${name}`);
-
-    } catch (err) {
-      // fail silently (per your spec)
-    }
-  }
 }
 
 
@@ -1046,59 +1103,6 @@ function baseSort(a,b,key){
     ||naLast(b.year,a.year);
 }
 
-
-function buildItemTitle(item) {
-  return [item.brand, item.identifier, item.varietal, item.year]
-    .filter(v => v && v !== "N/A")
-    .join(" ");
-}
-
-function openSmartListInspectorPopup(listName) {
-  if (!listName) return;
-
-  /* ---------- LOAD MATCHES ---------- */
-  let matches = [];
-
-  const stored = localStorage.getItem(listName);
-  if (stored) {
-    try {
-      const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed)) {
-        matches = parsed;
-      }
-    } catch {
-      matches = [];
-    }
-  }
-
-  /* ---------- BUILD UUID SET ---------- */
-  const matchUUIDs = new Set(
-    matches.map(item => item.UUID)
-  );
-
-  /* ---------- BUILD SUGGESTIONS ---------- */
-  const suggestions = items.filter(
-    item => !matchUUIDs.has(item.UUID)
-  );
-
-  /* ---------- LOG TITLES ---------- */
-  console.group(`Smart List: ${listName}`);
-
-  console.log("Matches:");
-  matches.forEach(item => {
-    console.log(buildItemTitle(item));
-  });
-
-  console.log("Suggestions:");
-  suggestions.forEach(item => {
-    console.log(buildItemTitle(item));
-  });
-
-  console.groupEnd();
-
-  /* ---------- RETURN IF NEEDED ---------- */
-  return { matches, suggestions };
-}
 
 
 function promptNumber(label, initialValue, callback) {
@@ -1685,7 +1689,6 @@ function savePatchItems(newPatches) {
     JSON.stringify(merged, null, 2)
   );
 
-
   console.log("Saved patchItems:");
   console.log(merged);
 }
@@ -2093,8 +2096,6 @@ let groupLongPressFired = false;
 groupBtn.onpointerdown = e => {
   e.preventDefault(); // iOS safety
   groupLongPressFired = false;
-openSmartListInspectorPopup(Source);
-
 
 groupHoldTimer = setTimeout(() => {
   groupLongPressFired = true;
