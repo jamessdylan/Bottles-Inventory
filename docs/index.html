@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>SM New Project</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -711,7 +711,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   <!-- Drawer Content -->
   <div class="drawer" id="drawer">
     <div class="drawer-title" id="pageTitle"></div>
-    <button>New Project</button>
+    <button id=“newProjectBtn”>New Project</button>
     <button id="reserveListBtn">Reserve List</button>
     <button id="salesReportBtn">Sales Report</button>
     <!-- Fixing the ID for dictionaryFileBtn -->
@@ -932,6 +932,7 @@ const tabsEl=document.getElementById("sourceTabs");
     };
 
     /* Drawer Button Functions */
+    const newProjectBtn = document.getElementById("newProjectBtn");
     const reserveListBtn = document.getElementById("reserveListBtn");
     const salesReportBtn = document.getElementById("salesReportBtn");
     const dictionaryFileBtn = document.getElementById("dictionaryFileBtn");
@@ -1306,6 +1307,52 @@ function onDeleteItem(item) {
 
   // 3. Re-render
   renderItems();
+}
+
+function getDynamicQuantityKeys(item) {
+  return Object.keys(item).filter(key =>
+    key.toLowerCase().includes("quantity") &&
+    !key.toLowerCase().includes("previous") &&
+    key !== "totalQuantity" &&
+    key !== "previousQuantity"
+  );
+}
+
+function calculateTotalQuantity(item) {
+  return getDynamicQuantityKeys(item)
+    .reduce((sum, key) => sum + (Number(item[key]) || 0), 0);
+}
+
+function loadCurrentQuantitiesAsPrevious() {
+  items.forEach(item => {
+
+    // ✅ EXACT match, as requested
+    if (item.tier === "Reserve") {
+      getDynamicQuantityKeys(item).forEach(key => {
+        const value = Number(item[key]) || 0;
+
+        if (value > 0) {
+          item[`previous_${key}`] = value;
+        }
+      });
+    }
+
+    // ✅ EVERY item gets previous total quantity
+    item.previousQuantity = calculateTotalQuantity(item);
+  });
+}
+
+function resetAllQuantities() {
+  items.forEach(item => {
+
+    getDynamicQuantityKeys(item).forEach(key => {
+      item[key] = 0;
+    });
+
+    if ("totalQuantity" in item) {
+      item.totalQuantity = 0;
+    }
+  });
 }
 
 
