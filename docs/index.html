@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>CSV</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -722,6 +722,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
     <button id="salesReportBtn">Sales Report</button>
 <button id="baseFileBtn">Base File</button>
 <button id="csvFileBtn">CSV File</button>
+<button id="printSummaryBtn">Print Summary</button>
     <button id="exportBtn">Export</button>
   </div>
 
@@ -944,6 +945,11 @@ const tabsEl=document.getElementById("sourceTabs");
     const exportBtn = document.getElementById("exportBtn");
 
 const newProjectBtn = document.getElementById("newProjectBtn");
+
+document.getElementById("printSummaryBtn").onclick = () => {
+  openPrintSummary();
+};
+
 
 newProjectBtn.onclick = () => {
   drawer.classList.remove("open");
@@ -2882,6 +2888,36 @@ confirmNewBottle.onclick = () => {
   closeNewBottle();
 };
 
+function openPrintSummary() {
+  const printWindow = window.open("print-summary.html", "_blank");
+  if (!printWindow) return;
+
+  const payload = items.map(item => {
+    const quantity = totalQuantity(item);
+    const price = Number(item.price) || 0;
+
+    return {
+      title: smartItemTitle(item),
+      color: item.color,
+      tier: item.tier,
+      quantity,
+      price,
+      total: quantity * price
+    };
+  });
+
+  // Wait until the new window is ready
+  const sendData = () => {
+    printWindow.printItems = payload;
+    printWindow.sourcePageTitle = document.title;
+  };
+
+  if (printWindow.document.readyState === "complete") {
+    sendData();
+  } else {
+    printWindow.onload = sendData;
+  }
+}
 
 
 </script>
