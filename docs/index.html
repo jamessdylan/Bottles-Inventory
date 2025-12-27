@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine </title>
+<title>SM Wine</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2134,11 +2134,15 @@ archiveBtn.onclick = e => {
   renderItems();
 };
 
-let groupHoldTimer = null;
+let holdTimer;
 let groupLongPressFired = false;
 
-groupButton.onpointerdown = () => {
+groupBtn.onpointerdown = () => {
+  groupLongPressFired = false;
+
   holdTimer = setTimeout(async () => {
+    groupLongPressFired = true;
+
     const list = await loadSmartListForSource(Source);
     if (!list) return;
 
@@ -2146,10 +2150,13 @@ groupButton.onpointerdown = () => {
   }, 600);
 };
 
-groupButton.onpointerup = () => clearTimeout(holdTimer);
-groupButton.onpointerleave = () => clearTimeout(holdTimer);
+groupBtn.onpointerup = () => {
+  clearTimeout(holdTimer);
+};
 
-
+groupBtn.onpointerleave = () => {
+  clearTimeout(holdTimer);
+};
 
 groupBtn.onclick = e => {
   // 🚫 suppress click if long-press fired
@@ -2164,6 +2171,7 @@ groupBtn.onclick = e => {
   updateGlobalFilters();
   renderItems();
 };
+
 
 
 smartSortBtn.onclick = () => {
