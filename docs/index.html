@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Winekey</title>
+<title>SM Wine key</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -816,6 +816,12 @@ let Source="Emporio";
 const undoStack = [];
 const UNDO_LIMIT = 5;
 
+const SmartLists = [
+  "Wine Cellar",
+  "Liquor Closet"
+];
+
+
 
 
 let templateItems = [];
@@ -953,6 +959,40 @@ async function loadItems() {
   items = applyPatchToTemplate(templateItems, patchItems);
 
   renderItems();
+initializeSmartLists();
+
+}
+
+async function initializeSmartLists() {
+  for (const name of SmartLists) {
+    try {
+      const response = await fetch(`./${name}.json`);
+      if (!response.ok) continue;
+
+      const raw = await response.json();
+      if (!Array.isArray(raw)) continue;
+
+      // raw may be UUIDs or objects containing UUID
+      const uuids = raw.map(v => v.UUID ?? v);
+
+      const matched = items.filter(item =>
+        uuids.includes(item.UUID)
+      );
+
+      if (!matched.length) continue;
+
+      // 🔹 Set runtime variable
+      window[name] = matched;
+
+      // 🔹 Persist
+      localStorage.setItem(name, JSON.stringify(matched));
+
+      console.log(`Smart List initialized: ${name}`);
+
+    } catch (err) {
+      // fail silently (per your spec)
+    }
+  }
 }
 
 
@@ -1644,6 +1684,7 @@ function savePatchItems(newPatches) {
     "patchItems",
     JSON.stringify(merged, null, 2)
   );
+
 
   console.log("Saved patchItems:");
   console.log(merged);
