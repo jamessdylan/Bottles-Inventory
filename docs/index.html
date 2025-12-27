@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Undo</title>
+<title>SM Wine key</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1267,25 +1267,25 @@ function promptNumber(label, initialValue, callback) {
   };
 }
 
-function logUndo(item, key, prevValue) {
+function logUndo(item, key, prevValue, nextValue) {
   const last = undoStack[undoStack.length - 1];
 
-  // 🚫 Do not log if same item AND same source key
-  if (last && last.item === item && last.key === key) {
-    return;
-  }
+  // 🚫 Skip if same item + same source
+  if (last && last.item === item && last.key === key) return;
 
   undoStack.push({
     item,
     key,
-    prevValue
+    prevValue,
+    nextValue,
+    text: `${smartItemTitle(item)}: ${prevValue} → ${nextValue}`
   });
 
-  // Keep only last 5
   if (undoStack.length > UNDO_LIMIT) {
     undoStack.shift();
   }
 }
+
 
 
 
@@ -1421,21 +1421,18 @@ function onDeleteItem(item) {
 }
 
 function handleQuantityChange(item, newValue) {
-  const key = Source;
+  if (!Source) return;
 
-  // 🔒 Normalize values safely
+  const key = Source;
   const oldValue = Number(item[key]) || 0;
   const nextValue = Math.max(0, Number(newValue));
 
-  // 🔒 Bail only if truly unchanged
   if (oldValue === nextValue) return;
 
-  // 🔹 Log undo BEFORE mutation
-  logUndo(item, key, oldValue);
+  // 🔹 Pass both values now
+  logUndo(item, key, oldValue, nextValue);
 
-  // 🔹 Apply change
   item[key] = nextValue;
-
   renderItems();
 }
 
@@ -2048,8 +2045,41 @@ function undoLastAction() {
   renderItems();
 }
 
+function showUndoHistory() {
+  if (!undoStack.length) {
+    alert("No undo history");
+    return;
+  }
 
-document.getElementById("undoBtn").onclick = undoLastAction;
+  const text = undoStack
+    .slice()
+    .reverse()
+    .map((u, i) => `${i + 1}. ${u.text}`)
+    .join("\n");
+
+  alert(`Undo History (most recent first):\n\n${text}`);
+}
+
+const undoBtn = document.getElementById("undoBtn");
+
+let undoHoldTimer;
+
+undoBtn.onclick = () => {
+  undoLastAction();
+};
+
+undoBtn.onpointerdown = () => {
+  undoHoldTimer = setTimeout(() => {
+    showUndoHistory();
+  }, 600);
+};
+
+undoBtn.onpointerup = () => clearTimeout(undoHoldTimer);
+undoBtn.onpointerleave = () => clearTimeout(undoHoldTimer);
+
+
+
+
   /* 🔹 RESTORED LONG-PRESS EDIT 🔹 */
   let pressTimer;
   const valueEl=row.querySelector(".value");
