@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine key</title>
+<title>Undo</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1268,6 +1268,13 @@ function promptNumber(label, initialValue, callback) {
 }
 
 function logUndo(item, key, prevValue) {
+  const last = undoStack[undoStack.length - 1];
+
+  // 🚫 Do not log if same item AND same source key
+  if (last && last.item === item && last.key === key) {
+    return;
+  }
+
   undoStack.push({
     item,
     key,
@@ -1279,6 +1286,7 @@ function logUndo(item, key, prevValue) {
     undoStack.shift();
   }
 }
+
 
 
 
