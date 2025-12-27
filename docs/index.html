@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>SM Wine Change</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1308,6 +1308,21 @@ function onDeleteItem(item) {
   renderItems();
 }
 
+function handleQuantityChange(item, newValue) {
+  const prevKey = `${Source}Prev`;
+
+  // 🔹 Remove SourcePrev if it exists
+  if (item.hasOwnProperty(prevKey)) {
+    delete item[prevKey];
+  }
+
+  // 🔹 Apply quantity change
+  item[Source] = Math.max(0, round(newValue));
+
+  renderItems();
+}
+
+
 
 function updateGlobalFilters() {
   /* ---------- ARCHIVE ---------- */
@@ -1729,13 +1744,14 @@ function drawItem(item){
 
   valueEl.onpointerdown=()=>{
     pressTimer=setTimeout(()=>{
-      const v=prompt("Enter value:",item[Source]);
-      if(v!==null&&!isNaN(v)){
-        item[Source]=Math.max(0,round(Number(v)));
-        renderItems();
-      }
+const v = prompt("Enter value:", item[Source]);
+if (v !== null && !isNaN(v)) {
+  handleQuantityChange(item, Number(v));
+}
+
     },450);
   };
+
   valueEl.onpointerup=()=>clearTimeout(pressTimer);
   valueEl.onpointerleave=()=>clearTimeout(pressTimer);
 
@@ -1745,42 +1761,39 @@ function drawItem(item){
   let holdTimerBtn;
 
   /* ----- MINUS ----- */
-  minusBtn.onclick = () => {
-    item[Source] = Math.max(0, round(item[Source] - 1));
-    renderItems();
-  };
+minusBtn.onclick = () => {
+  handleQuantityChange(item, item[Source] - 1);
+};
+
 
   minusBtn.onpointerdown = () => {
-    holdTimerBtn = setTimeout(() => {
-      const v = prompt("Subtract how many?", 0);
-      if (v !== null && !isNaN(v)) {
-        item[Source] = Math.max(
-          0,
-          round(item[Source] - Number(v))
-        );
-        renderItems();
-      }
-    }, 450);
-  };
+  holdTimerBtn = setTimeout(() => {
+    const v = prompt("Subtract how many?", 0);
+    if (v !== null && !isNaN(v)) {
+      handleQuantityChange(item, item[Source] - Number(v));
+    }
+  }, 450);
+};
+
 
   minusBtn.onpointerup = () => clearTimeout(holdTimerBtn);
   minusBtn.onpointerleave = () => clearTimeout(holdTimerBtn);
 
   /* ----- PLUS ----- */
-  plusBtn.onclick = () => {
-    item[Source] = round(item[Source] + 1);
-    renderItems();
-  };
+plusBtn.onclick = () => {
+  handleQuantityChange(item, item[Source] + 1);
+};
 
-  plusBtn.onpointerdown = () => {
-    holdTimerBtn = setTimeout(() => {
-      const v = prompt("Add how many?", 0);
-      if (v !== null && !isNaN(v)) {
-        item[Source] = round(item[Source] + Number(v));
-        renderItems();
-      }
-    }, 450);
-  };
+
+plusBtn.onpointerdown  = () => {
+  holdTimerBtn = setTimeout(() => {
+    const v = prompt("Add how many?", 0);
+    if (v !== null && !isNaN(v)) {
+      handleQuantityChange(item, item[Source] + Number(v));
+    }
+  }, 450);
+};
+
 
   plusBtn.onpointerup = () => clearTimeout(holdTimerBtn);
   plusBtn.onpointerleave = () => clearTimeout(holdTimerBtn);
