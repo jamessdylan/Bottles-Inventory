@@ -907,6 +907,10 @@ let Source="Emporio";
 const undoStack = [];
 const UNDO_LIMIT = 5;
 
+const SMART_LISTS = [
+  "Wine Cellar",
+  "Liquor Closet"
+];
 
 
 let templateItems = [];
@@ -1043,7 +1047,33 @@ async function loadItems() {
 
   items = applyPatchToTemplate(templateItems, patchItems);
 
+initializeSmartListsFromItems(items);
+
+
   renderItems();
+}
+
+function initializeSmartListsFromItems(items) {
+  SMART_LISTS.forEach(listName => {
+
+    // If localStorage already has this Smart List, do nothing
+    if (localStorage.getItem(listName)) return;
+
+    // Expecting an existing array of UUIDs named exactly like the list
+    const uuidArray = window[listName];
+    if (!Array.isArray(uuidArray)) return;
+
+    // Match UUIDs to items
+    const matchedItems = items.filter(item =>
+      uuidArray.includes(item.UUID)
+    );
+
+    // Persist matched items to localStorage
+    localStorage.setItem(
+      listName,
+      JSON.stringify(matchedItems)
+    );
+  });
 }
 
 
