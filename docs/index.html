@@ -2314,20 +2314,17 @@ archiveBtn.onclick = e => {
 
 let groupHoldTimer = null;
 let groupLongPressFired = false;
-enableGroupBtnLongPress(groupBtn);
-
 
 groupBtn.onpointerdown = e => {
   e.preventDefault(); // iOS safety
   groupLongPressFired = false;
 
-groupHoldTimer = setTimeout(() => {
-  groupLongPressFired = true;
-}, 700);
-
+  groupHoldTimer = setTimeout(() => {
+    groupLongPressFired = true;
+    console.log("Long press detected:", Source);
+    openSmartListPopup(Source);
+  }, 700);
 };
-
-
 
 groupBtn.onpointerup = () => {
   clearTimeout(groupHoldTimer);
@@ -2340,8 +2337,8 @@ groupBtn.onpointerleave = () => {
 groupBtn.onclick = e => {
   // 🚫 suppress click if long-press fired
   if (groupLongPressFired) {
-console.log("Long press detected:", Source);
-      openSmartListPopup(Source)
+    e.preventDefault();
+    e.stopPropagation();
     return;
   }
 
@@ -2350,6 +2347,7 @@ console.log("Long press detected:", Source);
   updateGlobalFilters();
   renderItems();
 };
+
 
 
 smartSortBtn.onclick = () => {
