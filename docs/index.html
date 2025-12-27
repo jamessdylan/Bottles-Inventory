@@ -293,27 +293,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   padding:4px 8px;
 }
 
-.project-toggle{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:14px 16px;
-  border-radius:14px;
-  background:rgba(0,0,0,.05);
-  cursor:pointer;
-}
-
-.project-toggle-label{
-  font-family:"Copperplate",serif;
-  font-size:14px;
-}
-
-.project-toggle-value{
-  font-weight:bold;
-  color:#1f5e3b;
-}
-
-
 
 </style>
 </head>
@@ -348,54 +327,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
     <select id="yearPicker" style="font-size:18px;"></select>
   </div>
 </div>
-
-<!-- NEW PROJECT OVERLAY -->
-<div id="newProjectOverlay" class="overlay"></div>
-
-<!-- NEW PROJECT MODAL -->
-<div id="newProjectModal" style="
-  position:fixed;
-  top:50%;
-  left:50%;
-  transform:translate(-50%, -50%) scale(.95);
-  width:calc(100vw - 40px);
-  max-width:420px;
-
-  background:rgba(255,255,255,.94);
-  backdrop-filter:blur(18px);
-  border-radius:20px;
-  padding:20px;
-
-  opacity:0;
-  pointer-events:none;
-  transition:.25s ease;
-  z-index:500;
-">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-    <div style="font-family:'Copperplate',serif;font-size:18px;">
-      New Project
-    </div>
-    <button id="cancelNewProject">Cancel</button>
-  </div>
-
-  <div id="newProjectOptions" style="display:flex;flex-direction:column;gap:14px;">
-    <!-- Toggles injected by JS -->
-  </div>
-
-  <button id="confirmNewProject" style="
-    margin-top:18px;
-    width:100%;
-    padding:14px;
-    border-radius:14px;
-    border:none;
-    background:#1f5e3b;
-    color:white;
-    font-size:16px;
-  ">
-    Create Project
-  </button>
-</div>
-
 
 <!-- ARCHIVE CLEANUP OVERLAY -->
 <div id="archiveCleanupOverlay" class="overlay"></div>
@@ -780,7 +711,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   <!-- Drawer Content -->
   <div class="drawer" id="drawer">
     <div class="drawer-title" id="pageTitle"></div>
-<button id="newProjectBtn">New Project</button>
+    <button>New Project</button>
     <button id="reserveListBtn">Reserve List</button>
     <button id="salesReportBtn">Sales Report</button>
     <!-- Fixing the ID for dictionaryFileBtn -->
@@ -789,8 +720,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   </div>
 
   <div class="overlay" id="overlay"></div>
-
-
 
 <!-- SMART LIST EDITOR OVERLAY -->
 <div id="smartListOverlay" class="overlay"></div>
@@ -814,7 +743,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
     <button id="closeSmartList">Done</button>
   </div>
 
-  <div id="smartListContainer"></div>
+  <div id="smartListContainer"></div>’
 
 <!-- SMART LIST ADD INPUT -->
 <div id="smartListAddWrap" style="
@@ -981,44 +910,6 @@ let GroupFilter   = "None";  // None | Tier | Special
 let SubgroupFilter = "None"; // None | Color
 let ItemFilter    = "None";  // None | Special
 
-let newProjectConfig = {
-  items: "current",        // current | previous | all
-  references: "reserve",   // all | reserve | none
-  reset: "reset"           // reset | keep
-};
-
-const PROJECT_TOGGLES = [
-  {
-    key: "items",
-    label: "Items",
-    options: [
-      { value: "current", label: "Use Current Items" },
-      { value: "previous", label: "Use Previous Items" },
-      { value: "all", label: "Use All Items" }
-    ],
-    default: "current"
-  },
-  {
-    key: "references",
-    label: "References",
-    options: [
-      { value: "all", label: "Use All Previous" },
-      { value: "reserve", label: "Use Reserve Previous" },
-      { value: "none", label: "Don’t Use Previous" }
-    ],
-    default: "reserve"
-  },
-  {
-    key: "reset",
-    label: "Reset Values",
-    options: [
-      { value: "reset", label: "Reset All Values" },
-      { value: "keep", label: "Don’t Reset Values" }
-    ],
-    default: "reset"
-  }
-];
-
 
 
 const list=document.getElementById("list");
@@ -1027,60 +918,6 @@ const tabsEl=document.getElementById("sourceTabs");
     const drawerTab = document.getElementById("drawerTab");
     const drawer = document.getElementById("drawer");
     const overlay = document.getElementById("overlay");
-
-const newProjectModal = document.getElementById("newProjectModal");
-const newProjectOverlay = document.getElementById("newProjectOverlay");
-const newProjectOptions = document.getElementById("newProjectOptions");
-
-function openNewProjectModal() {
-  // reset defaults every open
-  PROJECT_TOGGLES.forEach(t => {
-    newProjectConfig[t.key] = t.default;
-  });
-
-  renderNewProjectOptions();
-
-  newProjectModal.style.opacity = "1";
-  newProjectModal.style.pointerEvents = "auto";
-  newProjectModal.style.transform = "translate(-50%, -50%) scale(1)";
-  newProjectOverlay.classList.add("show");
-}
-
-function closeNewProjectModal() {
-  newProjectModal.style.opacity = "0";
-  newProjectModal.style.pointerEvents = "none";
-  newProjectModal.style.transform = "translate(-50%, -50%) scale(.95)";
-  newProjectOverlay.classList.remove("show");
-}
-
-function renderNewProjectOptions() {
-  newProjectOptions.innerHTML = "";
-
-  PROJECT_TOGGLES.forEach(toggle => {
-    const currentValue = newProjectConfig[toggle.key];
-    const options = toggle.options;
-    const index = options.findIndex(o => o.value === currentValue);
-
-    const row = document.createElement("div");
-    row.className = "project-toggle";
-
-    row.innerHTML = `
-      <div class="project-toggle-label">${toggle.label}</div>
-      <div class="project-toggle-value">
-        ${options[index].label}
-      </div>
-    `;
-
-    row.onclick = () => {
-      const next = (index + 1) % options.length;
-      newProjectConfig[toggle.key] = options[next].value;
-      renderNewProjectOptions();
-    };
-
-    newProjectOptions.appendChild(row);
-  });
-}
-
 
     // Open the drawer when the drawer tab is clicked
     drawerTab.onclick = () => {
@@ -1099,33 +936,6 @@ function renderNewProjectOptions() {
     const salesReportBtn = document.getElementById("salesReportBtn");
     const dictionaryFileBtn = document.getElementById("dictionaryFileBtn");
     const exportBtn = document.getElementById("exportBtn");
-const newProjectBtn = document.getElementById("newProjectBtn");
-const cancelNewProject = document.getElementById("cancelNewProject");
-const confirmNewProject = document.getElementById("confirmNewProject");
-
-newProjectBtn.onclick = () => {
-  drawer.classList.remove("open");
-  overlay.classList.remove("show");
-  openNewProjectModal();
-};
-
-cancelNewProject.onclick = closeNewProjectModal;
-newProjectOverlay.onclick = closeNewProjectModal;
-
-confirmNewProject.onclick = () => {
-  closeNewProjectModal();
-
-  const newItems = buildNewProjectItems(newProjectConfig);
-
-  /* ---------- COMMIT ---------- */
-  items = newItems;
-
-  saveItems();        // localStorage / persistence
-  rebuildCurrentItems();
-  renderItems();
-};
-
-
 
     // Handle the "Reserve List" button click
     reserveListBtn.onclick = () => {
@@ -1498,61 +1308,38 @@ function onDeleteItem(item) {
   renderItems();
 }
 
-function deepClone(obj) {
-  return JSON.parse(JSON.stringify(obj));
-}
 
-function getDynamicSources(item) {
-  return SOURCES.filter(src => typeof item[src] === "number");
-}
+function buildPreviousQtyPatch() {
+  const prevPatch = [];
 
-function buildNewProjectItems(config) {
-  let baseItems = [];
+  items.forEach(item => {
+    const entry = { UUID: item.UUID };
+    let hasAny = false;
 
-  /* ---------- ITEMS TOGGLE ---------- */
-  if (config.items === "all") {
-    baseItems = deepClone(items);
-
-  } else if (config.items === "current") {
-    baseItems = deepClone(
-      items.filter(item => !item.deleted)
-    );
-
-  } else if (config.items === "previous") {
-    baseItems = deepClone(templateItems);
-  }
-
-  /* ---------- PROCESS EACH ITEM ---------- */
-  baseItems.forEach(item => {
-    /* ---- TOTAL + PREVIOUS TOTAL ---- */
-    const total = totalQuantity(item);
-    item.totalQty = total;
-    item.previousQty = total;
-
-    /* ---------- REFERENCES TOGGLE ---------- */
-    if (config.references !== "none") {
-      const allow =
-        config.references === "all" ||
-        (config.references === "reserve" && item.tier === "Reserve");
-
-      if (allow) {
-        getDynamicSources(item).forEach(source => {
-          if (item[source] > 0) {
-            item[`${source}Prev`] = item[source];
-          }
-        });
+    SOURCES.forEach(src => {
+      const qty = Number(item[src]) || 0;
+      if (qty > 0) {
+        entry[`${src}Prev`] = qty;
+        hasAny = true;
       }
-    }
+    });
 
-    /* ---------- RESET TOGGLE ---------- */
-    if (config.reset === "reset") {
-      getDynamicSources(item).forEach(source => {
-        item[source] = 0;
-      });
+    if (hasAny) {
+      prevPatch.push(entry);
     }
   });
 
-  return baseItems;
+  return prevPatch;
+}
+
+function savePreviousQtyPatch(patch) {
+  localStorage.setItem(
+    "previousQtyPatch",
+    JSON.stringify(patch, null, 2)
+  );
+
+  console.log("Saved previousQtyPatch:");
+  console.log(patch);
 }
 
 
@@ -1832,6 +1619,8 @@ rebuildCurrentItems();
 const patchItems = buildPatchItems();
 savePatchItems(patchItems);
 
+const previousQtyPatch = buildPreviousQtyPatch();
+savePreviousQtyPatch(previousQtyPatch);
 
 console.log("patchItems (diff-only):");
 console.log(patchItems);
@@ -1863,6 +1652,8 @@ function savePatchItems(newPatches) {
   console.log("Saved patchItems:");
   console.log(merged);
 }
+
+
 
 
 /* ---------------- DRAW ITEM ---------------- */
@@ -2061,6 +1852,7 @@ function smartItemTitle(item){
     .filter(v => v && v !== "N/A")
     .join(" ");
 }
+
 
 
 /* ---------- INIT ---------- */
