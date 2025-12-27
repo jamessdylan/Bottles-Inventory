@@ -711,7 +711,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   <!-- Drawer Content -->
   <div class="drawer" id="drawer">
     <div class="drawer-title" id="pageTitle"></div>
-    <button id="newProjectBtn">New Project</button>
+    <button>New Project</button>
     <button id="reserveListBtn">Reserve List</button>
     <button id="salesReportBtn">Sales Report</button>
     <!-- Fixing the ID for dictionaryFileBtn -->
@@ -936,46 +936,6 @@ const tabsEl=document.getElementById("sourceTabs");
     const salesReportBtn = document.getElementById("salesReportBtn");
     const dictionaryFileBtn = document.getElementById("dictionaryFileBtn");
     const exportBtn = document.getElementById("exportBtn");
-const newProjectBtn = document.getElementById("newProjectBtn");
-
-newProjectBtn.addEventListener("click", () => {
-  drawer.classList.remove("open");
-  overlay.classList.remove("show");
-
-  const loadPrevious = confirm(
-    "Load Current Quantities As Previous Values?"
-  );
-
-  if (loadPrevious) {
-    items.forEach(item => {
-      // ONLY items with tier === "Reserve"
-      if (item.tier === "Reserve") {
-        SOURCES.forEach(src => {
-          const qty = Number(item[src]) || 0;
-          if (qty > 0) {
-            item[`previous_${src}`] = qty;
-          }
-        });
-      }
-
-      // EVERY item gets previous total quantity
-      item.previousQuantity = totalQuantity(item);
-    });
-  }
-
-  const resetQuantities = confirm("Reset All Quantities?");
-
-  if (resetQuantities) {
-    items.forEach(item => {
-      SOURCES.forEach(src => {
-        item[src] = 0;
-      });
-    });
-  }
-
-  renderItems();
-});
-
 
     // Handle the "Reserve List" button click
     reserveListBtn.onclick = () => {
@@ -1516,12 +1476,6 @@ function persistSmartListUUIDs() {
 }
 
 
-function getPreviousSourceKey(source) {
-  return `${source}PreviousQuantity`;
-}
-
-
-
 /* ---------------- RENDER ---------------- */
 async function renderItems() {
   list.innerHTML = "";
@@ -1666,15 +1620,6 @@ function savePatchItems(newPatches) {
 
 /* ---------------- DRAW ITEM ---------------- */
 function openEditBottle(item) {
-
-console.log(
-  "CHECK PREVIOUS:",
-  item.UUID,
-  Source,
-  item[getPreviousSourceKey(Source)]
-);
-
-
   editingItem = item;
 
 
@@ -1747,10 +1692,9 @@ deleteBottleBtn.style.display = "block";
   newBottleOverlay.classList.add("show");
 }
 
-This is my drawItem function:
+
 function drawItem(item){
   const key=`${Source}Complete`;
-
   const iconHTML=item.base64
     ? `<img src="data:image/png;base64,${item.icon}" width="40">`
     : `<div class="wine" style="color:${item.icon}"></div>`;
@@ -1779,32 +1723,6 @@ function drawItem(item){
     </div>
   `;
 
- /* ---------- PREVIOUS QUANTITY BUTTON (✅ FIXED) ---------- */
-  const prevKey = getPreviousSourceKey(Source);
-  const prevValue = Number(item[prevKey]);
-
-  if (!isNaN(prevValue) && prevValue > 0) {
-    const prevBtn = document.createElement("button");
-    prevBtn.textContent = `Previous Quantity: ${prevValue}`;
-
-    prevBtn.style.position = "absolute";
-    prevBtn.style.right = "12px";
-    prevBtn.style.bottom = "10px";
-    prevBtn.style.fontSize = "12px";
-    prevBtn.style.padding = "6px 10px";
-    prevBtn.style.borderRadius = "10px";
-    prevBtn.style.background = "rgba(31,94,59,.15)";
-    prevBtn.style.cursor = "pointer";
-    prevBtn.style.zIndex = "5";
-
-    prevBtn.onclick = e => {
-      e.stopPropagation();
-      item[Source] = prevValue;
-      renderItems();
-    };
-
-    row.appendChild(prevBtn);
-  }
   /* 🔹 RESTORED LONG-PRESS EDIT 🔹 */
   let pressTimer;
   const valueEl=row.querySelector(".value");
@@ -1818,7 +1736,6 @@ function drawItem(item){
       }
     },450);
   };
-
   valueEl.onpointerup=()=>clearTimeout(pressTimer);
   valueEl.onpointerleave=()=>clearTimeout(pressTimer);
 
