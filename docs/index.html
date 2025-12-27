@@ -1570,17 +1570,39 @@ else if (GroupFilter === "Special") {
 rebuildCurrentItems();
 
 const patchItems = buildPatchItems();
+savePatchItems(patchItems);
 
-localStorage.setItem(
-  "patchItems",
-  JSON.stringify(patchItems, null, 2)
-);
 
 console.log("patchItems (diff-only):");
 console.log(patchItems);
 
 }
 
+function savePatchItems(newPatches) {
+  const existing = JSON.parse(
+    localStorage.getItem("patchItems") || "[]"
+  );
+
+  const merged = [
+    // keep deletions
+    ...existing.filter(p => p.__deleted === true),
+
+    // overwrite non-deletions by UUID
+    ...newPatches.filter(
+      p => !existing.some(
+        e => e.UUID === p.UUID && e.__deleted === true
+      )
+    )
+  ];
+
+  localStorage.setItem(
+    "patchItems",
+    JSON.stringify(merged, null, 2)
+  );
+
+  console.log("Saved patchItems:");
+  console.log(merged);
+}
 
 
 /* ---------------- DRAW ITEM ---------------- */
@@ -2057,11 +2079,9 @@ archiveCleanupItems = items
 confirmArchiveCleanup.onclick = () => {
   // Update the items based on the selected action
   archiveCleanupItems.forEach(obj => {
-    if (obj.action === "Delete Item") {
-      // Remove item from items array
-      const i = items.indexOf(obj.item);
-      if (i > -1) items.splice(i, 1);
-    }
+   if (obj.action === "Delete Item") {
+  onDeleteItem(obj.item);
+}
 
     if (obj.action === "Make Active") {
       obj.item.status = true; // Activate the item
@@ -2481,17 +2501,8 @@ deleteBottleBtn.onclick = () => {
   const confirmed = confirm("Delete this bottle permanently?");
   if (!confirmed) return;
 
-  items = items.filter(i => i !== editingItem);
+  onDeleteItem(editingItem);
   editingItem = null;
-
-function onDeleteItem(item) {
-  markItemDeleted(item.UUID);
-
-  // Remove from live UI items
-  items = items.filter(i => i.UUID !== item.UUID);
-
-  renderItems();
-}
 
   closeNewBottle();
 };
