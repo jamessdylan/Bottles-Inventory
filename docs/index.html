@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine</title>
+<title>SM Wine key</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -908,6 +908,7 @@ const undoStack = [];
 const UNDO_LIMIT = 5;
 
 
+
 let templateItems = [];
 let currentItems = [];
 const patchItems = JSON.parse(
@@ -1082,8 +1083,6 @@ tab.onclick = async () => {
 }
 
 
-
-document.getElementById("undoBtn").onclick = undoLastAction;
 
 
 async function loadSmartListForSource(source) {
@@ -1414,44 +1413,27 @@ function onDeleteItem(item) {
 }
 
 function handleQuantityChange(item, newValue) {
-  const prevKey = `${Source}Prev`;
-
-  // 🔹 Remove SourcePrev if it exists
-  if (item.hasOwnProperty(prevKey)) {
-    delete item[prevKey];
-  }
-
-  // 🔹 Apply quantity change
-  item[Source] = Math.max(0, round(newValue));
-
   const key = Source;
+
+  // 🔒 Normalize values safely
   const oldValue = Number(item[key]) || 0;
-  const clamped = Math.max(0, newValue);
+  const nextValue = Math.max(0, Number(newValue));
 
-  // 🔒 Do nothing if no actual change
-  if (oldValue === clamped) return;
+  // 🔒 Bail only if truly unchanged
+  if (oldValue === nextValue) return;
 
-  // 🔹 LOG UNDO (item OR source change)
+  // 🔹 Log undo BEFORE mutation
   logUndo(item, key, oldValue);
 
-  // 🔹 APPLY CHANGE
-  item[key] = clamped;
+  // 🔹 Apply change
+  item[key] = nextValue;
 
   renderItems();
 }
 
 
 
-function undoLastAction() {
-  const action = undoStack.pop();
-  if (!action) return;
 
-  const { item, key, prevValue } = action;
-
-  item[key] = prevValue;
-
-  renderItems();
-}
 
 
 
@@ -2045,7 +2027,21 @@ row.innerHTML=`
   </div>
 `;
 
+document.getElementById("undoBtn").onclick = undoLastAction;
 
+function undoLastAction() {
+  const action = undoStack.pop();
+  if (!action) return;
+
+  const { item, key, prevValue } = action;
+
+  item[key] = prevValue;
+
+  renderItems();
+}
+
+
+document.getElementById("undoBtn").onclick = undoLastAction;
   /* 🔹 RESTORED LONG-PRESS EDIT 🔹 */
   let pressTimer;
   const valueEl=row.querySelector(".value");
