@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>SM save file</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1841,14 +1841,51 @@ function openJSONInNewWindow(json, filename) {
       <head>
         <title>${filename}</title>
         <style>
-          body { font-family: monospace; padding: 16px; }
-          a { display: inline-block; margin-bottom: 12px; }
-          pre { white-space: pre-wrap; }
+          body {
+            font-family: monospace;
+            padding: 16px;
+            margin: 0;
+          }
+          .download {
+            display: inline-block;
+            padding: 8px 12px;
+            background: #eee;
+            border-radius: 6px;
+            text-decoration: none;
+            color: #000;
+            font-weight: 600;
+          }
+          .top {
+            margin-bottom: 12px;
+          }
+          pre {
+            white-space: pre-wrap;
+            padding-bottom: 80px; /* space for bottom button */
+          }
+          .bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border-top: 1px solid #ccc;
+            padding: 10px;
+            text-align: center;
+          }
         </style>
       </head>
       <body>
-        <a href="${url}" download="${filename}">⬇ Download ${filename}</a>
+        <a class="download top" href="${url}" download="${filename}">
+          ⬇ Download ${filename}
+        </a>
+
         <pre>${json.replace(/</g, "&lt;")}</pre>
+
+        <div class="bottom-bar">
+          <a class="download" href="${url}" download="${filename}">
+            ⬇ Download ${filename}
+          </a>
+        </div>
       </body>
     </html>
   `);
