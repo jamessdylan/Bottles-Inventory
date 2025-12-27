@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>SM Wine prev</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1517,8 +1517,9 @@ function persistSmartListUUIDs() {
 
 
 function getPreviousSourceKey(source) {
-  return `${source}Previous`;
+  return `${source}PreviousQuantity`;
 }
+
 
 
 /* ---------------- RENDER ---------------- */
@@ -1665,6 +1666,15 @@ function savePatchItems(newPatches) {
 
 /* ---------------- DRAW ITEM ---------------- */
 function openEditBottle(item) {
+
+console.log(
+  "CHECK PREVIOUS:",
+  item.UUID,
+  Source,
+  item[getPreviousSourceKey(Source)]
+);
+
+
   editingItem = item;
 
 
@@ -1737,9 +1747,10 @@ deleteBottleBtn.style.display = "block";
   newBottleOverlay.classList.add("show");
 }
 
-
+This is my drawItem function:
 function drawItem(item){
   const key=`${Source}Complete`;
+
   const iconHTML=item.base64
     ? `<img src="data:image/png;base64,${item.icon}" width="40">`
     : `<div class="wine" style="color:${item.icon}"></div>`;
@@ -1768,6 +1779,33 @@ function drawItem(item){
     </div>
   `;
 
+ /* ---------- PREVIOUS QUANTITY BUTTON (✅ FIXED) ---------- */
+  const prevKey = getPreviousSourceKey(Source);
+  const prevValue = Number(item[prevKey]);
+
+  if (!isNaN(prevValue) && prevValue > 0) {
+    const prevBtn = document.createElement("button");
+    prevBtn.textContent = `Previous Quantity: ${prevValue}`;
+
+    prevBtn.style.position = "absolute";
+    prevBtn.style.right = "12px";
+    prevBtn.style.bottom = "10px";
+    prevBtn.style.fontSize = "12px";
+    prevBtn.style.padding = "6px 10px";
+    prevBtn.style.borderRadius = "10px";
+    prevBtn.style.background = "rgba(31,94,59,.15)";
+    prevBtn.style.cursor = "pointer";
+    prevBtn.style.zIndex = "5";
+
+    prevBtn.onclick = e => {
+      e.stopPropagation();
+      item[Source] = prevValue;
+      renderItems();
+    };
+
+    row.appendChild(prevBtn);
+  }
+
   /* 🔹 RESTORED LONG-PRESS EDIT 🔹 */
   let pressTimer;
   const valueEl=row.querySelector(".value");
@@ -1781,6 +1819,7 @@ function drawItem(item){
       }
     },450);
   };
+
   valueEl.onpointerup=()=>clearTimeout(pressTimer);
   valueEl.onpointerleave=()=>clearTimeout(pressTimer);
 
@@ -1850,32 +1889,6 @@ row.onpointerdown = e => {
 
 row.onpointerup = () => clearTimeout(rowHoldTimer);
 row.onpointerleave = () => clearTimeout(rowHoldTimer);
-
-  /* ---------- PREVIOUS QUANTITY BUTTON ---------- */
-  const prevKey = getPreviousSourceKey(Source);
-  const prevValue = Number(item[prevKey]);
-
-  if (!isNaN(prevValue) && prevValue > 0) {
-    const prevBtn = document.createElement("button");
-    prevBtn.textContent = `Previous Quantity: ${prevValue}`;
-
-    prevBtn.style.position = "absolute";
-    prevBtn.style.right = "12px";
-    prevBtn.style.bottom = "10px";
-    prevBtn.style.fontSize = "12px";
-    prevBtn.style.padding = "6px 10px";
-    prevBtn.style.borderRadius = "10px";
-    prevBtn.style.background = "rgba(31,94,59,.15)";
-    prevBtn.style.cursor = "pointer";
-
-    prevBtn.onclick = e => {
-      e.stopPropagation(); // prevent row edit
-      item[Source] = prevValue;
-      renderItems();
-    };
-
-    row.appendChild(prevBtn);
-  }
 
   list.appendChild(row);
 }
