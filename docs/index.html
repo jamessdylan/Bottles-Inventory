@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine key</title>
+<title>SM Wkey</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -953,6 +953,29 @@ async function loadItems() {
   items = applyPatchToTemplate(templateItems, patchItems);
 
   renderItems();
+}
+
+async function checkSpecialtyListSource(name) {
+  if (!name) return;
+
+  // 1️⃣ Check localStorage
+  if (localStorage.getItem(name)) {
+    console.log("variable");
+    return;
+  }
+
+  // 2️⃣ Check GitHub repository for name.json
+  try {
+    const response = await fetch(`./${name}.json`, { method: "HEAD" });
+
+    if (response.ok) {
+      console.log("file");
+    } else {
+      console.log("not found");
+    }
+  } catch (err) {
+    console.log("not found");
+  }
 }
 
 
@@ -1993,25 +2016,27 @@ archiveBtn.onclick = e => {
   renderItems();
 };
 
-let groupHoldTimer = null;
+let holdTimer;
 let groupLongPressFired = false;
 
-groupBtn.onpointerdown = e => {
-  e.preventDefault(); // iOS safety
+groupBtn.onpointerdown = () => {
   groupLongPressFired = false;
 
-groupHoldTimer = setTimeout(() => {
-  groupLongPressFired = true;
-}, 700);
+  holdTimer = setTimeout(async () => {
+    groupLongPressFired = true;
 
+    // 🔹 RUN YOUR FUNCTION WITH CURRENT SOURCE
+    await checkSpecialtyListSource(Source);
+
+  }, 600);
 };
 
 groupBtn.onpointerup = () => {
-  clearTimeout(groupHoldTimer);
+  clearTimeout(holdTimer);
 };
 
 groupBtn.onpointerleave = () => {
-  clearTimeout(groupHoldTimer);
+  clearTimeout(holdTimer);
 };
 
 groupBtn.onclick = e => {
@@ -2022,15 +2047,8 @@ groupBtn.onclick = e => {
     return;
   }
 
-  // ✅ normal toggle behavior
+  // ✅ normal click behavior
   groupBtn.classList.toggle("active");
-  updateGlobalFilters();
-  renderItems();
-};
-
-
-smartSortBtn.onclick = () => {
-  smartSortBtn.classList.toggle("active");
   updateGlobalFilters();
   renderItems();
 };
