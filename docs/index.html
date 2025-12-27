@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM New</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1516,6 +1516,11 @@ function persistSmartListUUIDs() {
 }
 
 
+function getPreviousSourceKey(source) {
+  return `${source}Previous`;
+}
+
+
 /* ---------------- RENDER ---------------- */
 async function renderItems() {
   list.innerHTML = "";
@@ -1845,6 +1850,32 @@ row.onpointerdown = e => {
 
 row.onpointerup = () => clearTimeout(rowHoldTimer);
 row.onpointerleave = () => clearTimeout(rowHoldTimer);
+
+  /* ---------- PREVIOUS QUANTITY BUTTON ---------- */
+  const prevKey = getPreviousSourceKey(Source);
+  const prevValue = Number(item[prevKey]);
+
+  if (!isNaN(prevValue) && prevValue > 0) {
+    const prevBtn = document.createElement("button");
+    prevBtn.textContent = `Previous Quantity: ${prevValue}`;
+
+    prevBtn.style.position = "absolute";
+    prevBtn.style.right = "12px";
+    prevBtn.style.bottom = "10px";
+    prevBtn.style.fontSize = "12px";
+    prevBtn.style.padding = "6px 10px";
+    prevBtn.style.borderRadius = "10px";
+    prevBtn.style.background = "rgba(31,94,59,.15)";
+    prevBtn.style.cursor = "pointer";
+
+    prevBtn.onclick = e => {
+      e.stopPropagation(); // prevent row edit
+      item[Source] = prevValue;
+      renderItems();
+    };
+
+    row.appendChild(prevBtn);
+  }
 
   list.appendChild(row);
 }
