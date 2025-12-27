@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM New Project</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -937,6 +937,28 @@ const tabsEl=document.getElementById("sourceTabs");
     const salesReportBtn = document.getElementById("salesReportBtn");
     const dictionaryFileBtn = document.getElementById("dictionaryFileBtn");
     const exportBtn = document.getElementById("exportBtn");
+
+newProjectBtn.onclick = () => {
+
+  const loadPrevious = confirm(
+    "Load Current Quantities As Previous Values?"
+  );
+
+  if (loadPrevious) {
+    loadCurrentQuantitiesAsPrevious();
+  }
+
+  const resetQuantities = confirm(
+    "Reset All Quantities?"
+  );
+
+  if (resetQuantities) {
+    resetAllQuantities();
+  }
+
+  renderItems();
+};
+
 
     // Handle the "Reserve List" button click
     reserveListBtn.onclick = () => {
