@@ -1,169 +1,172 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Wine Export</title>
-
+<meta charset="UTF-8" />
+<title>Inventory Summary</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <style>
-body{
-  font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
-  padding:24px;
-}
-.logo{text-align:center;margin-bottom:12px;}
-.logo img{max-width:260px;}
-.title{
-  background:#1f5e3b;
-  color:white;
-  padding:14px;
-  text-align:center;
-  border-radius:8px;
-  margin-bottom:24px;
-}
-h2{margin-top:32px;border-bottom:2px solid #1f5e3b;}
-h3{margin-top:16px;color:#555;}
-table{width:100%;border-collapse:collapse;margin-bottom:12px;}
-th,td{padding:8px;border-bottom:1px solid #ddd;}
-.qty{text-align:center;font-weight:bold;}
-.money{text-align:right;}
-.subtotal{font-weight:bold;background:#fafafa;}
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 40px;
+    color: #111;
+  }
+  header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  header img {
+    max-height: 80px;
+    margin-bottom: 12px;
+  }
+  h1 {
+    font-size: 26px;
+    margin: 0;
+  }
+  h2 {
+    margin-top: 40px;
+    border-bottom: 2px solid #ccc;
+    padding-bottom: 6px;
+    text-transform: uppercase;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+  }
+  th, td {
+    padding: 8px 6px;
+    font-size: 14px;
+  }
+  th {
+    text-align: left;
+    border-bottom: 1px solid #ccc;
+  }
+  td.right {
+    text-align: right;
+  }
+  tr.white { background: #f7f7f7; }
+  tr.red   { background: #fdeaea; }
+  tr.rose  { background: #fff1f4; }
+  tr.gray  { background: #f0f0f0; }
+  tr.green { background: #eef8f1; }
+  .group-total {
+    font-weight: bold;
+    text-align: right;
+    margin-top: 8px;
+  }
+  .grand-total {
+    margin-top: 48px;
+    font-size: 28px;
+    font-weight: 800;
+    text-align: right;
+  }
+  footer {
+    margin-top: 60px;
+    font-size: 12px;
+    color: #666;
+    text-align: center;
+  }
+  @media print {
+    body { margin: 20px; }
+  }
 </style>
 </head>
-
 <body>
 
-<div class="logo">
-  <img src="SiennaTransparent.png">
-</div>
+<header>
+  <img src="sienna-mercato-logo.png" alt="Sienna Mercato" />
+  <h1 id="pageTitle"></h1>
+</header>
 
-<div class="title">Wine Inventory Export</div>
+<section id="house"></section>
+<section id="reserve"></section>
 
-<div id="content"></div>
+<div class="grand-total" id="grandTotal"></div>
+
+<footer id="timestamp"></footer>
 
 <script>
-/* ================= HELPERS ================= */
+/*
+  EXPECTED INPUT (window.printItems):
+  [
+    {
+      title: "Smart Title",
+      color: "red|white|rose|gray|green",
+      tier: "House|Reserve",
+      quantity: 12,
+      price: 18,
+      total: 216
+    }
+  ]
+*/
 
-function wineTitle(item){
-  return [item.brand, item.identifier, item.varietal, item.year]
-    .filter(v => v && v !== "N/A")
-    .join(" ");
-}
+const items = window.printItems || [];
+const pageTitle = window.sourcePageTitle || "Inventory";
 
-/* ================= LOAD ITEMS ================= */
+document.getElementById("pageTitle").textContent = pageTitle;
 
-const items = JSON.parse(
-  localStorage.getItem("exportItems") || "[]"
-);
+function renderGroup(tier) {
+  const container = document.getElementById(tier.toLowerCase());
+  const groupItems = items
+    .filter(i => (i.tier || "").toLowerCase() === tier.toLowerCase())
+    .sort((a, b) => a.title.localeCompare(b.title));
 
-const content = document.getElementById("content");
+  if (!groupItems.length) return 0;
 
-if (!items.length) {
-  content.innerHTML = "<p>No items received.</p>";
-  throw new Error("No exportItems found in localStorage");
-}
+  let sum = 0;
 
-/* ================= GROUP ITEMS ================= */
-
-const tiers = {};
-const inactive = [];
-
-items.forEach(item => {
-  if (item.status === false) {
-    inactive.push(item);
-    return;
-  }
-
-  const tier = item.tier || "House";
-  const color = item.color || "Other";
-
-  if (!tiers[tier]) tiers[tier] = {};
-  if (!tiers[tier][color]) tiers[tier][color] = [];
-
-  tiers[tier][color].push({
-    qty: Number(item.qty || 0),
-    price: Number(item.price || 0),
-    ...item
-  });
-});
-
-/* ================= RENDER ================= */
-
-let grandTotal = 0;
-
-["House","Reserve"].forEach(tier => {
-  if (!tiers[tier]) return;
-
-  let tierTotal = 0;
-
-  const h2 = document.createElement("h2");
-  h2.textContent = `${tier} Wines`;
-  content.appendChild(h2);
-
-  Object.keys(tiers[tier]).forEach(color => {
-    const h3 = document.createElement("h3");
-    h3.textContent = color;
-    content.appendChild(h3);
-
-    const table = document.createElement("table");
-    table.innerHTML = `
+  const table = document.createElement("table");
+  table.innerHTML = `
+    <thead>
       <tr>
-        <th>Qty</th>
-        <th>Wine</th>
-        <th class="money">Price</th>
-        <th class="money">Total</th>
+        <th>Item</th>
+        <th class="right">Qty</th>
+        <th class="right">Price</th>
+        <th class="right">Total</th>
       </tr>
-    `;
-
-    tiers[tier][color].forEach(item => {
-      const value = item.qty * item.price;
-      tierTotal += value;
-
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td class="qty">${item.qty}</td>
-        <td>${wineTitle(item)}</td>
-        <td class="money">$${item.price.toFixed(2)}</td>
-        <td class="money">$${value.toFixed(2)}</td>
-      `;
-      table.appendChild(row);
-    });
-
-    content.appendChild(table);
-  });
-
-  grandTotal += tierTotal;
-
-  const subtotal = document.createElement("table");
-  subtotal.innerHTML = `
-    <tr class="subtotal">
-      <td colspan="3">${tier} Subtotal</td>
-      <td class="money">$${tierTotal.toFixed(2)}</td>
-    </tr>
+    </thead>
   `;
-  content.appendChild(subtotal);
-});
 
-/* ================= INACTIVE ================= */
+  const tbody = document.createElement("tbody");
 
-if (inactive.length) {
-  const h2 = document.createElement("h2");
-  h2.textContent = "Inactive Wines";
-  content.appendChild(h2);
-
-  const ul = document.createElement("ul");
-  inactive.forEach(i => {
-    const li = document.createElement("li");
-    li.textContent = wineTitle(i);
-    ul.appendChild(li);
+  groupItems.forEach(item => {
+    sum += item.total || 0;
+    const tr = document.createElement("tr");
+    tr.className = item.color || "";
+    tr.innerHTML = `
+      <td>${item.title}</td>
+      <td class="right">${item.quantity}</td>
+      <td class="right">$${Number(item.price).toFixed(2)}</td>
+      <td class="right"><strong>$${Number(item.total).toFixed(2)}</strong></td>
+    `;
+    tbody.appendChild(tr);
   });
-  content.appendChild(ul);
+
+  table.appendChild(tbody);
+
+  const h2 = document.createElement("h2");
+  h2.textContent = tier;
+
+  const totalDiv = document.createElement("div");
+  totalDiv.className = "group-total";
+  totalDiv.textContent = `${tier} Total: $${sum.toFixed(2)}`;
+
+  container.appendChild(h2);
+  container.appendChild(table);
+  container.appendChild(totalDiv);
+
+  return sum;
 }
 
-/* ================= GRAND TOTAL ================= */
+const houseTotal = renderGroup("House");
+const reserveTotal = renderGroup("Reserve");
 
-const total = document.createElement("h2");
-total.style.textAlign = "right";
-total.textContent = `Grand Total: $${grandTotal.toFixed(2)}`;
-content.appendChild(total);
+const grand = houseTotal + reserveTotal;
+document.getElementById("grandTotal").textContent = `Grand Total: $${grand.toFixed(2)}`;
+
+document.getElementById("timestamp").textContent =
+  `Generated ${new Date().toLocaleString()}`;
 </script>
 
 </body>
