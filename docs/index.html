@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM New Project</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1115,12 +1115,16 @@ newProjectOverlay.onclick = closeNewProjectModal;
 confirmNewProject.onclick = () => {
   closeNewProjectModal();
 
-  console.log("New Project Config:");
-  console.log(newProjectConfig);
+  const newItems = buildNewProjectItems(newProjectConfig);
 
-  // 🚧 Future hook:
-  // createNewProject(newProjectConfig);
+  /* ---------- COMMIT ---------- */
+  items = newItems;
+
+  saveItems();        // localStorage / persistence
+  rebuildCurrentItems();
+  renderItems();
 };
+
 
 
     // Handle the "Reserve List" button click
@@ -1492,6 +1496,63 @@ function onDeleteItem(item) {
 
   // 3. Re-render
   renderItems();
+}
+
+function deepClone(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+function getDynamicSources(item) {
+  return SOURCES.filter(src => typeof item[src] === "number");
+}
+
+function buildNewProjectItems(config) {
+  let baseItems = [];
+
+  /* ---------- ITEMS TOGGLE ---------- */
+  if (config.items === "all") {
+    baseItems = deepClone(items);
+
+  } else if (config.items === "current") {
+    baseItems = deepClone(
+      items.filter(item => !item.deleted)
+    );
+
+  } else if (config.items === "previous") {
+    baseItems = deepClone(templateItems);
+  }
+
+  /* ---------- PROCESS EACH ITEM ---------- */
+  baseItems.forEach(item => {
+    /* ---- TOTAL + PREVIOUS TOTAL ---- */
+    const total = totalQuantity(item);
+    item.totalQty = total;
+    item.previousQty = total;
+
+    /* ---------- REFERENCES TOGGLE ---------- */
+    if (config.references !== "none") {
+      const allow =
+        config.references === "all" ||
+        (config.references === "reserve" && item.tier === "Reserve");
+
+      if (allow) {
+        getDynamicSources(item).forEach(source => {
+          if (item[source] > 0) {
+            item[`${source}Prev`] = item[source];
+          }
+        });
+      }
+    }
+
+    /* ---------- RESET TOGGLE ---------- */
+    if (config.reset === "reset") {
+      getDynamicSources(item).forEach(source => {
+        item[source] = 0;
+      });
+    }
+  });
+
+  return baseItems;
 }
 
 
