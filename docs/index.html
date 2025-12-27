@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>SM Wine </title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -897,6 +897,12 @@ let Source="Emporio";
 
 let templateItems = [];
 let currentItems = [];
+const patchItems = JSON.parse(
+  localStorage.getItem("patchItems") || "[]"
+);
+
+const mergedItems = applyPatchToTemplate(templateItems, patchItems);
+
 
 // ---------- GLOBAL FILTERS ----------
 let ArchiveFilter = false;   // true | false
@@ -935,7 +941,7 @@ const tabsEl=document.getElementById("sourceTabs");
     reserveListBtn.onclick = () => {
       drawer.classList.remove("open");
       overlay.classList.remove("show");
-      const itemsPatch = localStorage.getItem("patchItems");
+      const itemsPatch = localStorage.getItem("itemsPatch.json");
 
   if (itemsPatch) {
     // If itemsPatch exists in localStorage, display it
@@ -993,11 +999,15 @@ async function loadItems() {
   const res = await fetch("./items.json", { cache: "no-store" });
   templateItems = await res.json();
 
-  // Clone template → live working items
-  items = structuredClone(templateItems);
+  const patchItems = JSON.parse(
+    localStorage.getItem("patchItems") || "[]"
+  );
+
+  items = applyPatchToTemplate(templateItems, patchItems);
 
   renderItems();
 }
+
 
 /* ---------------- TABS ---------------- */
 function buildSourceTabs(){
@@ -1214,6 +1224,34 @@ function buildPatchItems() {
   });
 
   return patchArray;
+}
+
+function applyPatchToTemplate(templateItems, patchItems) {
+  const templateByUUID = new Map(
+    templateItems.map(item => [item.UUID, structuredClone(item)])
+  );
+
+  patchItems.forEach(patch => {
+    const uuid = patch.UUID;
+
+    // Existing item → merge
+    if (templateByUUID.has(uuid)) {
+      const target = templateByUUID.get(uuid);
+
+      Object.keys(patch).forEach(key => {
+        if (key === "UUID") return;
+        target[key] = patch[key];
+      });
+
+    } 
+    // New item → add entire patch as base
+    else {
+      templateByUUID.set(uuid, structuredClone(patch));
+    }
+  });
+
+  // Return merged items as array
+  return Array.from(templateByUUID.values());
 }
 
 
