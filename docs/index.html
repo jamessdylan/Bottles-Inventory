@@ -294,6 +294,20 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 }
 
 
+.drawer-toggle {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0,0,0,0.1);
+}
+
+.toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+
 </style>
 </head>
 <body>
@@ -717,6 +731,18 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
     <!-- Fixing the ID for dictionaryFileBtn -->
     <button id="dictionaryFileBtn">Dictionary File</button>
     <button id="exportBtn">Export</button>
+
+
+<div class="drawer-toggle">
+  <label class="toggle-row">
+    <span>Display Previous Quantities</span>
+    <input
+      type="checkbox"
+      id="togglePreviousQuantities"
+    />
+  </label>
+</div>
+
   </div>
 
   <div class="overlay" id="overlay"></div>
@@ -919,6 +945,9 @@ const tabsEl=document.getElementById("sourceTabs");
     const drawer = document.getElementById("drawer");
     const overlay = document.getElementById("overlay");
 
+let showPreviousQuantities = false;
+
+
     // Open the drawer when the drawer tab is clicked
     drawerTab.onclick = () => {
       drawer.classList.add("open");
@@ -991,6 +1020,20 @@ ItemFilter: ${ItemFilter}`;
       alert("Export button clicked!");
     };
 
+const prevToggle = document.getElementById("togglePreviousQuantities");
+
+prevToggle.checked = showPreviousQuantities;
+
+prevToggle.addEventListener("change", () => {
+  showPreviousQuantities = prevToggle.checked;
+
+  console.log(
+    "Display Previous Quantities:",
+    showPreviousQuantities
+  );
+
+  renderItems(); // or whatever your main render function is
+});
 
 
 /* ---------------- LOAD ---------------- */
