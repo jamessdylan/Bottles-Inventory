@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Change</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -711,7 +711,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   <!-- Drawer Content -->
   <div class="drawer" id="drawer">
     <div class="drawer-title" id="pageTitle"></div>
-    <button>New Project</button>
+    <button id="newProjectBtn">New Project</button>
     <button id="reserveListBtn">Reserve List</button>
     <button id="salesReportBtn">Sales Report</button>
     <!-- Fixing the ID for dictionaryFileBtn -->
@@ -936,6 +936,16 @@ const tabsEl=document.getElementById("sourceTabs");
     const salesReportBtn = document.getElementById("salesReportBtn");
     const dictionaryFileBtn = document.getElementById("dictionaryFileBtn");
     const exportBtn = document.getElementById("exportBtn");
+
+const newProjectBtn = document.getElementById("newProjectBtn");
+
+newProjectBtn.onclick = () => {
+  drawer.classList.remove("open");
+  overlay.classList.remove("show");
+
+  startNewProject();
+};
+
 
     // Handle the "Reserve List" button click
     reserveListBtn.onclick = () => {
@@ -1461,6 +1471,39 @@ function totalQuantity(item){
     return sum + (Number(item[src]) || 0);
   }, 0);
 }
+
+
+function startNewProject() {
+  const ok = confirm("Do you want to continue?");
+  if (!ok) return;
+
+  items.forEach(item => {
+
+    /* ---------- SNAPSHOT TOTAL ---------- */
+    const total = totalQuantity(item);
+    item.TotalPrev = total;
+
+    /* ---------- RESERVE SOURCE SNAPSHOT ---------- */
+    if (item.tier === "Reserve") {
+      SOURCES.forEach(src => {
+        const qty = Number(item[src]) || 0;
+        if (qty > 0) {
+          item[`${src}Prev`] = qty;
+        }
+      });
+    }
+
+    /* ---------- RESET LIVE VALUES ---------- */
+    item.Total = 0;
+
+    SOURCES.forEach(src => {
+      item[src] = 0;
+    });
+  });
+
+  renderItems();
+}
+
 
 function defaultArchiveAction(item){
   const qty = totalQuantity(item);
@@ -2569,4 +2612,4 @@ confirmNewBottle.onclick = () => {
 </script>
 
 </body>
-</html>
+</html> 
