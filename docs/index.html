@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>SM Wine </title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1825,12 +1825,15 @@ function drawItem(item){
 /* ---------- DISPLAY PREVIOUS QTY (DRAWER-GATED) ---------- */
 const actualQty = Number(item[Source]) || 0;
 const isComplete = !!item[key];
-
+let showPreviousQuantities = false;
 let displayQty = actualQty;
 let showingPrevious = false;
 
-if (showPreviousQuantities) {
-  const prevEntry = previousQtyByUUID[item.UUID];
+if (showPreviousQuantities && Source) {
+  const prevEntry = previousQtyByUUID
+    ? previousQtyByUUID[item.UUID]
+    : undefined;
+
   const prevQty = prevEntry?.[`${Source}Prev`];
 
   if (
@@ -1842,6 +1845,7 @@ if (showPreviousQuantities) {
     showingPrevious = true;
   }
 }
+
 
 valueEl.textContent = displayQty;
 valueEl.style.color = showingPrevious ? "#b0b0b0" : "";
