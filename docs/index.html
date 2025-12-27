@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Prev Inventory</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1051,6 +1051,16 @@ async function loadItems() {
   renderItems();
 }
 
+const previousQtyPatch = JSON.parse(
+  localStorage.getItem("previousQtyPatch") || "[]"
+);
+
+const previousQtyByUUID = {};
+previousQtyPatch.forEach(p => {
+  previousQtyByUUID[p.UUID] = p;
+});
+
+
 
 /* ---------------- TABS ---------------- */
 function buildSourceTabs(){
@@ -1777,7 +1787,7 @@ deleteBottleBtn.style.display = "block";
   newBottleOverlay.classList.add("show");
 }
 
-
+This is my drawItem function:
 function drawItem(item){
   const key=`${Source}Complete`;
   const iconHTML=item.base64
@@ -1797,7 +1807,7 @@ function drawItem(item){
           <div class="subtitle">${item.tier||""}</div>
           <div class="controls">
             <button class="minus">−</button>
-            <div class="value">${item[Source]}</div>
+            <div class="value"></div>
             <button class="plus">+</button>
           </div>
         </div>
@@ -1812,6 +1822,31 @@ function drawItem(item){
   let pressTimer;
   const valueEl=row.querySelector(".value");
 
+/* ---------- DISPLAY PREVIOUS QTY (DRAWER-GATED) ---------- */
+const actualQty = Number(item[Source]) || 0;
+const isComplete = !!item[key];
+
+let displayQty = actualQty;
+let showingPrevious = false;
+
+if (showPreviousQuantities) {
+  const prevEntry = previousQtyByUUID[item.UUID];
+  const prevQty = prevEntry?.[`${Source}Prev`];
+
+  if (
+    actualQty === 0 &&
+    !isComplete &&
+    prevQty !== undefined
+  ) {
+    displayQty = prevQty;
+    showingPrevious = true;
+  }
+}
+
+valueEl.textContent = displayQty;
+valueEl.style.color = showingPrevious ? "#b0b0b0" : "";
+
+
   valueEl.onpointerdown=()=>{
     pressTimer=setTimeout(()=>{
       const v=prompt("Enter value:",item[Source]);
@@ -1821,6 +1856,19 @@ function drawItem(item){
       }
     },450);
   };
+
+valueEl.onclick = () => {
+  if (!showingPrevious) return;
+
+  const prevQty =
+    previousQtyByUUID[item.UUID]?.[`${Source}Prev`];
+
+  if (prevQty !== undefined) {
+    item[Source] = prevQty;
+    renderItems();
+  }
+};
+
   valueEl.onpointerup=()=>clearTimeout(pressTimer);
   valueEl.onpointerleave=()=>clearTimeout(pressTimer);
 
