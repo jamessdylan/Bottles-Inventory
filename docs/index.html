@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Delete</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1295,6 +1295,19 @@ function markItemDeleted(uuid) {
   console.log(`Item ${uuid} marked for deletion`);
 }
 
+function onDeleteItem(item) {
+  if (!item || !item.UUID) return;
+
+  // 1. Write explicit deletion patch
+  markItemDeleted(item.UUID);
+
+  // 2. Remove from live in-memory items
+  items = items.filter(i => i.UUID !== item.UUID);
+
+  // 3. Re-render
+  renderItems();
+}
+
 
 function updateGlobalFilters() {
   /* ---------- ARCHIVE ---------- */
@@ -2095,15 +2108,6 @@ confirmArchiveCleanup.onclick = () => {
   // Close the archive cleanup modal
   archiveCleanupSheet.style.transform = "translateY(100%)";
   archiveCleanupOverlay.classList.remove("show");
-
-function onDeleteItem(item) {
-  markItemDeleted(item.UUID);
-
-  // Remove from live UI items
-  items = items.filter(i => i.UUID !== item.UUID);
-
-  renderItems();
-}
 
 };
 
