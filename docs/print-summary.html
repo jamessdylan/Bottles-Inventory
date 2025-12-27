@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Sienna Summary</title>
+<title>Inventory Summary</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <style>
   body {
@@ -79,6 +79,27 @@
   }
   @media print {
     body { margin: 20px; }
+    .save-bar { display: none; }
+  }
+  .save-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border-top: 1px solid #ccc;
+    padding: 12px;
+    text-align: center;
+  }
+  .save-bar button {
+    font-size: 14px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid #999;
+    background: #f7f7f7;
+    font-weight: 600;
+    cursor: pointer;
+  }
   }
 </style>
 </head>
@@ -95,6 +116,10 @@
 <div class="grand-total" id="grandTotal"></div>
 
 <footer id="timestamp"></footer>
+
+<div class="save-bar">
+  <button id="savePdfBtn">Save as PDF</button>
+</div>
 
 <script>
 /*
@@ -177,8 +202,12 @@ document.getElementById("grandTotal").textContent = `Grand Total: $${grand.toFix
 
 document.getElementById("timestamp").textContent =
   `Generated ${new Date().toLocaleString()}`;
+
+const saveBtn = document.getElementById("savePdfBtn");
+if (saveBtn) {
+  saveBtn.onclick = () => window.print();
+}
 </script>
 
 </body>
 </html>
-
