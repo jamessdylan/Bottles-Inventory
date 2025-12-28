@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM sfda key</title>
+<title>SM Wine key</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -308,26 +308,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   </div>
 
   <div id="archiveCleanupList"></div>
-</div>
-
-<div id="smartListOverlay" class="overlay">
-  <div class="drawer" style="width:300px; left:50%; transform:translate(-50%, -100%);">
-    <div class="drawer-title">Smart Lists</div>
-
-    <div id="smartListOptions"></div>
-
-    <button id="createNewListBtn">+ Create New List</button>
-
-    <div id="newListInputWrap" style="display:none; margin-top:12px;">
-      <input
-        id="newListInput"
-        type="text"
-        placeholder="Name of List"
-        style="width:100%; padding:8px; font-size:15px;"
-      />
-      <button id="confirmNewListBtn" style="margin-top:8px;">Confirm</button>
-    </div>
-  </div>
 </div>
 
 
@@ -1053,40 +1033,116 @@ function normalizeSmartLists(data) {
   return [];
 }
 
-function openSmartListPopup() {
-  const overlay = document.getElementById("smartListOverlay");
-  const optionsWrap = document.getElementById("smartListOptions");
-  const inputWrap = document.getElementById("newListInputWrap");
-  const input = document.getElementById("newListInput");
-
-  optionsWrap.innerHTML = "";
-  inputWrap.style.display = "none";
-  input.value = "";
-
-  const smartLists = JSON.parse(localStorage.getItem("Smart Lists") || "[]");
-
-  // Sort lists alphabetically
-  const sorted = [...smartLists].sort((a, b) =>
-    a.list.localeCompare(b.list)
+function openSmartListSelector() {
+  const smartLists = JSON.parse(
+    localStorage.getItem("Smart Lists") || "[]"
   );
 
-  sorted.forEach(listObj => {
-    const btn = document.createElement("button");
-    btn.textContent = listObj.list;
+  const listNames = smartLists
+    .map(l => l.list)
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b));
+console.log("Smart List Options:", listNames);
+
+
+  let selectedList = null;
+
+  /* ---------- OVERLAY ---------- */
+  const overlay = document.createElement("div");
+  overlay.style.cssText = `
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.4);
+    z-index:500;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  `;
+
+  /* ---------- POPUP ---------- */
+  const popup = document.createElement("div");
+  popup.style.cssText = `
+    width:300px;
+    background:white;
+    border-radius:14px;
+    padding:16px;
+    max-height:70vh;
+    overflow:auto;
+  `;
+
+  popup.innerHTML = `<div style="font-weight:bold;margin-bottom:10px">Select Smart List</div>`;
+
+  /* ---------- EXISTING LIST OPTIONS ---------- */
+  listNames.forEach(name => {
+    const btn = document.createElement("div");
+    btn.textContent = name;
+    btn.style.cssText = `
+      padding:10px;
+      border-radius:8px;
+      cursor:pointer;
+      margin-bottom:6px;
+      background:#f2f2f2;
+    `;
+
     btn.onclick = () => {
-      const targetList = listObj.list;
-      console.log("Target List:", targetList);
-      closeSmartListPopup();
+      selectedList = name;
+      document.querySelectorAll(".smart-list-option")
+        .forEach(b => b.style.background = "#f2f2f2");
+      btn.style.background = "#d0eadf";
     };
-    optionsWrap.appendChild(btn);
+
+    btn.className = "smart-list-option";
+    popup.appendChild(btn);
   });
 
-  overlay.classList.add("show");
-  overlay.onclick = e => {
-    if (e.target === overlay) closeSmartListPopup();
-  };
-}
+  /* ---------- CREATE NEW LIST ---------- */
+  const newBtn = document.createElement("div");
+  newBtn.textContent = "+ Create New List";
+  newBtn.style.cssText = `
+    padding:10px;
+    border-radius:8px;
+    cursor:pointer;
+    margin-top:10px;
+    background:#e8e8e8;
+    font-weight:bold;
+  `;
 
+  newBtn.onclick = () => {
+    const name = prompt("Name of List");
+    if (name && name.trim()) {
+      targetList = name.trim();
+      console.log("targetList:", targetList);
+      document.body.removeChild(overlay);
+    }
+  };
+
+  popup.appendChild(newBtn);
+
+  /* ---------- CONFIRM BUTTON ---------- */
+  const confirm = document.createElement("button");
+  confirm.textContent = "Confirm";
+  confirm.style.cssText = `
+    margin-top:14px;
+    width:100%;
+    padding:10px;
+    border:none;
+    border-radius:10px;
+    background:#1f5e3b;
+    color:white;
+    font-size:15px;
+  `;
+
+  confirm.onclick = () => {
+    if (!selectedList) return;
+    targetList = selectedList;
+    console.log("targetList:", targetList);
+    document.body.removeChild(overlay);
+  };
+
+  popup.appendChild(confirm);
+  overlay.appendChild(popup);
+  document.body.appendChild(overlay);
+}
 
 
 /* ---------------- TABS ---------------- */
@@ -2134,7 +2190,7 @@ groupBtn.onpointerdown = e => {
 groupHoldTimer = setTimeout(() => {
   groupLongPressFired = true;
   alert("Export button clicked!");
-  openSmartListPopup;
+openSmartListSelector();
 }, 700);
 
 };
@@ -2319,25 +2375,6 @@ archiveCleanupOverlay.onclick = () => {
   archiveCleanupSheet.style.transform = "translateY(100%)";
   archiveCleanupOverlay.classList.remove("show");
 };
-
-
-document.getElementById("createNewListBtn").onclick = () => {
-  document.getElementById("newListInputWrap").style.display = "block";
-};
-
-document.getElementById("confirmNewListBtn").onclick = () => {
-  const input = document.getElementById("newListInput");
-  const targetList = input.value.trim();
-
-  if (!targetList) return;
-
-  console.log("Target List:", targetList);
-  closeSmartListPopup();
-};
-
-function closeSmartListPopup() {
-  document.getElementById("smartListOverlay").classList.remove("show");
-}
 
 
 /* ---------- NEW BOTTLE ---------- */
