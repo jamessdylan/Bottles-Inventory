@@ -271,56 +271,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   font-style: italic;
 }
 
-.overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.4);
-  display: none;
-}
-
-.popup {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: #fff;
-  max-height: 80%;
-  transform: translateY(100%);
-  transition: .3s;
-  padding: 12px;
-}
-
-.popup.show {
-  transform: translateY(0);
-}
-
-.smart-row {
-  display: flex;
-  align-items: center;
-  padding: 8px;
-  border-bottom: 1px solid #ddd;
-}
-
-.smart-row .delete {
-  margin-right: 8px;
-  cursor: pointer;
-}
-
-.smart-row .title {
-  flex: 1;
-}
-
-#smartListSuggestions {
-  display: none;
-  max-height: 150px;
-  overflow-y: auto;
-  background: #f4f4f4;
-}
-
-.suggestion {
-  padding: 6px;
-  cursor: pointer;
-}
 
 </style>
 </head>
@@ -379,23 +329,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   </div>
 
   <div id="archiveCleanupList"></div>
-</div>
-
-<div id="smartListPopupOverlay" class="overlay"></div>
-
-<div id="smartListPopup" class="popup">
-  <div class="popup-header" id="smartListPopupTitle"></div>
-
-  <div id="smartListMatches"></div>
-
-  <input
-    id="smartListAddInput"
-    placeholder="Add item…"
-    autocomplete="off"
-  />
-  <div id="smartListSuggestions"></div>
-
-  <button id="smartListConfirm">Confirm</button>
 </div>
 
 
@@ -884,40 +817,6 @@ const undoStack = [];
 const UNDO_LIMIT = 5;
 
 
-const DEFAULT_SMART_LISTS = [
-  "Wine Cellar",
-  "Liquor Closet"
-];
-
-
-let activeSmartListName = "";
-let matches = [];        // array of item objects
-let suggestions = [];    // array of item objects
-
-
-
-function initializeSmartListsIndex() {
-  const stored = localStorage.getItem("Smart Lists");
-
-  console.log("Smart Lists (raw from localStorage):", stored);
-
-  if (!stored) {
-    localStorage.setItem(
-      "Smart Lists",
-      JSON.stringify(DEFAULT_SMART_LISTS)
-    );
-
-    console.log("Smart Lists initialized to default:", DEFAULT_SMART_LISTS);
-  } else {
-    try {
-      const parsed = JSON.parse(stored);
-      console.log("Smart Lists parsed from localStorage:", parsed);
-    } catch {
-      console.warn("Smart Lists exists but could not be parsed");
-    }
-  }
-}
-
 
 let templateItems = [];
 let currentItems = [];
@@ -926,75 +825,6 @@ const patchItems = JSON.parse(
 );
 
 const mergedItems = applyPatchToTemplate(templateItems, patchItems);
-
-async function resolveSmartLists() {
-  const stored = localStorage.getItem("Smart Lists");
-
-  if (!stored) {
-    console.warn("Smart Lists not found in localStorage");
-    return;
-  }
-
-  let smartLists;
-  try {
-    smartLists = JSON.parse(stored);
-  } catch {
-    console.error("Smart Lists could not be parsed");
-    return;
-  }
-
-  if (!Array.isArray(smartLists)) return;
-
-  for (const name of smartLists) {
-    /* ---------- 1️⃣ Check localStorage ---------- */
-    const localValue = localStorage.getItem(name);
-
-    if (localValue) {
-      console.log(name, "retrieved from local");
-
-      try {
-        const parsed = JSON.parse(localValue);
-        console.log(name, parsed);
-      } catch {
-        console.warn(name, "exists locally but could not be parsed");
-      }
-
-      continue;
-    }
-
-    /* ---------- 2️⃣ Attempt GitHub file ---------- */
-    const fileName = `${name}.json`;
-
-    try {
-      const response = await fetch(`./${fileName}`);
-
-      if (!response.ok) {
-        console.log("file not found:", fileName);
-        continue;
-      }
-
-      console.log("found file:", fileName);
-
-      const raw = await response.json();
-      if (!Array.isArray(raw)) continue;
-
-      const uuids = raw.map(v => v.UUID ?? v);
-
-      /* ---------- 3️⃣ Match to items ---------- */
-      const matched = items.filter(item =>
-        uuids.includes(item.UUID)
-      );
-
-      /* ---------- 4️⃣ Save & log ---------- */
-      localStorage.setItem(name, JSON.stringify(matched));
-
-      console.log(name, matched);
-
-    } catch {
-      console.log("file not found:", fileName);
-    }
-  }
-}
 
 
 // ---------- GLOBAL FILTERS ----------
@@ -1121,10 +951,8 @@ async function loadItems() {
   );
 
   items = applyPatchToTemplate(templateItems, patchItems);
-initializeSmartListsIndex();
-  renderItems();
-resolveSmartLists();
 
+  renderItems();
 }
 
 
@@ -1177,153 +1005,6 @@ function baseSort(a,b,key){
     ||naLast(a.varietal,b.varietal)
     ||naLast(b.year,a.year);
 }
-
-function buildItemTitle(item) {
-  return [item.brand, item.identifier, item.varietal, item.year]
-    .filter(v => v && v !== "N/A")
-    .join(" ");
-}
-
-function openSmartListPopup(listName) {
-  activeSmartListName = listName;
-
-  /* ---------- LOAD MATCHES ---------- */
-  const stored = localStorage.getItem(listName);
-  const storedObjects = stored ? JSON.parse(stored) : [];
-
-  matches = storedObjects.map(obj => obj.UUID);
-  console.log("matches:", matches);
-
-  /* ---------- BUILD SUGGESTIONS ---------- */
-  suggestions = items.filter(
-    item => !matches.includes(item.UUID)
-  );
-  console.log("suggestions:", suggestions);
-
-  document.getElementById("smartListPopupTitle").textContent = listName;
-
-  renderSmartListPopup();
-
-  document.getElementById("smartListPopupOverlay").style.display = "block";
-  document.getElementById("smartListPopup").classList.add("show");
-}
-
-function renderSmartListPopup() {
-  const container = document.getElementById("smartListMatches");
-  container.innerHTML = "";
-
-  const matchedObjects = matches
-    .map(uuid => items.find(i => i.UUID === uuid))
-    .filter(Boolean);
-
-  /* ---------- MATCHES LIST ---------- */
-  matchedObjects.forEach((item, index) => {
-    const row = document.createElement("div");
-    row.className = "smart-row";
-    row.draggable = true;
-
-    const title = buildItemTitle(item);
-
-    row.innerHTML = `
-      <div class="delete">✕</div>
-      <div class="title">${title}</div>
-    `;
-
-    /* ❌ REMOVE */
-    row.querySelector(".delete").onclick = () => {
-      matches.splice(index, 1);
-      persistSmartList();
-      console.log("Removed", title);
-      renderSmartListPopup();
-    };
-
-    /* ⬍ REORDER */
-    row.ondragstart = e => {
-      e.dataTransfer.setData("index", index);
-    };
-
-    row.ondragover = e => e.preventDefault();
-
-    row.ondrop = e => {
-      const from = Number(e.dataTransfer.getData("index"));
-      const to = index;
-
-      const [moved] = matches.splice(from, 1);
-      matches.splice(to, 0, moved);
-
-      persistSmartList();
-      console.log("Resorted", [...matches]);
-      renderSmartListPopup();
-    };
-
-    container.appendChild(row);
-  });
-
-  setupAutocomplete();
-}
-
-function persistSmartList() {
-  const objects = matches
-    .map(uuid => items.find(i => i.UUID === uuid))
-    .filter(Boolean);
-
-  localStorage.setItem(activeSmartListName, JSON.stringify(objects));
-}
-
-function setupAutocomplete() {
-  const input = document.getElementById("smartListAddInput");
-  const box = document.getElementById("smartListSuggestions");
-
-  input.value = "";
-  box.innerHTML = "";
-
-  input.oninput = () => {
-    const q = input.value.toLowerCase();
-    box.innerHTML = "";
-
-    if (!q) {
-      box.style.display = "none";
-      return;
-    }
-
-    suggestions
-      .filter(item =>
-        buildItemTitle(item).toLowerCase().includes(q)
-      )
-      .forEach(item => {
-        const div = document.createElement("div");
-        div.className = "suggestion";
-        div.textContent = buildItemTitle(item);
-
-        div.onclick = () => {
-          matches.push(item.UUID);
-          persistSmartList();
-
-          console.log("added", buildItemTitle(item));
-
-          input.value = "";
-          box.style.display = "none";
-          renderSmartListPopup();
-        };
-
-        box.appendChild(div);
-      });
-
-    box.style.display = box.children.length ? "block" : "none";
-  };
-}
-
-
-document.getElementById("smartListConfirm").onclick = () => {
-  const finalObjects = matches
-    .map(uuid => items.find(i => i.UUID === uuid))
-    .filter(Boolean);
-
-  console.log("New", activeSmartListName, finalObjects);
-
-  document.getElementById("smartListPopup").classList.remove("show");
-  document.getElementById("smartListPopupOverlay").style.display = "none";
-};
 
 
 
@@ -2319,11 +2000,10 @@ groupBtn.onpointerdown = e => {
   e.preventDefault(); // iOS safety
   groupLongPressFired = false;
 
-  groupHoldTimer = setTimeout(() => {
-    groupLongPressFired = true;
-    console.log("Long press detected:", Source);
-    openSmartListPopup(Source);
-  }, 700);
+groupHoldTimer = setTimeout(() => {
+  groupLongPressFired = true;
+}, 700);
+
 };
 
 groupBtn.onpointerup = () => {
@@ -2347,7 +2027,6 @@ groupBtn.onclick = e => {
   updateGlobalFilters();
   renderItems();
 };
-
 
 
 smartSortBtn.onclick = () => {
