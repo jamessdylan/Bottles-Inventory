@@ -2,11 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>condensed</title>
+<title>SM Wine key</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+
+<link rel="stylesheet" href="./layout.css">
 
 <style>
 :root { --green:#1f5e3b; --green-light:rgba(255,255,255,.25); }
@@ -34,24 +37,6 @@ body {
     env(safe-area-inset-left);
   font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
 }
-
-/* ---------- BACKGROUND ---------- */
-body::before{
-  content:"";
-  position:fixed;
-  inset:0;
-  background:url("IMG_6048.jpeg") no-repeat right center / 1200px auto;
-  opacity:.65;
-  z-index:-1;
-}
-
-/* ---------- HEADER ---------- */
-header{
-  display:flex;
-  justify-content:center;
-  padding:24px 16px;
-}
-header img{max-width:100%;}
 
 /* ---------- SOURCE TABS ---------- */
 .tabs{
@@ -779,6 +764,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
       outline:none;
     "
   />
+
   <div
     id="smartListAddSuggestions"
     style="
@@ -828,7 +814,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
 
 <script src="./csv.js"></script>
-<script src=“./baseFile.js”></script>
+
 <script>
 
 /* ---------- PAGE TITLE ---------- */
@@ -1914,6 +1900,91 @@ function getSourceDisplay(item, source) {
   };
 }
 
+function generateBaseFile() {
+  // Deep clone so we never mutate live items
+  const baseItems = items.map(item => {
+    const clean = JSON.parse(JSON.stringify(item));
+
+    // Reset totals
+    clean.Total = 0;
+    clean.TotalPrev = 0;
+
+    // Reset all sources and remove SourcePrev keys
+    SOURCES.forEach(src => {
+      clean[src] = 0;
+      delete clean[`${src}Prev`];
+    });
+
+    return clean;
+  });
+
+  const json = JSON.stringify(baseItems, null, 2);
+
+  openJSONInNewWindow(json, "items.json");
+}
+
+
+function openJSONInNewWindow(json, filename) {
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+
+  const win = window.open("", "_blank");
+  win.document.write(`
+    <html>
+      <head>
+        <title>${filename}</title>
+        <style>
+          body {
+            font-family: monospace;
+            padding: 16px;
+            margin: 0;
+          }
+          .download {
+            display: inline-block;
+            padding: 8px 12px;
+            background: #eee;
+            border-radius: 6px;
+            text-decoration: none;
+            color: #000;
+            font-weight: 600;
+          }
+          .top {
+            margin-bottom: 12px;
+          }
+          pre {
+            white-space: pre-wrap;
+            padding-bottom: 80px; /* space for bottom button */
+          }
+          .bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border-top: 1px solid #ccc;
+            padding: 10px;
+            text-align: center;
+          }
+        </style>
+      </head>
+      <body>
+        <a class="download top" href="${url}" download="${filename}">
+          ⬇ Download ${filename}
+        </a>
+
+        <pre>${json.replace(/</g, "&lt;")}</pre>
+
+        <div class="bottom-bar">
+          <a class="download" href="${url}" download="${filename}">
+            ⬇ Download ${filename}
+          </a>
+        </div>
+      </body>
+    </html>
+  `);
+
+  win.document.close();
+}
 
 
 function drawItem(item){
@@ -2859,5 +2930,6 @@ function openPrintSummary() {
 
 
 </script>
+
 </body>
 </html> 
