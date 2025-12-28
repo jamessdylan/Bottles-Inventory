@@ -1,11 +1,9 @@
-console.log("[undo.js] loaded");
-
 let undoStack = [];
 const UNDO_LIMIT = 5;
 
 
 function logUndo(item, key, prevValue, nextValue) {
-  let last = undoStack[undoStack.length - 1];
+  const last = undoStack[undoStack.length - 1];
 
   // 🚫 Skip if same item + same source
   if (last && last.item === item && last.key === key) return;
@@ -24,7 +22,7 @@ function logUndo(item, key, prevValue, nextValue) {
 }
 
 function undoLastAction() {
-  let action = undoStack.pop();
+  const action = undoStack.pop();
   if (!action) return;
 
   const { item, key, prevValue } = action;
@@ -40,7 +38,7 @@ function showUndoHistory() {
     return;
   }
 
-  let text = undoStack
+  const text = undoStack
     .slice()
     .reverse()
     .map((u, i) => `${i + 1}. ${u.text}`)
