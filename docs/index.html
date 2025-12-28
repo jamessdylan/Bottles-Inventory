@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Winekey</title>
+<title>Smart Lists</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -935,7 +935,74 @@ async function loadItems() {
   items = applyPatchToTemplate(templateItems, patchItems);
 
   renderItems();
+  initSmartLists(items);
 }
+
+async function loadSmartLists() {
+  const stored = localStorage.getItem("Smart Lists");
+  let smartLists;
+
+  if (stored) {
+    smartLists = JSON.parse(stored);
+    debugSmartLists("loaded from localStorage", smartLists);
+  } else {
+    const res = await fetch("./Smart Lists.json", {
+      cache: "no-store"
+    });
+    smartLists = await res.json();
+    debugSmartLists("loaded from GitHub", smartLists);
+  }
+
+  smartLists = normalizeSmartLists(smartLists);
+  debugSmartLists("normalized", smartLists);
+
+  return smartLists;
+}
+
+function validateSmartLists(smartLists, items) {
+  const validUUIDs = new Set(items.map(i => i.UUID));
+  let changed = false;
+
+  smartLists.forEach(list => {
+    if (!Array.isArray(list.members)) return;
+
+    const filtered = list.members.filter(uuid =>
+      validUUIDs.has(uuid)
+    );
+
+    if (filtered.length !== list.members.length) {
+      list.members = filtered;
+      changed = true;
+    }
+  });
+
+  if (changed) {
+    debugSmartLists("validated (invalid UUIDs removed)", smartLists);
+  }
+
+  return changed;
+}
+
+function saveSmartLists(smartLists) {
+  localStorage.setItem(
+    "Smart Lists",
+    JSON.stringify(smartLists)
+  );
+
+  debugSmartLists("saved to localStorage", smartLists);
+}
+
+async function initSmartLists(items) {
+  const smartLists = await loadSmartLists();
+
+  if (validateSmartLists(smartLists, items)) {
+    saveSmartLists(smartLists);
+  }
+
+  debugSmartLists("ready for use", smartLists);
+  return smartLists;
+}
+
 
 
 /* ---------------- TABS ---------------- */
@@ -971,7 +1038,6 @@ tab.onclick = async () => {
     tabsEl.appendChild(tab);
   });
 }
-
 
 
 /* ---------------- HELPERS ---------------- */
@@ -1207,6 +1273,11 @@ function handleQuantityChange(item, newValue) {
 }
 
 
+function debugSmartLists(action, smartLists) {
+  console.groupCollapsed(`🧠 Smart Lists — ${action}`);
+  console.log(JSON.stringify(smartLists, null, 2));
+  console.groupEnd();
+}
 
 
 
