@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine key</title>
+<title>Smart Lists</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -932,10 +932,18 @@ async function loadItems() {
     localStorage.getItem("patchItems") || "[]"
   );
 
+  // 🔹 ITEMS NOW EXIST 🔹
   items = applyPatchToTemplate(templateItems, patchItems);
 
+  // 🔹 LOAD + VALIDATE SMART LISTS 🔹
+  smartLists = await loadSmartLists();
+
+  if (validateSmartLists(smartLists, items)) {
+    saveSmartLists(smartLists);
+  }
+
+  // 🔹 NOW SAFE TO RENDER 🔹
   renderItems();
-  initSmartLists(items);
 }
 
 async function loadSmartLists() {
@@ -957,6 +965,12 @@ async function loadSmartLists() {
   debugSmartLists("normalized", smartLists);
 
   return smartLists;
+}
+
+function debugSmartLists(action, smartLists) {
+  console.groupCollapsed(`🧠 Smart Lists — ${action}`);
+  console.log(JSON.stringify(smartLists, null, 2));
+  console.groupEnd();
 }
 
 function validateSmartLists(smartLists, items) {
@@ -1003,6 +1017,21 @@ async function initSmartLists(items) {
   return smartLists;
 }
 
+function normalizeSmartLists(data) {
+  // Already correct
+  if (Array.isArray(data)) return data;
+
+  // Legacy: object keyed by list name
+  if (data && typeof data === "object") {
+    return Object.entries(data).map(([list, members]) => ({
+      list,
+      members: Array.isArray(members) ? members : []
+    }));
+  }
+
+  // Anything else → empty
+  return [];
+}
 
 
 /* ---------------- TABS ---------------- */
@@ -1038,6 +1067,7 @@ tab.onclick = async () => {
     tabsEl.appendChild(tab);
   });
 }
+
 
 
 /* ---------------- HELPERS ---------------- */
@@ -1273,11 +1303,6 @@ function handleQuantityChange(item, newValue) {
 }
 
 
-function debugSmartLists(action, smartLists) {
-  console.groupCollapsed(`🧠 Smart Lists — ${action}`);
-  console.log(JSON.stringify(smartLists, null, 2));
-  console.groupEnd();
-}
 
 
 
@@ -2081,7 +2106,6 @@ smartSortBtn.onclick = () => {
   updateGlobalFilters();
   renderItems();
 };
-
 
 
 function resetNewBottleDefaults() {
