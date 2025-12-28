@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Delete</title>
+<title>SM Wine key</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -814,6 +814,7 @@ let ArchiveFilter = false;   // true | false
 let GroupFilter   = "None";  // None | Tier | Special
 let SubgroupFilter = "None"; // None | Color
 let ItemFilter    = "None";  // None | Special
+let targetList = null;
 
 
 
@@ -2031,6 +2032,102 @@ function smartItemTitle(item){
     .join(" ");
 }
 
+function openSmartListPicker() {
+  const overlay = document.createElement("div");
+  overlay.className = "overlay show";
+
+  const modal = document.createElement("div");
+  modal.className = "drawer open";
+  modal.style.right = "auto";
+  modal.style.left = "50%";
+  modal.style.transform = "translateX(-50%)";
+  modal.style.width = "300px";
+
+  modal.innerHTML = `
+    <div class="drawer-title">Choose List</div>
+
+    <div class="list-options"></div>
+
+    <hr style="margin:12px 0">
+
+    <button class="new-list-btn">＋ Create New List</button>
+  `;
+
+  document.body.appendChild(overlay);
+  document.body.appendChild(modal);
+
+  overlay.onclick = () => {
+    overlay.remove();
+    modal.remove();
+  };
+
+  populateSmartListOptions(
+    modal.querySelector(".list-options"),
+    overlay,
+    modal
+  );
+}
+
+function populateSmartListOptions(container, overlay, modal) {
+  const listNames = smartLists
+    .map(l => l.list)
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b));
+
+  if (listNames.length === 0) {
+    container.innerHTML = `<div style="color:#666">No lists yet</div>`;
+  }
+
+  listNames.forEach(name => {
+    const btn = document.createElement("button");
+    btn.textContent = name;
+
+    btn.onclick = () => {
+      targetList = name;
+      console.log("targetList set (existing):", targetList);
+      overlay.remove();
+      modal.remove();
+    };
+
+    container.appendChild(btn);
+  });
+
+  modal
+    .querySelector(".new-list-btn")
+    .onclick = () => openCreateNewList(container, overlay, modal);
+}
+
+function openCreateNewList(container, overlay, modal) {
+  container.innerHTML = `
+    <div style="margin-bottom:8px">Name of List</div>
+    <input
+      type="text"
+      class="new-list-input"
+      placeholder="Name of List"
+      style="width:100%;padding:8px;font-size:15px"
+    />
+    <button class="confirm-new-list" style="margin-top:12px">
+      Create
+    </button>
+  `;
+
+  const input = container.querySelector(".new-list-input");
+  input.focus();
+
+  container
+    .querySelector(".confirm-new-list")
+    .onclick = () => {
+      const value = input.value.trim();
+      if (!value) return;
+
+      targetList = value;
+      console.log("targetList set (new):", targetList);
+
+      overlay.remove();
+      modal.remove();
+    };
+}
+
 
 
 /* ---------- INIT ---------- */
@@ -2038,6 +2135,8 @@ buildSourceTabs();
 loadItems();
 
 /* ---------- ACTION STATES ---------- */
+const groupBtn = document.getElementById(“groupBtn”);
+
 let showArchived = false;
 let groupEnabled = false;
 
@@ -2078,7 +2177,7 @@ groupBtn.onpointerdown = e => {
 
 groupHoldTimer = setTimeout(() => {
   groupLongPressFired = true;
-  alert("Export button clicked!");
+  openSmartListPicker();
 }, 700);
 
 };
