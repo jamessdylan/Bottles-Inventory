@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine key</title>
+<title>SM Winesadfkey</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1284,6 +1284,11 @@ function onDeleteItem(item) {
 
   // 3. Re-render
   renderItems();
+
+if (validateSmartLists(smartLists, items)) {
+  saveSmartLists(smartLists);
+}
+
 }
 
 function handleQuantityChange(item, newValue) {
