@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine key</title>
+<title>SM Reserve List</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -269,6 +269,37 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   color: #9a9a9a;
   opacity: 0.6;
   font-style: italic;
+}
+
+.drawer-dropdown {
+  position: absolute;
+  bottom: 60px;
+  left: 16px;
+  right: 16px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  overflow: hidden;
+  z-index: 999;
+}
+
+.drawer-dropdown.hidden {
+  display: none;
+}
+
+.drawer-dropdown .option {
+  padding: 12px 16px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+}
+
+.drawer-dropdown .option:last-child {
+  border-bottom: none;
+  font-weight: 600;
+}
+
+.drawer-dropdown .option:hover {
+  background: #f5f5f5;
 }
 
 
@@ -875,21 +906,20 @@ newProjectBtn.onclick = () => {
 };
 
 
-    // Handle the "Reserve List" button click
-    reserveListBtn.onclick = () => {
-      drawer.classList.remove("open");
-      overlay.classList.remove("show");
-      const itemsPatch = localStorage.getItem("itemsPatch.json");
+reserveListBtn.onclick = e => {
+  e.preventDefault();
+  e.stopPropagation();
+  openReserveListDropdown();
+};
 
-  if (itemsPatch) {
-    // If itemsPatch exists in localStorage, display it
-    const jsonContent = JSON.stringify(JSON.parse(itemsPatch), null, 2); // Pretty-print JSON
-    alert("Items Patch Loaded: \n\n" + jsonContent); // Display in alert (could be a modal in the future)
-  } else {
-    // If itemsPatch does not exist, show an error message
-    alert("The values could not be loaded.");
+document.addEventListener("click", e => {
+  const dropdown = document.getElementById("reserveListDropdown");
+  if (!dropdown.contains(e.target) && e.target !== reserveListBtn) {
+    dropdown.classList.add("hidden");
   }
-    };
+});
+
+
 
     // Handle the "Sales Report" button click
     salesReportBtn.onclick = () => {
@@ -939,6 +969,54 @@ csvFileBtn.onclick = () => {
   generateCSVFile();
 };
 
+function openReserveListDropdown() {
+  const dropdown = document.getElementById("reserveListDropdown");
+  dropdown.innerHTML = "";
+
+  let smartListNames = JSON.parse(localStorage.getItem("Smart Lists"));
+  if (!Array.isArray(smartListNames)) smartListNames = [];
+
+  // sort alphabetically
+  smartListNames.sort((a, b) => a.localeCompare(b));
+
+  /* ---------- EXISTING LISTS ---------- */
+  smartListNames.forEach(name => {
+    const row = document.createElement("div");
+    row.className = "option";
+    row.textContent = name;
+
+    row.onclick = () => {
+      console.log("Selected Smart List:", name);
+      const list = getOrCreateSmartList(name);
+      dropdown.classList.add("hidden");
+
+      if (list) {
+        openSmartListPopup(name); // uses localStorage internally
+      }
+    };
+
+    dropdown.appendChild(row);
+  });
+
+  /* ---------- CREATE NEW ---------- */
+  const createRow = document.createElement("div");
+  createRow.className = "option";
+  createRow.textContent = "＋ Create New List";
+
+  createRow.onclick = () => {
+    dropdown.classList.add("hidden");
+    const list = getOrCreateSmartList(); // prompts user
+    if (list) {
+      openSmartListPopup(
+        Object.keys(JSON.parse(localStorage.getItem("SmartLists"))).pop()
+      );
+    }
+  };
+
+  dropdown.appendChild(createRow);
+
+  dropdown.classList.remove("hidden");
+}
 
 /* ---------------- LOAD ---------------- */
 
@@ -2855,6 +2933,7 @@ function openPrintSummary() {
   }
 }
 
+<div id="reserveListDropdown" class="drawer-dropdown hidden"></div>
 
 </script>
 
