@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Smart Lists Take 5000</title>
+<title>SM Wine key</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1033,30 +1033,67 @@ async function loadItems() {
   items = applyPatchToTemplate(templateItems, patchItems);
 
   renderItems();
-await loadSmartListsIfNeeded()
+  async function initSmartLists(items)
 }
 
-async function loadSmartListsIfNeeded() {
+async function loadSmartLists() {
   const stored = localStorage.getItem("Smart Lists");
 
-  let smartLists;
-
   if (stored) {
-    // Already in localStorage
-    smartLists = JSON.parse(stored);
-  } else {
-    // Fetch from GitHub
-    const res = await fetch("./Smart Lists.json", {
-      cache: "no-store"
-    });
+    return JSON.parse(stored);
+  }
 
-    smartLists = await res.json();
+  const res = await fetch("./Smart Lists.json", {
+    cache: "no-store"
+  });
 
-    // Save to localStorage
-    localStorage.setItem(
-      "Smart Lists",
-      JSON.stringify(smartLists)
+  const smartLists = await res.json();
+
+  localStorage.setItem(
+    "Smart Lists",
+    JSON.stringify(smartLists)
+  );
+
+  return smartLists;
+}
+
+function validateSmartLists(smartLists, items) {
+  const validUUIDs = new Set(
+    items.map(item => item.UUID)
+  );
+
+  let changed = false;
+
+  smartLists.forEach(list => {
+    if (!Array.isArray(list.members)) return;
+
+    const filtered = list.members.filter(uuid =>
+      validUUIDs.has(uuid)
     );
+
+    if (filtered.length !== list.members.length) {
+      list.members = filtered;
+      changed = true;
+    }
+  });
+
+  return changed;
+}
+
+
+function saveSmartLists(smartLists) {
+  localStorage.setItem(
+    "Smart Lists",
+    JSON.stringify(smartLists)
+  );
+}
+
+async function initSmartLists(items) {
+  const smartLists = await loadSmartLists();
+
+  const changed = validateSmartLists(smartLists, items);
+  if (changed) {
+    saveSmartLists(smartLists);
   }
 
   console.log("Smart Lists:");
@@ -1064,6 +1101,7 @@ async function loadSmartListsIfNeeded() {
 
   return smartLists;
 }
+
 
 /* ---------------- TABS ---------------- */
 function buildSourceTabs(){
@@ -1453,10 +1491,6 @@ function handleQuantityChange(item, newValue) {
   item[key] = nextValue;
   renderItems();
 }
-
-
-
-
 
 
 
