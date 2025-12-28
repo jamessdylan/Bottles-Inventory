@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Smart Lists</title>
+<title>SM Wine key</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2080,75 +2080,6 @@ smartSortBtn.onclick = () => {
   smartSortBtn.classList.toggle("active");
   updateGlobalFilters();
   renderItems();
-};
-
-const smartListAddInput = document.getElementById("smartListAddInput");
-const smartListAddSuggestions = document.getElementById("smartListAddSuggestions");
-
-let smartListSelectedItem = null;
-
-smartListAddInput.oninput = () => {
-  const value = smartListAddInput.value.trim().toLowerCase();
-  smartListAddSuggestions.innerHTML = "";
-  smartListSelectedItem = null;
-
-  if (!value || !activeSmartKey) {
-    smartListAddSuggestions.style.display = "none";
-    return;
-  }
-
-  const currentList = window[activeSmartKey] || [];
-  const currentUUIDs = new Set(currentList.map(i => i.UUID));
-
-  // Eligible items: exist in inventory, NOT already in smart list
-  const candidates = items.filter(i =>
-    !currentUUIDs.has(i.UUID)
-  );
-
-  const matches = candidates.filter(i =>
-    smartItemTitle(i).toLowerCase().includes(value)
-  );
-
-  if (!matches.length) {
-    smartListAddSuggestions.style.display = "none";
-    return;
-  }
-
-  matches.forEach(item => {
-    const div = document.createElement("div");
-    div.textContent = smartItemTitle(item);
-    div.style.padding = "12px 16px";
-    div.style.cursor = "pointer";
-
-    div.onclick = () => {
-      smartListAddInput.value = smartItemTitle(item);
-      smartListSelectedItem = item;
-      smartListAddSuggestions.style.display = "none";
-    };
-
-    smartListAddSuggestions.appendChild(div);
-  });
-
-  smartListAddSuggestions.style.display = "flex";
-};
-
-smartListAddInput.onkeydown = e => {
-  if (e.key !== "Enter") return;
-
-  // 🚫 Only allow confirmed autocomplete items
-  if (!smartListSelectedItem || !activeSmartKey) return;
-
-  const list = window[activeSmartKey];
-
-  list.push(smartListSelectedItem);
-
-  // reset UI
-  smartListAddInput.value = "";
-  smartListSelectedItem = null;
-  smartListAddSuggestions.style.display = "none";
-
-  renderSmartListEditor();
-  renderItems(); // reflect immediately
 };
 
 
