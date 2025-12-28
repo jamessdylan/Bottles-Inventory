@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine key</title>
+<title>plz work</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2034,13 +2034,15 @@ function openSmartListEditor(listName = null) {
     a.localeCompare(b)
   );
 
-  /* ---------- IF LIST PROVIDED ---------- */
+  console.log("Smart List keys:", listNames);
+
+  /* ---------- DIRECT OPEN ---------- */
   if (listName) {
     renderSmartListPopup(listName);
     return;
   }
 
-  /* ---------- BUILD DROPDOWN ---------- */
+  /* ---------- SELECTOR POPUP ---------- */
   const popup = document.createElement("div");
   popup.className = "smart-list-popup";
 
@@ -2049,18 +2051,38 @@ function openSmartListEditor(listName = null) {
   title.textContent = "Select Smart List";
   popup.appendChild(title);
 
+  const listContainer = document.createElement("div");
+  popup.appendChild(listContainer);
+
   listNames.forEach(name => {
     const row = document.createElement("div");
     row.className = "popup-option";
     row.textContent = name;
 
     row.onclick = () => {
-      closePopup(popup);
+      popup.remove();
       renderSmartListPopup(name);
     };
 
-    popup.appendChild(row);
+    listContainer.appendChild(row);
   });
+
+  /* ---------- CREATE ---------- */
+  const createRow = document.createElement("div");
+  createRow.className = "popup-option create";
+  createRow.textContent = "＋ Create List";
+
+  createRow.onclick = () => {
+    const input = prompt("Enter new Smart List name:");
+    if (!input) return;
+    popup.remove();
+    renderSmartListPopup(input.trim());
+  };
+
+  listContainer.appendChild(createRow);
+
+  document.body.appendChild(popup);
+}
 
   /* ---------- CREATE LIST OPTION ---------- */
   const createRow = document.createElement("div");
