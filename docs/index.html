@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine key</title>
+<title>SM Winekey</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -249,40 +249,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   color:#888;
 }
 
-
-/* ---------- SMART LIST EDITOR ---------- */
-.smart-row{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  padding:14px 16px;
-  margin-bottom:10px;
-  background:rgba(255,255,255,.7);
-  border-radius:14px;
-  cursor:grab;
-}
-
-.smart-row.dragging{
-  opacity:.6;
-}
-
-.smart-label{
-  flex:1;
-  font-size:15px;
-}
-
-.smart-delete{
-  font-size:18px;
-  color:#b00020;
-  cursor:pointer;
-  padding:4px 8px;
-}
-
-.value.ghost {
-  color: #9a9a9a;
-  opacity: 0.6;
-  font-style: italic;
-}
 
 
 </style>
@@ -715,70 +681,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
   <div class="overlay" id="overlay"></div>
 
-<!-- SMART LIST EDITOR OVERLAY -->
-<div id="smartListOverlay" class="overlay"></div>
-
-<div id="smartListEditor" style="
-  position:fixed;
-  inset:0;
-  background:rgba(255,255,255,.94);
-  backdrop-filter:blur(18px);
-  padding:calc(20px + env(safe-area-inset-top)) 16px 20px;
-  transform:translateY(100%);
-  transition:.25s ease;
-  z-index:550;
-  overflow-y:auto;
-">
-
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-    <div style="font-family:'Copperplate',serif;font-size:18px;">
-      Smart List Editor
-    </div>
-    <button id="closeSmartList">Done</button>
-  </div>
-
-  <div id="smartListContainer"></div>’
-
-<!-- SMART LIST ADD INPUT -->
-<div id="smartListAddWrap" style="
-  position:sticky;
-  bottom:0;
-  margin-top:16px;
-  background:rgba(255,255,255,.94);
-  backdrop-filter:blur(14px);
-  padding:12px 0 env(safe-area-inset-bottom);
-">
-
-  <input
-    id="smartListAddInput"
-    type="text"
-    placeholder="Add item…"
-    autocomplete="off"
-    style="
-      width:100%;
-      padding:14px 16px;
-      border-radius:14px;
-      border:none;
-      background:rgba(0,0,0,.06);
-      font-size:16px;
-      outline:none;
-    "
-  />
-
-  <div
-    id="smartListAddSuggestions"
-    style="
-      display:none;
-      flex-direction:column;
-      background:white;
-      border-radius:14px;
-      margin-top:8px;
-      box-shadow:0 6px 20px rgba(0,0,0,.18);
-      overflow:hidden;
-    "
-  ></div>
-</div>
-
 </div>
 
 <header><img src="SiennaTransparent.png"></header>
@@ -1030,41 +932,11 @@ async function loadItems() {
     localStorage.getItem("patchItems") || "[]"
   );
 
-  // 🔹 ITEMS NOW EXIST 🔹
   items = applyPatchToTemplate(templateItems, patchItems);
 
-  // 🔹 LOAD + VALIDATE SMART LISTS 🔹
-  smartLists = await loadSmartLists();
-
-  if (validateSmartLists(smartLists, items)) {
-    saveSmartLists(smartLists);
-  }
-
-  // 🔹 NOW SAFE TO RENDER 🔹
   renderItems();
 }
 
-
-async function loadSmartLists() {
-  const stored = localStorage.getItem("Smart Lists");
-
-  if (stored) {
-    return JSON.parse(stored);
-  }
-
-  const res = await fetch("./Smart Lists.json", {
-    cache: "no-store"
-  });
-
-  const smartLists = await res.json();
-
-  localStorage.setItem(
-    "Smart Lists",
-    JSON.stringify(smartLists)
-  );
-
-  return smartLists;
-}
 
 /* ---------------- TABS ---------------- */
 function buildSourceTabs(){
@@ -1084,7 +956,6 @@ function buildSourceTabs(){
 tab.onclick = async () => {
   Source = src;
 
-  await loadSmartListForSource(Source);
 
   updateGlobalFilters();
 
@@ -1103,126 +974,6 @@ tab.onclick = async () => {
 
 
 
-
-async function loadSmartListForSource(source) {
-  const smartKey = `${source}SmartList`;
-  const fileName = `${source}.json`;
-
-  try {
-    const res = await fetch(`./${fileName}`, { cache: "no-store" });
-    if (!res.ok) throw new Error("No file");
-
-    const uuidList = await res.json();
-
-    // Match UUIDs to actual item objects
-    window[smartKey] = items.filter(i =>
-      uuidList.includes(i.UUID)
-    );
-
-  } catch {
-    // No file or error → empty smart list
-    window[smartKey] = [];
-  }
-}
-
-const smartListEditor = document.getElementById("smartListEditor");
-const smartListOverlay = document.getElementById("smartListOverlay");
-const smartListContainer = document.getElementById("smartListContainer");
-const closeSmartList = document.getElementById("closeSmartList");
-
-let activeSmartKey = null;
-let dragIndex = null;
-
-function openSmartListEditor() {
-  const smartKey = `${Source}SmartList`;
-  const smartItems = window[smartKey];
-
-  if (!Array.isArray(smartItems)) return;
-
-  activeSmartKey = smartKey;
-
-  smartListAddInput.value = "";
-  smartListSelectedItem = null;
-  smartListAddSuggestions.style.display = "none";
-
-  renderSmartListEditor();
-
-  smartListEditor.style.transform = "translateY(0)";
-  smartListOverlay.classList.add("show");
-}
-
-
-function closeSmartListEditorFn() {
-  // ✅ Persist UUIDs on confirm
-  persistSmartListUUIDs();
-
-  smartListEditor.style.transform = "translateY(100%)";
-  smartListOverlay.classList.remove("show");
-
-  activeSmartKey = null;
-  dragIndex = null;
-}
-
-closeSmartList.onclick = closeSmartListEditorFn;
-smartListOverlay.onclick = closeSmartListEditorFn;
-
-function renderSmartListEditor() {
-  smartListContainer.innerHTML = "";
-
-  const list = window[activeSmartKey];
-
-  list.forEach((item, index) => {
-    const row = document.createElement("div");
-    row.className = "smart-row";
-    row.draggable = true;
-
-    row.innerHTML = `
-      <div class="smart-label">
-        ${[item.brand, item.identifier, item.varietal, item.year]
-          .filter(v => v && v !== "N/A")
-          .join(" ")}
-      </div>
-      <div class="smart-delete">✕</div>
-    `;
-
-    /* ❌ DELETE */
-    row.querySelector(".smart-delete").onclick = e => {
-      e.stopPropagation();
-      list.splice(index, 1);
-      renderSmartListEditor();
-      renderItems(); // reflect immediately
-    };
-
-    /* ☰ DRAG REORDER */
-    row.addEventListener("dragstart", () => {
-      dragIndex = index;
-      row.classList.add("dragging");
-    });
-
-    row.addEventListener("dragend", () => {
-      dragIndex = null;
-      row.classList.remove("dragging");
-    });
-
-    row.addEventListener("dragover", e => {
-      e.preventDefault();
-    });
-
-    row.addEventListener("drop", () => {
-      if (dragIndex === null || dragIndex === index) return;
-
-      const moved = list.splice(dragIndex, 1)[0];
-      list.splice(index, 0, moved);
-
-      renderSmartListEditor();
-      renderItems();
-    });
-
-    smartListContainer.appendChild(row);
-  });
-}
-
-
 /* ---------------- HELPERS ---------------- */
 const round=v=>Math.round(v*10)/10;
 const naLast=(a,b)=>a==="N/A"?1:b==="N/A"?-1:a.localeCompare(b);
@@ -1234,50 +985,6 @@ function baseSort(a,b,key){
     ||naLast(b.year,a.year);
 }
 
-
-function validateSmartLists(smartLists, items) {
-  const validUUIDs = new Set(
-    items.map(item => item.UUID)
-  );
-
-  let changed = false;
-
-  smartLists.forEach(list => {
-    if (!Array.isArray(list.members)) return;
-
-    const filtered = list.members.filter(uuid =>
-      validUUIDs.has(uuid)
-    );
-
-    if (filtered.length !== list.members.length) {
-      list.members = filtered;
-      changed = true;
-    }
-  });
-
-  return changed;
-}
-
-function saveSmartLists(smartLists) {
-  localStorage.setItem(
-    "Smart Lists",
-    JSON.stringify(smartLists)
-  );
-}
-
-async function initSmartLists(items) {
-  const smartLists = await loadSmartLists();
-
-  const changed = validateSmartLists(smartLists, items);
-  if (changed) {
-    saveSmartLists(smartLists);
-  }
-
-  console.log("Smart Lists:");
-  console.log(smartLists);
-
-  return smartLists;
-}
 
 
 function promptNumber(label, initialValue, callback) {
@@ -1503,8 +1210,6 @@ function handleQuantityChange(item, newValue) {
 
 
 
-
-
 function updateGlobalFilters() {
   /* ---------- ARCHIVE ---------- */
   ArchiveFilter = archiveBtn.classList.contains("active");
@@ -1723,17 +1428,6 @@ const ARCHIVE_ACTIONS = [
   "Delete Item",
   null
 ];
-
-function persistSmartListUUIDs() {
-  if (!activeSmartKey) return;
-
-  const list = window[activeSmartKey];
-  if (!Array.isArray(list)) return;
-
-  const uuidKey = `${Source}SmartListUUIDs`;
-
-  window[uuidKey] = list.map(item => item.UUID);
-}
 
 
 /* ---------------- RENDER ---------------- */
@@ -2283,7 +1977,7 @@ groupBtn.onpointerdown = e => {
 
 groupHoldTimer = setTimeout(() => {
   groupLongPressFired = true;
-  openSmartListEditor();
+  alert("Export button clicked!");
 }, 700);
 
 };
