@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine key</title>
+<title>SM sfda key</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -308,6 +308,26 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   </div>
 
   <div id="archiveCleanupList"></div>
+</div>
+
+<div id="smartListOverlay" class="overlay">
+  <div class="drawer" style="width:300px; left:50%; transform:translate(-50%, -100%);">
+    <div class="drawer-title">Smart Lists</div>
+
+    <div id="smartListOptions"></div>
+
+    <button id="createNewListBtn">+ Create New List</button>
+
+    <div id="newListInputWrap" style="display:none; margin-top:12px;">
+      <input
+        id="newListInput"
+        type="text"
+        placeholder="Name of List"
+        style="width:100%; padding:8px; font-size:15px;"
+      />
+      <button id="confirmNewListBtn" style="margin-top:8px;">Confirm</button>
+    </div>
+  </div>
 </div>
 
 
@@ -814,7 +834,6 @@ let ArchiveFilter = false;   // true | false
 let GroupFilter   = "None";  // None | Tier | Special
 let SubgroupFilter = "None"; // None | Color
 let ItemFilter    = "None";  // None | Special
-let targetList = null;
 
 
 
@@ -1034,15 +1053,39 @@ function normalizeSmartLists(data) {
   return [];
 }
 
-  list.appendChild(row);
-}
+function openSmartListPopup() {
+  const overlay = document.getElementById("smartListOverlay");
+  const optionsWrap = document.getElementById("smartListOptions");
+  const inputWrap = document.getElementById("newListInputWrap");
+  const input = document.getElementById("newListInput");
 
-function smartItemTitle(item){
-  return [item.brand, item.identifier, item.varietal, item.year]
-    .filter(v => v && v !== "N/A")
-    .join(" ");
-}
+  optionsWrap.innerHTML = "";
+  inputWrap.style.display = "none";
+  input.value = "";
 
+  const smartLists = JSON.parse(localStorage.getItem("Smart Lists") || "[]");
+
+  // Sort lists alphabetically
+  const sorted = [...smartLists].sort((a, b) =>
+    a.list.localeCompare(b.list)
+  );
+
+  sorted.forEach(listObj => {
+    const btn = document.createElement("button");
+    btn.textContent = listObj.list;
+    btn.onclick = () => {
+      const targetList = listObj.list;
+      console.log("Target List:", targetList);
+      closeSmartListPopup();
+    };
+    optionsWrap.appendChild(btn);
+  });
+
+  overlay.classList.add("show");
+  overlay.onclick = e => {
+    if (e.target === overlay) closeSmartListPopup();
+  };
+}
 
 
 
@@ -1163,6 +1206,8 @@ function logUndo(item, key, prevValue, nextValue) {
     undoStack.shift();
   }
 }
+
+
 
 
 
@@ -2032,6 +2077,16 @@ row.onpointerdown = e => {
 row.onpointerup = () => clearTimeout(rowHoldTimer);
 row.onpointerleave = () => clearTimeout(rowHoldTimer);
 
+  list.appendChild(row);
+}
+
+function smartItemTitle(item){
+  return [item.brand, item.identifier, item.varietal, item.year]
+    .filter(v => v && v !== "N/A")
+    .join(" ");
+}
+
+
 
 /* ---------- INIT ---------- */
 buildSourceTabs();
@@ -2078,7 +2133,8 @@ groupBtn.onpointerdown = e => {
 
 groupHoldTimer = setTimeout(() => {
   groupLongPressFired = true;
-  openSmartListPicker();
+  alert("Export button clicked!");
+  openSmartListPopup;
 }, 700);
 
 };
@@ -2264,101 +2320,25 @@ archiveCleanupOverlay.onclick = () => {
   archiveCleanupOverlay.classList.remove("show");
 };
 
-function openSmartListPicker() {
-  const overlay = document.createElement("div");
-  overlay.className = "overlay show";
 
-  const modal = document.createElement("div");
-  modal.className = "drawer open";
-  modal.style.right = "auto";
-  modal.style.left = "50%";
-  modal.style.transform = "translateX(-50%)";
-  modal.style.width = "300px";
+document.getElementById("createNewListBtn").onclick = () => {
+  document.getElementById("newListInputWrap").style.display = "block";
+};
 
-  modal.innerHTML = `
-    <div class="drawer-title">Choose List</div>
+document.getElementById("confirmNewListBtn").onclick = () => {
+  const input = document.getElementById("newListInput");
+  const targetList = input.value.trim();
 
-    <div class="list-options"></div>
+  if (!targetList) return;
 
-    <hr style="margin:12px 0">
+  console.log("Target List:", targetList);
+  closeSmartListPopup();
+};
 
-    <button class="new-list-btn">＋ Create New List</button>
-  `;
-
-  document.body.appendChild(overlay);
-  document.body.appendChild(modal);
-
-  overlay.onclick = () => {
-    overlay.remove();
-    modal.remove();
-  };
-
-  populateSmartListOptions(
-    modal.querySelector(".list-options"),
-    overlay,
-    modal
-  );
+function closeSmartListPopup() {
+  document.getElementById("smartListOverlay").classList.remove("show");
 }
 
-function populateSmartListOptions(container, overlay, modal) {
-  const listNames = smartLists
-    .map(l => l.list)
-    .filter(Boolean)
-    .sort((a, b) => a.localeCompare(b));
-
-  if (listNames.length === 0) {
-    container.innerHTML = `<div style="color:#666">No lists yet</div>`;
-  }
-
-  listNames.forEach(name => {
-    const btn = document.createElement("button");
-    btn.textContent = name;
-
-    btn.onclick = () => {
-      targetList = name;
-      console.log("targetList set (existing):", targetList);
-      overlay.remove();
-      modal.remove();
-    };
-
-    container.appendChild(btn);
-  });
-
-  modal
-    .querySelector(".new-list-btn")
-    .onclick = () => openCreateNewList(container, overlay, modal);
-}
-
-function openCreateNewList(container, overlay, modal) {
-  container.innerHTML = `
-    <div style="margin-bottom:8px">Name of List</div>
-    <input
-      type="text"
-      class="new-list-input"
-      placeholder="Name of List"
-      style="width:100%;padding:8px;font-size:15px"
-    />
-    <button class="confirm-new-list" style="margin-top:12px">
-      Create
-    </button>
-  `;
-
-  const input = container.querySelector(".new-list-input");
-  input.focus();
-
-  container
-    .querySelector(".confirm-new-list")
-    .onclick = () => {
-      const value = input.value.trim();
-      if (!value) return;
-
-      targetList = value;
-      console.log("targetList set (new):", targetList);
-
-      overlay.remove();
-      modal.remove();
-    };
-}
 
 /* ---------- NEW BOTTLE ---------- */
 const newBottleBtn = document.getElementById("newBottleBtn");
