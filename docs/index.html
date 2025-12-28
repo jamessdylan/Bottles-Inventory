@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Reserve List</title>
+<title>SM Wine key</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -911,14 +911,6 @@ reserveListBtn.onclick = e => {
   e.stopPropagation();
   openReserveListDropdown();
 };
-
-document.addEventListener("click", e => {
-  const dropdown = document.getElementById("reserveListDropdown");
-  if (!dropdown.contains(e.target) && e.target !== reserveListBtn) {
-    dropdown.classList.add("hidden");
-  }
-});
-
 
 
     // Handle the "Sales Report" button click
