@@ -271,34 +271,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   font-style: italic;
 }
 
-.smart-list-popup {
-  position: fixed;
-  inset: 0;
-  background: #fff;
-  z-index: 9999;
-  padding: 20px;
-  overflow-y: auto;
-}
-
-.popup-title {
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 16px;
-}
-
-.popup-option {
-  padding: 12px;
-  border-bottom: 1px solid #eee;
-  cursor: pointer;
-}
-
-.popup-option.create {
-  font-weight: 600;
-}
-
-.popup-option:hover {
-  background: #f5f5f5;
-}
 
 </style>
 </head>
@@ -949,12 +921,11 @@ baseFileBtn.onclick = () => {
 };
 
 
-    // Handle the "Export" button click
-    exportBtn.onclick = () => {
-      drawer.classList.remove("open");
-      overlay.classList.remove("show");
-       openSmartListEditor();
-    };
+exportBtn.onclick = () => {
+  console.log("[ExportBtn] Pressed — opening Smart List editor");
+  openSmartListEditor(); // no list specified → selector popup
+};
+
 
 
 
@@ -971,10 +942,8 @@ csvFileBtn.onclick = () => {
 /* ---------------- LOAD ---------------- */
 
 async function loadItems() {
-await initializeSmartLists();
-
+await loadSmartLists();
   const res = await fetch("./items.json", { cache: "no-store" });
-
   templateItems = await res.json();
 
   const patchItems = JSON.parse(
@@ -984,44 +953,29 @@ await initializeSmartLists();
   items = applyPatchToTemplate(templateItems, patchItems);
 
   renderItems();
-
 }
 
+let SmartLists = {};
 
-async function initializeSmartLists() {
-  const stored = localStorage.getItem("Smart Lists");
+async function loadSmartLists() {
+  const local = localStorage.getItem("Smart Lists");
 
-  // ✅ Case 1: Found in localStorage
-  if (stored) {
-    try {
-      SmartLists = JSON.parse(stored);
-      console.log("Smart Lists loaded from local storage:", SmartLists);
-      return;
-    } catch (err) {
-      console.warn("Smart Lists in local storage is corrupted, refetching");
-      localStorage.removeItem("Smart Lists");
-    }
+  if (local) {
+    SmartLists = JSON.parse(local);
+    console.log("[SmartLists] Loaded from localStorage:", SmartLists);
+    return;
   }
 
-  // ✅ Case 2: Fetch from GitHub repository
   try {
     const res = await fetch("./Smart Lists.json");
     if (!res.ok) throw new Error("File not found");
 
-    const data = await res.json();
-
-    // Validate basic structure
-    if (typeof data !== "object" || Array.isArray(data)) {
-      throw new Error("Invalid Smart Lists format");
-    }
-
-    SmartLists = data;
+    SmartLists = await res.json();
     localStorage.setItem("Smart Lists", JSON.stringify(SmartLists));
-
-    console.log("Smart Lists loaded from file:", SmartLists);
+    console.log("[SmartLists] Loaded from file:", SmartLists);
   } catch (err) {
-    console.warn("Smart Lists not found in local storage or repository");
     SmartLists = {};
+    console.warn("[SmartLists] No storage or file found, initialized empty");
   }
 }
 
@@ -1061,7 +1015,6 @@ tab.onclick = async () => {
 }
 
 
-let SmartLists = {};
 
 
 
@@ -1077,6 +1030,156 @@ function baseSort(a,b,key){
     ||naLast(b.year,a.year);
 }
 
+function openSmartListEditor(listName = null) {
+  console.log("[Editor] Requested list:", listName);
+
+  if (listName) {
+    openListEditorPopup(listName);
+    return;
+  }
+
+  openListSelectorPopup();
+}
+
+function openListSelectorPopup() {
+  const names = Object.keys(SmartLists).sort((a, b) =>
+    a.localeCompare(b)
+  );
+
+  console.log("[Selector] Available lists:", names);
+
+  const popup = document.createElement("div");
+  popup.className = "smart-list-popup";
+
+  popup.innerHTML = `<h2>Select Smart List</h2>`;
+
+  names.forEach(name => {
+    const row = document.createElement("div");
+    row.className = "popup-option";
+    row.textContent = name;
+
+    row.onclick = () => {
+      popup.remove();
+      openListEditorPopup(name);
+    };
+
+    popup.appendChild(row);
+  });
+
+  const create = document.createElement("div");
+  create.className = "popup-option create";
+  create.textContent = "＋ Create New List";
+
+  create.onclick = () => {
+    const input = prompt("Enter new list name:");
+    if (!input) return;
+
+    popup.remove();
+    openListEditorPopup(input.trim());
+  };
+
+  popup.appendChild(create);
+  document.body.appendChild(popup);
+}
+
+function itemTitle(item) {
+  return [item.brand, item.identifier, item.varietal, item.year]
+    .filter(v => v && v !== "N/A")
+    .join(" ");
+}
+
+function uuidToItem(uuid) {
+  return items.find(i => i.UUID === uuid);
+}
+
+function openListEditorPopup(listName) {
+  const originalUUIDs = SmartLists[listName] || [];
+  let workingUUIDs = [...originalUUIDs]; // 🔒 copy
+
+  console.log("[Editor] Editing list:", listName);
+  console.log("[Editor] Original UUIDs:", originalUUIDs);
+
+  const popup = document.createElement("div");
+  popup.className = "smart-list-popup editor";
+
+  const title = document.createElement("h2");
+  title.textContent = listName;
+  popup.appendChild(title);
+
+  const listEl = document.createElement("div");
+  popup.appendChild(listEl);
+
+  const input = document.createElement("input");
+  input.placeholder = "Add item…";
+  popup.appendChild(input);
+
+  const confirm = document.createElement("button");
+  confirm.textContent = "Confirm";
+  popup.appendChild(confirm);
+
+  function render() {
+    listEl.innerHTML = "";
+
+    console.log("[Editor] Rendering UUIDs:", workingUUIDs);
+
+    workingUUIDs.forEach((uuid, index) => {
+      const item = uuidToItem(uuid);
+      if (!item) return;
+
+      const row = document.createElement("div");
+      row.className = "editor-row";
+
+      const x = document.createElement("span");
+      x.textContent = "✕";
+      x.onclick = () => {
+        workingUUIDs.splice(index, 1);
+        console.log("[Editor] Removed:", itemTitle(item));
+        render();
+      };
+
+      const label = document.createElement("span");
+      label.textContent = itemTitle(item);
+
+      row.append(x, label);
+      listEl.appendChild(row);
+    });
+  }
+
+  // 🔹 suggestions
+  const availableItems = items.filter(
+    i => !workingUUIDs.includes(i.UUID)
+  );
+
+  console.log(
+    "[Editor] Suggestions:",
+    availableItems.map(itemTitle)
+  );
+
+  input.onchange = () => {
+    const match = availableItems.find(
+      i => itemTitle(i) === input.value
+    );
+    if (!match) return;
+
+    workingUUIDs.push(match.UUID);
+    console.log("[Editor] Added:", itemTitle(match));
+    input.value = "";
+    render();
+  };
+
+  confirm.onclick = () => {
+    SmartLists[listName] = workingUUIDs;
+    localStorage.setItem("Smart Lists", JSON.stringify(SmartLists));
+
+    console.log("[Editor] CONFIRMED list:", listName);
+    console.log("[Editor] Updated SmartLists:", SmartLists);
+
+    popup.remove();
+  };
+
+  render();
+  document.body.appendChild(popup);
+}
 
 
 function promptNumber(label, initialValue, callback) {
@@ -2025,66 +2128,6 @@ function smartItemTitle(item){
     .filter(v => v && v !== "N/A")
     .join(" ");
 }
-
-function openSmartListEditor(listName = null) {
-  const smartLists =
-    JSON.parse(localStorage.getItem("SmartLists")) || {};
-
-  const listNames = Object.keys(smartLists).sort((a, b) =>
-    a.localeCompare(b)
-  );
-
-  console.log("Smart List keys:", listNames);
-
-  /* ---------- DIRECT OPEN ---------- */
-  if (listName) {
-    renderSmartListPopup(listName);
-    return;
-  }
-
-  /* ---------- SELECTOR POPUP ---------- */
-  const popup = document.createElement("div");
-  popup.className = "smart-list-popup";
-
-  const title = document.createElement("div");
-  title.className = "popup-title";
-  title.textContent = "Select Smart List";
-  popup.appendChild(title);
-
-  const listContainer = document.createElement("div");
-  popup.appendChild(listContainer);
-
-  listNames.forEach(name => {
-    const row = document.createElement("div");
-    row.className = "popup-option";
-    row.textContent = name;
-
-    row.onclick = () => {
-      popup.remove();
-      renderSmartListPopup(name);
-    };
-
-    listContainer.appendChild(row);
-  });
-
-  /* ---------- CREATE ---------- */
-  const createRow = document.createElement("div");
-  createRow.className = "popup-option create";
-  createRow.textContent = "＋ Create List";
-
-  createRow.onclick = () => {
-    const input = prompt("Enter new Smart List name:");
-    if (!input) return;
-    popup.remove();
-    renderSmartListPopup(input.trim());
-  };
-
-  listContainer.appendChild(createRow);
-
-  document.body.appendChild(popup);
-}
-
-
 
 
 
