@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine key</title>
+<title>SM Wine</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1031,9 +1031,8 @@ async function loadItems() {
   );
 
   items = applyPatchToTemplate(templateItems, patchItems);
-
+smartLists = await initSmartLists(items);
   renderItems();
-  async function initSmartLists(items)
 }
 
 async function loadSmartLists() {
@@ -1056,52 +1055,6 @@ async function loadSmartLists() {
 
   return smartLists;
 }
-
-function validateSmartLists(smartLists, items) {
-  const validUUIDs = new Set(
-    items.map(item => item.UUID)
-  );
-
-  let changed = false;
-
-  smartLists.forEach(list => {
-    if (!Array.isArray(list.members)) return;
-
-    const filtered = list.members.filter(uuid =>
-      validUUIDs.has(uuid)
-    );
-
-    if (filtered.length !== list.members.length) {
-      list.members = filtered;
-      changed = true;
-    }
-  });
-
-  return changed;
-}
-
-
-function saveSmartLists(smartLists) {
-  localStorage.setItem(
-    "Smart Lists",
-    JSON.stringify(smartLists)
-  );
-}
-
-async function initSmartLists(items) {
-  const smartLists = await loadSmartLists();
-
-  const changed = validateSmartLists(smartLists, items);
-  if (changed) {
-    saveSmartLists(smartLists);
-  }
-
-  console.log("Smart Lists:");
-  console.log(smartLists);
-
-  return smartLists;
-}
-
 
 /* ---------------- TABS ---------------- */
 function buildSourceTabs(){
@@ -1271,6 +1224,50 @@ function baseSort(a,b,key){
     ||naLast(b.year,a.year);
 }
 
+
+function validateSmartLists(smartLists, items) {
+  const validUUIDs = new Set(
+    items.map(item => item.UUID)
+  );
+
+  let changed = false;
+
+  smartLists.forEach(list => {
+    if (!Array.isArray(list.members)) return;
+
+    const filtered = list.members.filter(uuid =>
+      validUUIDs.has(uuid)
+    );
+
+    if (filtered.length !== list.members.length) {
+      list.members = filtered;
+      changed = true;
+    }
+  });
+
+  return changed;
+}
+
+function saveSmartLists(smartLists) {
+  localStorage.setItem(
+    "Smart Lists",
+    JSON.stringify(smartLists)
+  );
+}
+
+async function initSmartLists(items) {
+  const smartLists = await loadSmartLists();
+
+  const changed = validateSmartLists(smartLists, items);
+  if (changed) {
+    saveSmartLists(smartLists);
+  }
+
+  console.log("Smart Lists:");
+  console.log(smartLists);
+
+  return smartLists;
+}
 
 
 function promptNumber(label, initialValue, callback) {
@@ -1491,6 +1488,10 @@ function handleQuantityChange(item, newValue) {
   item[key] = nextValue;
   renderItems();
 }
+
+
+
+
 
 
 
