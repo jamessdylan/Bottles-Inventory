@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine</title>
+<title>SM Wine key</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -269,6 +269,15 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   color: #9a9a9a;
   opacity: 0.6;
   font-style: italic;
+}
+
+
+.popup-overlay,
+.smartlist-popup,
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
 }
 
 
@@ -1031,6 +1040,8 @@ function baseSort(a,b,key){
 }
 
 function openSmartListEditor(listName = null) {
+console.log("[UI] openSmartListEditor called");
+
   console.log("[Editor] Requested list:", listName);
 
   if (listName) {
@@ -1045,7 +1056,7 @@ function openListSelectorPopup() {
   const names = Object.keys(SmartLists).sort((a, b) =>
     a.localeCompare(b)
   );
-
+console.log("[UI] Popup element created:", popupEl);
   console.log("[Selector] Available lists:", names);
 
   const popup = document.createElement("div");
