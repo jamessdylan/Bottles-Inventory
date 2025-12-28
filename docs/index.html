@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine </title>
+<title>SM Wine key</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -271,6 +271,34 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   font-style: italic;
 }
 
+.smart-list-popup {
+  position: fixed;
+  inset: 0;
+  background: #fff;
+  z-index: 9999;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.popup-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.popup-option {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+}
+
+.popup-option.create {
+  font-weight: 600;
+}
+
+.popup-option:hover {
+  background: #f5f5f5;
+}
 
 </style>
 </head>
@@ -925,7 +953,7 @@ baseFileBtn.onclick = () => {
     exportBtn.onclick = () => {
       drawer.classList.remove("open");
       overlay.classList.remove("show");
-      alert("Export button clicked!");
+      openSmartListEditor();
     };
 
 
@@ -1048,7 +1076,6 @@ function baseSort(a,b,key){
     ||naLast(a.varietal,b.varietal)
     ||naLast(b.year,a.year);
 }
-
 
 
 
@@ -1272,41 +1299,7 @@ function handleQuantityChange(item, newValue) {
 }
 
 
-function getOrCreateSmartList(listName) {
-  if (!listName) return null;
 
-  /* ---------- LOAD DICTIONARY ---------- */
-  let smartLists = JSON.parse(localStorage.getItem("SmartLists"));
-
-  if (!smartLists || typeof smartLists !== "object") {
-    smartLists = {};
-  }
-
-  /* ---------- LOAD LIST NAMES ---------- */
-  let smartListNames = JSON.parse(localStorage.getItem("Smart Lists"));
-  if (!Array.isArray(smartListNames)) {
-    smartListNames = [];
-  }
-
-  /* ---------- CREATE IF MISSING ---------- */
-  if (!smartLists[listName]) {
-    console.log("Creating Smart List:", listName);
-
-    smartLists[listName] = [];
-
-    if (!smartListNames.includes(listName)) {
-      smartListNames.push(listName);
-    }
-  } else {
-    console.log("Editing Smart List:", listName);
-  }
-
-  /* ---------- SAVE (NO OVERWRITE) ---------- */
-  localStorage.setItem("SmartLists", JSON.stringify(smartLists));
-  localStorage.setItem("Smart Lists", JSON.stringify(smartListNames));
-
-  return smartLists[listName];
-}
 
 
 
@@ -2032,6 +2025,80 @@ function smartItemTitle(item){
     .filter(v => v && v !== "N/A")
     .join(" ");
 }
+
+function openSmartListEditor(listName = null) {
+  const smartLists =
+    JSON.parse(localStorage.getItem("SmartLists")) || {};
+
+  const listNames = Object.keys(smartLists).sort((a, b) =>
+    a.localeCompare(b)
+  );
+
+  /* ---------- IF LIST PROVIDED ---------- */
+  if (listName) {
+    renderSmartListPopup(listName);
+    return;
+  }
+
+  /* ---------- BUILD DROPDOWN ---------- */
+  const popup = document.createElement("div");
+  popup.className = "smart-list-popup";
+
+  const title = document.createElement("div");
+  title.className = "popup-title";
+  title.textContent = "Select Smart List";
+  popup.appendChild(title);
+
+  listNames.forEach(name => {
+    const row = document.createElement("div");
+    row.className = "popup-option";
+    row.textContent = name;
+
+    row.onclick = () => {
+      closePopup(popup);
+      renderSmartListPopup(name);
+    };
+
+    popup.appendChild(row);
+  });
+
+  /* ---------- CREATE LIST OPTION ---------- */
+  const createRow = document.createElement("div");
+  createRow.className = "popup-option create";
+  createRow.textContent = "＋ Create List";
+
+  createRow.onclick = () => {
+    const input = prompt("Enter new Smart List name:");
+    if (!input) return;
+
+    closePopup(popup);
+    renderSmartListPopup(input.trim());
+  };
+
+  popup.appendChild(createRow);
+
+  document.body.appendChild(popup);
+}
+
+function renderSmartListPopup(listName) {
+  const popup = document.createElement("div");
+  popup.className = "smart-list-popup editor";
+
+  const title = document.createElement("div");
+  title.className = "popup-title";
+  title.textContent = listName;
+
+  popup.appendChild(title);
+
+  document.body.appendChild(popup);
+
+  console.log("Editing Smart List:", listName);
+}
+
+function closePopup(popup) {
+  popup.remove();
+}
+
 
 
 
