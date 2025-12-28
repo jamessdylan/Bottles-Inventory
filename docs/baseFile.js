@@ -1,5 +1,13 @@
-console.log(“[baseFile.js] loaded");
+console.log("[baseFile.js] loaded");
+
 function generateBaseFile() {
+  console.log("[baseFile] generateBaseFile called");
+
+  if (!Array.isArray(items)) {
+    console.warn("[baseFile] items not ready");
+    return;
+  }
+
   // Deep clone so we never mutate live items
   const baseItems = items.map(item => {
     const clean = JSON.parse(JSON.stringify(item));
@@ -9,25 +17,30 @@ function generateBaseFile() {
     clean.TotalPrev = 0;
 
     // Reset all sources and remove SourcePrev keys
-    SOURCES.forEach(src => {
-      clean[src] = 0;
-      delete clean[`${src}Prev`];
-    });
+    if (Array.isArray(SOURCES)) {
+      SOURCES.forEach(src => {
+        clean[src] = 0;
+        delete clean[`${src}Prev`];
+      });
+    }
 
     return clean;
   });
 
   const json = JSON.stringify(baseItems, null, 2);
-
   openJSONInNewWindow(json, "items.json");
 }
-
 
 function openJSONInNewWindow(json, filename) {
   const blob = new Blob([json], { type: "application/json" });
   const url = URL.createObjectURL(blob);
 
   const win = window.open("", "_blank");
+  if (!win) {
+    alert("Popup blocked. Please allow popups.");
+    return;
+  }
+
   win.document.write(`
     <html>
       <head>
@@ -52,7 +65,7 @@ function openJSONInNewWindow(json, filename) {
           }
           pre {
             white-space: pre-wrap;
-            padding-bottom: 80px; /* space for bottom button */
+            padding-bottom: 80px;
           }
           .bottom-bar {
             position: fixed;
