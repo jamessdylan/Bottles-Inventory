@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine</title>
+<title>SM Wine Undo</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -840,8 +840,49 @@ function defaultTitle(){
 let pageTitle=defaultTitle();
 pageTitleEl.textContent=pageTitle;
 
-initDatePicker();
+const picker=document.getElementById("datePicker");
+const pickerOverlay=document.getElementById("datePickerOverlay");
+const monthPicker=document.getElementById("monthPicker");
+const yearPicker=document.getElementById("yearPicker");
+const cancelDate = document.getElementById("cancelDate");
+const confirmDate = document.getElementById("confirmDate");
 
+
+const months=[ "January","February","March","April","May","June",
+               "July","August","September","October","November","December" ];
+
+months.forEach(m=>{
+  const o=document.createElement("option");
+  o.value=m; o.textContent=m;
+  monthPicker.appendChild(o);
+});
+
+const currentYear=new Date().getFullYear();
+for(let y=currentYear;y>=currentYear-2;y--){
+  const o=document.createElement("option");
+  o.value=y; o.textContent=y;
+  yearPicker.appendChild(o);
+}
+
+pageTitleEl.onclick=()=>{
+  const [m,y]=pageTitle.split(" ");
+  monthPicker.value=m;
+  yearPicker.value=y;
+  picker.style.transform="translateY(0)";
+  pickerOverlay.classList.add("show");
+};
+
+cancelDate.onclick=()=>{
+  picker.style.transform="translateY(100%)";
+  pickerOverlay.classList.remove("show");
+};
+
+confirmDate.onclick=()=>{
+  pageTitle=`${monthPicker.value} ${yearPicker.value} Wine Inventory`;
+  pageTitleEl.textContent=pageTitle;
+  cancelDate.onclick();
+};
+;
 
 /* ---------------- STATE ---------------- */
 const SOURCES=[
@@ -3010,7 +3051,6 @@ function openPrintSummary() {
 
 
 </script>
-<script src="./datePicker.js"></script>
 
 </body>
 </html> 
