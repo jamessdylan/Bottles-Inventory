@@ -265,19 +265,38 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 }
 
 
+/* ---------- SMART LIST EDITOR ---------- */
+.smart-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:14px 16px;
+  margin-bottom:10px;
+  background:rgba(255,255,255,.7);
+  border-radius:14px;
+  cursor:grab;
+}
+
+.smart-row.dragging{
+  opacity:.6;
+}
+
+.smart-label{
+  flex:1;
+  font-size:15px;
+}
+
+.smart-delete{
+  font-size:18px;
+  color:#b00020;
+  cursor:pointer;
+  padding:4px 8px;
+}
+
 .value.ghost {
   color: #9a9a9a;
   opacity: 0.6;
   font-style: italic;
-}
-
-
-.popup-overlay,
-.smartlist-popup,
-.modal {
-  position: fixed;
-  inset: 0;
-  z-index: 100000;
 }
 
 
@@ -711,6 +730,69 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
   <div class="overlay" id="overlay"></div>
 
+<!-- SMART LIST EDITOR OVERLAY -->
+<div id="smartListOverlay" class="overlay"></div>
+
+<div id="smartListEditor" style="
+  position:fixed;
+  inset:0;
+  background:rgba(255,255,255,.94);
+  backdrop-filter:blur(18px);
+  padding:calc(20px + env(safe-area-inset-top)) 16px 20px;
+  transform:translateY(100%);
+  transition:.25s ease;
+  z-index:550;
+  overflow-y:auto;
+">
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div style="font-family:'Copperplate',serif;font-size:18px;">
+      Smart List Editor
+    </div>
+    <button id="closeSmartList">Done</button>
+  </div>
+
+  <div id="smartListContainer"></div>’
+
+<!-- SMART LIST ADD INPUT -->
+<div id="smartListAddWrap" style="
+  position:sticky;
+  bottom:0;
+  margin-top:16px;
+  background:rgba(255,255,255,.94);
+  backdrop-filter:blur(14px);
+  padding:12px 0 env(safe-area-inset-bottom);
+">
+
+  <input
+    id="smartListAddInput"
+    type="text"
+    placeholder="Add item…"
+    autocomplete="off"
+    style="
+      width:100%;
+      padding:14px 16px;
+      border-radius:14px;
+      border:none;
+      background:rgba(0,0,0,.06);
+      font-size:16px;
+      outline:none;
+    "
+  />
+
+  <div
+    id="smartListAddSuggestions"
+    style="
+      display:none;
+      flex-direction:column;
+      background:white;
+      border-radius:14px;
+      margin-top:8px;
+      box-shadow:0 6px 20px rgba(0,0,0,.18);
+      overflow:hidden;
+    "
+  ></div>
+</div>
 
 </div>
 
@@ -746,6 +828,10 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
 
 <script>
+
+await loadExternalScript("./undo.js");
+
+
 /* ---------- PAGE TITLE ---------- */
 const pageTitleEl=document.getElementById("pageTitle");
 
@@ -822,8 +908,7 @@ const SOURCE_ICONS = {
 let items=[];
 let Source="Emporio";
 
-const undoStack = [];
-const UNDO_LIMIT = 5;
+
 
 
 
@@ -930,11 +1015,12 @@ baseFileBtn.onclick = () => {
 };
 
 
-exportBtn.onclick = () => {
-  console.log("[ExportBtn] Pressed — opening Smart List editor");
-  openSmartListEditor(); // no list specified → selector popup
-};
-
+    // Handle the "Export" button click
+    exportBtn.onclick = () => {
+      drawer.classList.remove("open");
+      overlay.classList.remove("show");
+      alert("Export button clicked!");
+    };
 
 
 
@@ -951,7 +1037,6 @@ csvFileBtn.onclick = () => {
 /* ---------------- LOAD ---------------- */
 
 async function loadItems() {
-await loadSmartLists();
   const res = await fetch("./items.json", { cache: "no-store" });
   templateItems = await res.json();
 
@@ -962,30 +1047,6 @@ await loadSmartLists();
   items = applyPatchToTemplate(templateItems, patchItems);
 
   renderItems();
-}
-
-let SmartLists = {};
-
-async function loadSmartLists() {
-  const local = localStorage.getItem("Smart Lists");
-
-  if (local) {
-    SmartLists = JSON.parse(local);
-    console.log("[SmartLists] Loaded from localStorage:", SmartLists);
-    return;
-  }
-
-  try {
-    const res = await fetch("./Smart Lists.json");
-    if (!res.ok) throw new Error("File not found");
-
-    SmartLists = await res.json();
-    localStorage.setItem("Smart Lists", JSON.stringify(SmartLists));
-    console.log("[SmartLists] Loaded from file:", SmartLists);
-  } catch (err) {
-    SmartLists = {};
-    console.warn("[SmartLists] No storage or file found, initialized empty");
-  }
 }
 
 
@@ -1007,6 +1068,7 @@ function buildSourceTabs(){
 tab.onclick = async () => {
   Source = src;
 
+  await loadSmartListForSource(Source);
 
   updateGlobalFilters();
 
@@ -1026,6 +1088,123 @@ tab.onclick = async () => {
 
 
 
+async function loadSmartListForSource(source) {
+  const smartKey = `${source}SmartList`;
+  const fileName = `${source}.json`;
+
+  try {
+    const res = await fetch(`./${fileName}`, { cache: "no-store" });
+    if (!res.ok) throw new Error("No file");
+
+    const uuidList = await res.json();
+
+    // Match UUIDs to actual item objects
+    window[smartKey] = items.filter(i =>
+      uuidList.includes(i.UUID)
+    );
+
+  } catch {
+    // No file or error → empty smart list
+    window[smartKey] = [];
+  }
+}
+
+const smartListEditor = document.getElementById("smartListEditor");
+const smartListOverlay = document.getElementById("smartListOverlay");
+const smartListContainer = document.getElementById("smartListContainer");
+const closeSmartList = document.getElementById("closeSmartList");
+
+let activeSmartKey = null;
+let dragIndex = null;
+
+function openSmartListEditor() {
+  const smartKey = `${Source}SmartList`;
+  const smartItems = window[smartKey];
+
+  if (!Array.isArray(smartItems)) return;
+
+  activeSmartKey = smartKey;
+
+  smartListAddInput.value = "";
+  smartListSelectedItem = null;
+  smartListAddSuggestions.style.display = "none";
+
+  renderSmartListEditor();
+
+  smartListEditor.style.transform = "translateY(0)";
+  smartListOverlay.classList.add("show");
+}
+
+
+function closeSmartListEditorFn() {
+  // ✅ Persist UUIDs on confirm
+  persistSmartListUUIDs();
+
+  smartListEditor.style.transform = "translateY(100%)";
+  smartListOverlay.classList.remove("show");
+
+  activeSmartKey = null;
+  dragIndex = null;
+}
+
+closeSmartList.onclick = closeSmartListEditorFn;
+smartListOverlay.onclick = closeSmartListEditorFn;
+
+function renderSmartListEditor() {
+  smartListContainer.innerHTML = "";
+
+  const list = window[activeSmartKey];
+
+  list.forEach((item, index) => {
+    const row = document.createElement("div");
+    row.className = "smart-row";
+    row.draggable = true;
+
+    row.innerHTML = `
+      <div class="smart-label">
+        ${[item.brand, item.identifier, item.varietal, item.year]
+          .filter(v => v && v !== "N/A")
+          .join(" ")}
+      </div>
+      <div class="smart-delete">✕</div>
+    `;
+
+    /* ❌ DELETE */
+    row.querySelector(".smart-delete").onclick = e => {
+      e.stopPropagation();
+      list.splice(index, 1);
+      renderSmartListEditor();
+      renderItems(); // reflect immediately
+    };
+
+    /* ☰ DRAG REORDER */
+    row.addEventListener("dragstart", () => {
+      dragIndex = index;
+      row.classList.add("dragging");
+    });
+
+    row.addEventListener("dragend", () => {
+      dragIndex = null;
+      row.classList.remove("dragging");
+    });
+
+    row.addEventListener("dragover", e => {
+      e.preventDefault();
+    });
+
+    row.addEventListener("drop", () => {
+      if (dragIndex === null || dragIndex === index) return;
+
+      const moved = list.splice(dragIndex, 1)[0];
+      list.splice(index, 0, moved);
+
+      renderSmartListEditor();
+      renderItems();
+    });
+
+    smartListContainer.appendChild(row);
+  });
+}
 
 
 /* ---------------- HELPERS ---------------- */
@@ -1039,158 +1218,6 @@ function baseSort(a,b,key){
     ||naLast(b.year,a.year);
 }
 
-function openSmartListEditor(listName = null) {
-console.log("[UI] openSmartListEditor called");
-
-  console.log("[Editor] Requested list:", listName);
-
-  if (listName) {
-    openListEditorPopup(listName);
-    return;
-  }
-
-  openListSelectorPopup();
-}
-
-function openListSelectorPopup() {
-  const names = Object.keys(SmartLists).sort((a, b) =>
-    a.localeCompare(b)
-  );
-console.log("[UI] Popup element created:", popupEl);
-  console.log("[Selector] Available lists:", names);
-
-  const popup = document.createElement("div");
-  popup.className = "smart-list-popup";
-
-  popup.innerHTML = `<h2>Select Smart List</h2>`;
-
-  names.forEach(name => {
-    const row = document.createElement("div");
-    row.className = "popup-option";
-    row.textContent = name;
-
-    row.onclick = () => {
-      popup.remove();
-      openListEditorPopup(name);
-    };
-
-    popup.appendChild(row);
-  });
-
-  const create = document.createElement("div");
-  create.className = "popup-option create";
-  create.textContent = "＋ Create New List";
-
-  create.onclick = () => {
-    const input = prompt("Enter new list name:");
-    if (!input) return;
-
-    popup.remove();
-    openListEditorPopup(input.trim());
-  };
-
-  popup.appendChild(create);
-  document.body.appendChild(popup);
-}
-
-function itemTitle(item) {
-  return [item.brand, item.identifier, item.varietal, item.year]
-    .filter(v => v && v !== "N/A")
-    .join(" ");
-}
-
-function uuidToItem(uuid) {
-  return items.find(i => i.UUID === uuid);
-}
-
-function openListEditorPopup(listName) {
-  const originalUUIDs = SmartLists[listName] || [];
-  let workingUUIDs = [...originalUUIDs]; // 🔒 copy
-
-  console.log("[Editor] Editing list:", listName);
-  console.log("[Editor] Original UUIDs:", originalUUIDs);
-
-  const popup = document.createElement("div");
-  popup.className = "smart-list-popup editor";
-
-  const title = document.createElement("h2");
-  title.textContent = listName;
-  popup.appendChild(title);
-
-  const listEl = document.createElement("div");
-  popup.appendChild(listEl);
-
-  const input = document.createElement("input");
-  input.placeholder = "Add item…";
-  popup.appendChild(input);
-
-  const confirm = document.createElement("button");
-  confirm.textContent = "Confirm";
-  popup.appendChild(confirm);
-
-  function render() {
-    listEl.innerHTML = "";
-
-    console.log("[Editor] Rendering UUIDs:", workingUUIDs);
-
-    workingUUIDs.forEach((uuid, index) => {
-      const item = uuidToItem(uuid);
-      if (!item) return;
-
-      const row = document.createElement("div");
-      row.className = "editor-row";
-
-      const x = document.createElement("span");
-      x.textContent = "✕";
-      x.onclick = () => {
-        workingUUIDs.splice(index, 1);
-        console.log("[Editor] Removed:", itemTitle(item));
-        render();
-      };
-
-      const label = document.createElement("span");
-      label.textContent = itemTitle(item);
-
-      row.append(x, label);
-      listEl.appendChild(row);
-    });
-  }
-
-  // 🔹 suggestions
-  const availableItems = items.filter(
-    i => !workingUUIDs.includes(i.UUID)
-  );
-
-  console.log(
-    "[Editor] Suggestions:",
-    availableItems.map(itemTitle)
-  );
-
-  input.onchange = () => {
-    const match = availableItems.find(
-      i => itemTitle(i) === input.value
-    );
-    if (!match) return;
-
-    workingUUIDs.push(match.UUID);
-    console.log("[Editor] Added:", itemTitle(match));
-    input.value = "";
-    render();
-  };
-
-  confirm.onclick = () => {
-    SmartLists[listName] = workingUUIDs;
-    localStorage.setItem("Smart Lists", JSON.stringify(SmartLists));
-
-    console.log("[Editor] CONFIRMED list:", listName);
-    console.log("[Editor] Updated SmartLists:", SmartLists);
-
-    popup.remove();
-  };
-
-  render();
-  document.body.appendChild(popup);
-}
 
 
 function promptNumber(label, initialValue, callback) {
@@ -1243,24 +1270,6 @@ function promptNumber(label, initialValue, callback) {
   };
 }
 
-function logUndo(item, key, prevValue, nextValue) {
-  const last = undoStack[undoStack.length - 1];
-
-  // 🚫 Skip if same item + same source
-  if (last && last.item === item && last.key === key) return;
-
-  undoStack.push({
-    item,
-    key,
-    prevValue,
-    nextValue,
-    text: `${smartItemTitle(item)}: ${prevValue} → ${nextValue}`
-  });
-
-  if (undoStack.length > UNDO_LIMIT) {
-    undoStack.shift();
-  }
-}
 
 
 
@@ -1637,7 +1646,16 @@ const ARCHIVE_ACTIONS = [
   null
 ];
 
+function persistSmartListUUIDs() {
+  if (!activeSmartKey) return;
 
+  const list = window[activeSmartKey];
+  if (!Array.isArray(list)) return;
+
+  const uuidKey = `${Source}SmartListUUIDs`;
+
+  window[uuidKey] = list.map(item => item.UUID);
+}
 
 
 /* ---------------- RENDER ---------------- */
@@ -2001,31 +2019,7 @@ row.innerHTML=`
 
 document.getElementById("undoBtn").onclick = undoLastAction;
 
-function undoLastAction() {
-  const action = undoStack.pop();
-  if (!action) return;
 
-  const { item, key, prevValue } = action;
-
-  item[key] = prevValue;
-
-  renderItems();
-}
-
-function showUndoHistory() {
-  if (!undoStack.length) {
-    alert("No undo history");
-    return;
-  }
-
-  const text = undoStack
-    .slice()
-    .reverse()
-    .map((u, i) => `${i + 1}. ${u.text}`)
-    .join("\n");
-
-  alert(`Undo History (most recent first):\n\n${text}`);
-}
 
 const undoBtn = document.getElementById("undoBtn");
 
@@ -2187,6 +2181,7 @@ groupBtn.onpointerdown = e => {
 
 groupHoldTimer = setTimeout(() => {
   groupLongPressFired = true;
+  openSmartListEditor();
 }, 700);
 
 };
@@ -2220,6 +2215,74 @@ smartSortBtn.onclick = () => {
   renderItems();
 };
 
+const smartListAddInput = document.getElementById("smartListAddInput");
+const smartListAddSuggestions = document.getElementById("smartListAddSuggestions");
+
+let smartListSelectedItem = null;
+
+smartListAddInput.oninput = () => {
+  const value = smartListAddInput.value.trim().toLowerCase();
+  smartListAddSuggestions.innerHTML = "";
+  smartListSelectedItem = null;
+
+  if (!value || !activeSmartKey) {
+    smartListAddSuggestions.style.display = "none";
+    return;
+  }
+
+  const currentList = window[activeSmartKey] || [];
+  const currentUUIDs = new Set(currentList.map(i => i.UUID));
+
+  // Eligible items: exist in inventory, NOT already in smart list
+  const candidates = items.filter(i =>
+    !currentUUIDs.has(i.UUID)
+  );
+
+  const matches = candidates.filter(i =>
+    smartItemTitle(i).toLowerCase().includes(value)
+  );
+
+  if (!matches.length) {
+    smartListAddSuggestions.style.display = "none";
+    return;
+  }
+
+  matches.forEach(item => {
+    const div = document.createElement("div");
+    div.textContent = smartItemTitle(item);
+    div.style.padding = "12px 16px";
+    div.style.cursor = "pointer";
+
+    div.onclick = () => {
+      smartListAddInput.value = smartItemTitle(item);
+      smartListSelectedItem = item;
+      smartListAddSuggestions.style.display = "none";
+    };
+
+    smartListAddSuggestions.appendChild(div);
+  });
+
+  smartListAddSuggestions.style.display = "flex";
+};
+
+smartListAddInput.onkeydown = e => {
+  if (e.key !== "Enter") return;
+
+  // 🚫 Only allow confirmed autocomplete items
+  if (!smartListSelectedItem || !activeSmartKey) return;
+
+  const list = window[activeSmartKey];
+
+  list.push(smartListSelectedItem);
+
+  // reset UI
+  smartListAddInput.value = "";
+  smartListSelectedItem = null;
+  smartListAddSuggestions.style.display = "none";
+
+  renderSmartListEditor();
+  renderItems(); // reflect immediately
+};
 
 
 
