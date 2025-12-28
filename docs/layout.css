@@ -1,5 +1,3 @@
-console.log(“[layout.css] loaded");
-
 /* ---------- BACKGROUND ---------- */
 body::before{
   content:"";
