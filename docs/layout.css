@@ -1,0 +1,19 @@
+console.log(“[layout.css] loaded");
+
+/* ---------- BACKGROUND ---------- */
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:url("IMG_6048.jpeg") no-repeat right center / 1200px auto;
+  opacity:.65;
+  z-index:-1;
+}
+
+/* ---------- HEADER ---------- */
+header{
+  display:flex;
+  justify-content:center;
+  padding:24px 16px;
+}
+header img{max-width:100%;}
