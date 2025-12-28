@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wire Group</title>
+<title>SM Wine key</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1273,55 +1273,42 @@ function handleQuantityChange(item, newValue) {
 
 
 
-function getOrCreateSmartList(listName = null) {
-  /* ---------- LOAD REGISTRY ---------- */
+function getOrCreateSmartList(listName) {
+  if (!listName) return null;
+
+  /* ---------- LOAD DICTIONARY ---------- */
+  let smartLists = JSON.parse(localStorage.getItem("SmartLists"));
+
+  if (!smartLists || typeof smartLists !== "object") {
+    smartLists = {};
+  }
+
+  /* ---------- LOAD LIST NAMES ---------- */
   let smartListNames = JSON.parse(localStorage.getItem("Smart Lists"));
   if (!Array.isArray(smartListNames)) {
     smartListNames = [];
   }
 
-  /* ---------- LOAD DICTIONARY ---------- */
-  let smartListsDict = JSON.parse(localStorage.getItem("SmartLists"));
-  if (!smartListsDict || typeof smartListsDict !== "object") {
-    smartListsDict = {};
-  }
-
-  /* ---------- PROMPT IF NEEDED ---------- */
-  if (!listName) {
-    const input = prompt("Enter a name for the Smart List:");
-    if (!input) {
-      console.warn("Smart List creation cancelled");
-      return null;
-    }
-    listName = input.trim();
-  }
-
-  if (!listName) {
-    console.warn("Smart List name invalid");
-    return null;
-  }
-
   /* ---------- CREATE IF MISSING ---------- */
-  const exists = !!smartListsDict[listName];
+  if (!smartLists[listName]) {
+    console.log("Creating Smart List:", listName);
 
-  if (!exists) {
-    smartListsDict[listName] = [];
+    smartLists[listName] = [];
 
     if (!smartListNames.includes(listName)) {
       smartListNames.push(listName);
     }
-
-    console.log("Created Smart List:", listName);
   } else {
     console.log("Editing Smart List:", listName);
   }
 
-  /* ---------- PERSIST ---------- */
+  /* ---------- SAVE (NO OVERWRITE) ---------- */
+  localStorage.setItem("SmartLists", JSON.stringify(smartLists));
   localStorage.setItem("Smart Lists", JSON.stringify(smartListNames));
-  localStorage.setItem("SmartLists", JSON.stringify(smartListsDict));
 
-  return smartListsDict[listName];
+  return smartLists[listName];
 }
+
 
 
 
@@ -2054,6 +2041,8 @@ function smartItemTitle(item){
 buildSourceTabs();
 loadItems();
 
+
+The group
 /* ---------- ACTION STATES ---------- */
 let showArchived = false;
 let groupEnabled = false;
