@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>plz work</title>
+<title>SM Wine key</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -953,7 +953,7 @@ baseFileBtn.onclick = () => {
     exportBtn.onclick = () => {
       drawer.classList.remove("open");
       overlay.classList.remove("show");
-      openSmartListEditor();
+       openSmartListEditor();
     };
 
 
@@ -2084,42 +2084,6 @@ function openSmartListEditor(listName = null) {
   document.body.appendChild(popup);
 }
 
-  /* ---------- CREATE LIST OPTION ---------- */
-  const createRow = document.createElement("div");
-  createRow.className = "popup-option create";
-  createRow.textContent = "＋ Create List";
-
-  createRow.onclick = () => {
-    const input = prompt("Enter new Smart List name:");
-    if (!input) return;
-
-    closePopup(popup);
-    renderSmartListPopup(input.trim());
-  };
-
-  popup.appendChild(createRow);
-
-  document.body.appendChild(popup);
-}
-
-function renderSmartListPopup(listName) {
-  const popup = document.createElement("div");
-  popup.className = "smart-list-popup editor";
-
-  const title = document.createElement("div");
-  title.className = "popup-title";
-  title.textContent = listName;
-
-  popup.appendChild(title);
-
-  document.body.appendChild(popup);
-
-  console.log("Editing Smart List:", listName);
-}
-
-function closePopup(popup) {
-  popup.remove();
-}
 
 
 
