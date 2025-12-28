@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Smart Lists</title>
+<title>SM Wine key</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1051,6 +1051,7 @@ function baseSort(a,b,key){
 
 
 
+
 function promptNumber(label, initialValue, callback) {
   const overlay = document.createElement("div");
   overlay.style.cssText = `
@@ -1272,6 +1273,55 @@ function handleQuantityChange(item, newValue) {
 
 
 
+function getOrCreateSmartList(listName = null) {
+  /* ---------- LOAD REGISTRY ---------- */
+  let smartListNames = JSON.parse(localStorage.getItem("Smart Lists"));
+  if (!Array.isArray(smartListNames)) {
+    smartListNames = [];
+  }
+
+  /* ---------- LOAD DICTIONARY ---------- */
+  let smartListsDict = JSON.parse(localStorage.getItem("SmartLists"));
+  if (!smartListsDict || typeof smartListsDict !== "object") {
+    smartListsDict = {};
+  }
+
+  /* ---------- PROMPT IF NEEDED ---------- */
+  if (!listName) {
+    const input = prompt("Enter a name for the Smart List:");
+    if (!input) {
+      console.warn("Smart List creation cancelled");
+      return null;
+    }
+    listName = input.trim();
+  }
+
+  if (!listName) {
+    console.warn("Smart List name invalid");
+    return null;
+  }
+
+  /* ---------- CREATE IF MISSING ---------- */
+  const exists = !!smartListsDict[listName];
+
+  if (!exists) {
+    smartListsDict[listName] = [];
+
+    if (!smartListNames.includes(listName)) {
+      smartListNames.push(listName);
+    }
+
+    console.log("Created Smart List:", listName);
+  } else {
+    console.log("Editing Smart List:", listName);
+  }
+
+  /* ---------- PERSIST ---------- */
+  localStorage.setItem("Smart Lists", JSON.stringify(smartListNames));
+  localStorage.setItem("SmartLists", JSON.stringify(smartListsDict));
+
+  return smartListsDict[listName];
+}
 
 
 
