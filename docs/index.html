@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine key</title>
+<title>SM Wine</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -828,9 +828,6 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
 
 <script>
-
-
-
 /* ---------- PAGE TITLE ---------- */
 const pageTitleEl=document.getElementById("pageTitle");
 
@@ -843,49 +840,8 @@ function defaultTitle(){
 let pageTitle=defaultTitle();
 pageTitleEl.textContent=pageTitle;
 
-const picker=document.getElementById("datePicker");
-const pickerOverlay=document.getElementById("datePickerOverlay");
-const monthPicker=document.getElementById("monthPicker");
-const yearPicker=document.getElementById("yearPicker");
-const cancelDate = document.getElementById("cancelDate");
-const confirmDate = document.getElementById("confirmDate");
+initDatePicker();
 
-
-const months=[ "January","February","March","April","May","June",
-               "July","August","September","October","November","December" ];
-
-months.forEach(m=>{
-  const o=document.createElement("option");
-  o.value=m; o.textContent=m;
-  monthPicker.appendChild(o);
-});
-
-const currentYear=new Date().getFullYear();
-for(let y=currentYear;y>=currentYear-2;y--){
-  const o=document.createElement("option");
-  o.value=y; o.textContent=y;
-  yearPicker.appendChild(o);
-}
-
-pageTitleEl.onclick=()=>{
-  const [m,y]=pageTitle.split(" ");
-  monthPicker.value=m;
-  yearPicker.value=y;
-  picker.style.transform="translateY(0)";
-  pickerOverlay.classList.add("show");
-};
-
-cancelDate.onclick=()=>{
-  picker.style.transform="translateY(100%)";
-  pickerOverlay.classList.remove("show");
-};
-
-confirmDate.onclick=()=>{
-  pageTitle=`${monthPicker.value} ${yearPicker.value} Wine Inventory`;
-  pageTitleEl.textContent=pageTitle;
-  cancelDate.onclick();
-};
-;
 
 /* ---------------- STATE ---------------- */
 const SOURCES=[
@@ -907,7 +863,8 @@ const SOURCE_ICONS = {
 let items=[];
 let Source="Emporio";
 
-
+const undoStack = [];
+const UNDO_LIMIT = 5;
 
 
 
@@ -1269,6 +1226,24 @@ function promptNumber(label, initialValue, callback) {
   };
 }
 
+function logUndo(item, key, prevValue, nextValue) {
+  const last = undoStack[undoStack.length - 1];
+
+  // 🚫 Skip if same item + same source
+  if (last && last.item === item && last.key === key) return;
+
+  undoStack.push({
+    item,
+    key,
+    prevValue,
+    nextValue,
+    text: `${smartItemTitle(item)}: ${prevValue} → ${nextValue}`
+  });
+
+  if (undoStack.length > UNDO_LIMIT) {
+    undoStack.shift();
+  }
+}
 
 
 
@@ -1798,8 +1773,6 @@ function savePatchItems(newPatches) {
   console.log(merged);
 }
 
-await loadExternalScript("./undo.js");
-
 
 /* ---------------- DRAW ITEM ---------------- */
 function openEditBottle(item) {
@@ -2020,7 +1993,31 @@ row.innerHTML=`
 
 document.getElementById("undoBtn").onclick = undoLastAction;
 
+function undoLastAction() {
+  const action = undoStack.pop();
+  if (!action) return;
 
+  const { item, key, prevValue } = action;
+
+  item[key] = prevValue;
+
+  renderItems();
+}
+
+function showUndoHistory() {
+  if (!undoStack.length) {
+    alert("No undo history");
+    return;
+  }
+
+  const text = undoStack
+    .slice()
+    .reverse()
+    .map((u, i) => `${i + 1}. ${u.text}`)
+    .join("\n");
+
+  alert(`Undo History (most recent first):\n\n${text}`);
+}
 
 const undoBtn = document.getElementById("undoBtn");
 
@@ -3013,6 +3010,7 @@ function openPrintSummary() {
 
 
 </script>
+<script src="./datePicker.js"></script>
 
 </body>
 </html> 
