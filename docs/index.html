@@ -1272,7 +1272,6 @@ function handleQuantityChange(item, newValue) {
 }
 
 
-
 function getOrCreateSmartList(listName) {
   if (!listName) return null;
 
@@ -1308,7 +1307,6 @@ function getOrCreateSmartList(listName) {
 
   return smartLists[listName];
 }
-
 
 
 
@@ -2041,8 +2039,6 @@ function smartItemTitle(item){
 buildSourceTabs();
 loadItems();
 
-
-The group
 /* ---------- ACTION STATES ---------- */
 let showArchived = false;
 let groupEnabled = false;
@@ -2082,15 +2078,19 @@ groupBtn.onpointerdown = e => {
   e.preventDefault(); // iOS safety
   groupLongPressFired = false;
 
-  groupHoldTimer = setTimeout(() => {
-    groupLongPressFired = true;
-    console.log("Long press → Smart List:", Source);
-    getOrCreateSmartList(Source);
-  }, 700);
+groupHoldTimer = setTimeout(() => {
+  groupLongPressFired = true;
+}, 700);
+
 };
 
-groupBtn.onpointerup = () => clearTimeout(groupHoldTimer);
-groupBtn.onpointerleave = () => clearTimeout(groupHoldTimer);
+groupBtn.onpointerup = () => {
+  clearTimeout(groupHoldTimer);
+};
+
+groupBtn.onpointerleave = () => {
+  clearTimeout(groupHoldTimer);
+};
 
 groupBtn.onclick = e => {
   // 🚫 suppress click if long-press fired
@@ -2100,7 +2100,7 @@ groupBtn.onclick = e => {
     return;
   }
 
-  // ✅ normal click behavior
+  // ✅ normal toggle behavior
   groupBtn.classList.toggle("active");
   updateGlobalFilters();
   renderItems();
