@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine key</title>
+<title>Smart Lists</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -814,7 +814,7 @@ let Source="Emporio";
 const undoStack = [];
 const UNDO_LIMIT = 5;
 
-
+const SMART_LISTS_KEY = "Smart Lists";
 
 let templateItems = [];
 let currentItems = [];
@@ -1069,7 +1069,7 @@ async function loadItems() {
   );
 
   items = applyPatchToTemplate(templateItems, patchItems);
-
+await prepareSmartLists(items);
   renderItems();
 }
 
@@ -1582,6 +1582,7 @@ async function renderItems() {
   list.innerHTML = "";
 
   const completeKey = `${Source}Complete`;
+  await prepareSmartLists(items);
 
   // ---------- NORMALIZE ----------
   items.forEach(i => {
@@ -2070,6 +2071,80 @@ function smartItemTitle(item){
     .join(" ");
 }
 
+async function loadSmartLists() {
+  let smartLists = JSON.parse(
+    localStorage.getItem(SMART_LISTS_KEY) || "null"
+  );
+
+  if (!smartLists) {
+    const res = await fetch("./Smart Lists.json", {
+      cache: "no-store"
+    });
+    smartLists = await res.json();
+
+    localStorage.setItem(
+      SMART_LISTS_KEY,
+      JSON.stringify(smartLists)
+    );
+
+    console.log("Smart Lists loaded from GitHub");
+  } else {
+    console.log("Smart Lists loaded from localStorage");
+  }
+
+  return smartLists;
+}
+
+function validateSmartListsMembers(smartLists, items) {
+  const validUUIDs = new Set(items.map(item => item.UUID));
+  let changed = false;
+
+  smartLists.forEach(listObj => {
+    if (!Array.isArray(listObj.members)) return;
+
+    listObj.members = listObj.members.filter(uuid => {
+      const exists = validUUIDs.has(uuid);
+      if (!exists) {
+        console.log(
+          "Deleted Item from",
+          listObj.list
+        );
+        changed = true;
+      }
+      return exists;
+    });
+  });
+
+  return changed;
+}
+
+function saveSmartLists(smartLists) {
+  localStorage.setItem(
+    SMART_LISTS_KEY,
+    JSON.stringify(smartLists)
+  );
+
+  console.log("Updated Smart Lists:");
+  console.log(JSON.stringify(smartLists, null, 2));
+}
+
+async function prepareSmartLists(items) {
+  const smartLists = await loadSmartLists();
+
+  const changed = validateSmartListsMembers(
+    smartLists,
+    items
+  );
+
+  if (changed) {
+    saveSmartLists(smartLists);
+  } else {
+    console.log("Smart Lists unchanged");
+    console.log(JSON.stringify(smartLists, null, 2));
+  }
+
+  return smartLists;
+}
 
 
 /* ---------- INIT ---------- */
