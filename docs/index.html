@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Smart Lists Removed</title>
+<title>SM Wine key</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -678,10 +678,21 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
     <button id="newProjectBtn">New Project</button>
     <button id="reserveListBtn">Reserve List</button>
     <button id="salesReportBtn">Sales Report</button>
-<button id="baseFileBtn">Base File</button>
-<button id="csvFileBtn">CSV File</button>
-<button id="printSummaryBtn">Print Summary</button>
+    <button id="baseFileBtn">Base File</button>
+    <button id="csvFileBtn">CSV File</button>
+    <button id="printSummaryBtn">Print Summary</button>
     <button id="exportBtn">Export</button>
+    <button id="clearCacheBtn" style="
+  position:absolute;
+  left:20px;
+  right:20px;
+  bottom:20px;
+  font-weight:bold;
+  color:#7b1e1e;
+">
+  Clear Cache
+</button>
+
   </div>
 
   <div class="overlay" id="overlay"></div>
@@ -842,10 +853,12 @@ const tabsEl=document.getElementById("sourceTabs");
     };
 
     /* Drawer Button Functions */
+
     const reserveListBtn = document.getElementById("reserveListBtn");
     const salesReportBtn = document.getElementById("salesReportBtn");
     const dictionaryFileBtn = document.getElementById("dictionaryFileBtn");
     const exportBtn = document.getElementById("exportBtn");
+document.getElementById("clearCacheBtn").onclick = openClearCachePopup;
 
 const newProjectBtn = document.getElementById("newProjectBtn");
 
@@ -926,6 +939,124 @@ csvFileBtn.onclick = () => {
   generateCSVFile();
 };
 
+
+function openClearCachePopup() {
+  let selectedAction = null;
+
+  /* ---------- OVERLAY ---------- */
+  const overlay = document.createElement("div");
+  overlay.className = "overlay show";
+
+  /* ---------- POPUP ---------- */
+  const popup = document.createElement("div");
+  popup.style.cssText = `
+    position:fixed;
+    inset:auto 20px 20px 20px;
+    background:white;
+    border-radius:14px;
+    padding:16px;
+    z-index:400;
+  `;
+
+  popup.innerHTML = `
+    <div style="font-weight:bold;margin-bottom:12px">
+      How would you like to proceed?
+    </div>
+  `;
+
+  /* ---------- OPTIONS ---------- */
+  const options = [
+    { id: "items", label: "Delete Items Cache Only" },
+    { id: "lists", label: "Delete Smart List Cache Only" },
+    { id: "all",   label: "Delete Entire Cache" }
+  ];
+
+  options.forEach(opt => {
+    const row = document.createElement("div");
+    row.style.cssText = `
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:8px 0;
+      cursor:pointer;
+    `;
+
+    const bullet = document.createElement("div");
+    bullet.style.cssText = `
+      width:14px;
+      height:14px;
+      border-radius:50%;
+      border:2px solid black;
+    `;
+
+    const label = document.createElement("div");
+    label.textContent = opt.label;
+
+    row.onclick = () => {
+      selectedAction = opt.id;
+      popup.querySelectorAll(".bullet").forEach(b => {
+        b.style.background = "transparent";
+      });
+      bullet.style.background = "#1f5e3b";
+    };
+
+    bullet.className = "bullet";
+    row.appendChild(bullet);
+    row.appendChild(label);
+    popup.appendChild(row);
+  });
+
+  /* ---------- ACTION BUTTONS ---------- */
+  const actions = document.createElement("div");
+  actions.style.cssText = `
+    display:flex;
+    justify-content:flex-end;
+    gap:12px;
+    margin-top:14px;
+  `;
+
+  const cancel = document.createElement("button");
+  cancel.textContent = "Cancel";
+  cancel.onclick = () => cleanup();
+
+  const confirm = document.createElement("button");
+  confirm.textContent = "Confirm";
+  confirm.style.cssText = `
+    background:#1f5e3b;
+    color:white;
+    border:none;
+    padding:6px 12px;
+    border-radius:8px;
+  `;
+
+  confirm.onclick = () => {
+    if (!selectedAction) return;
+
+    /* ---------- EXECUTE ACTION ---------- */
+    if (selectedAction === "items" || selectedAction === "all") {
+      localStorage.removeItem("patchItems");
+    }
+
+    if (selectedAction === "lists" || selectedAction === "all") {
+      localStorage.removeItem("Smart Lists");
+    }
+
+    cleanup();
+    location.reload();
+  };
+
+  actions.appendChild(cancel);
+  actions.appendChild(confirm);
+  popup.appendChild(actions);
+
+  document.body.appendChild(overlay);
+  document.body.appendChild(popup);
+
+  function cleanup() {
+    overlay.remove();
+    popup.remove();
+  }
+}
 
 /* ---------------- LOAD ---------------- */
 
