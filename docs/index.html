@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Smart Lists</title>
+<title>Pop-Up List</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2207,6 +2207,7 @@ groupBtn.onpointerleave = () => {
 groupBtn.onclick = e => {
   // 🚫 suppress click if long-press fired
   if (groupLongPressFired) {
+    openTargetListPopup();
     e.preventDefault();
     e.stopPropagation();
     return;
@@ -2808,6 +2809,141 @@ confirmNewBottle.onclick = () => {
   renderItems();
   closeNewBottle();
 };
+
+function openTargetListPopup() {
+  const smartLists = JSON.parse(
+    localStorage.getItem("Smart Lists") || "[]"
+  );
+
+  const listNames = smartLists
+    .map(l => l.list)
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b));
+
+  console.log("Smart List Options:", listNames);
+
+  let selectedList = null;
+
+  /* ---------- OVERLAY ---------- */
+  const overlay = document.createElement("div");
+  overlay.className = "overlay show";
+
+  /* ---------- POPUP ---------- */
+  const popup = document.createElement("div");
+  popup.style.cssText = `
+    position:fixed;
+    inset:auto 20px 20px 20px;
+    background:white;
+    border-radius:14px;
+    padding:16px;
+    z-index:400;
+    max-height:70vh;
+    overflow:auto;
+  `;
+
+  popup.innerHTML = `
+    <div style="font-weight:bold;margin-bottom:12px">
+      Select or Enter Smart List
+    </div>
+  `;
+
+  /* ---------- LIST OPTIONS ---------- */
+  listNames.forEach(name => {
+    const row = document.createElement("div");
+    row.textContent = name;
+    row.style.cssText = `
+      padding:10px;
+      border-radius:8px;
+      margin-bottom:6px;
+      background:#f2f2f2;
+      cursor:pointer;
+    `;
+
+    row.onclick = () => {
+      selectedList = name;
+      input.value = "";
+      [...popup.querySelectorAll(".list-option")]
+        .forEach(el => el.style.background = "#f2f2f2");
+      row.style.background = "#d0eadf";
+    };
+
+    row.className = "list-option";
+    popup.appendChild(row);
+  });
+
+  /* ---------- TEXT INPUT ---------- */
+  const input = document.createElement("input");
+  input.type = "text";
+  input.placeholder = "Enter new list name";
+  input.style.cssText = `
+    width:100%;
+    margin-top:12px;
+    padding:10px;
+    font-size:15px;
+  `;
+
+  input.oninput = () => {
+    selectedList = null;
+    [...popup.querySelectorAll(".list-option")]
+      .forEach(el => el.style.background = "#f2f2f2");
+  };
+
+  popup.appendChild(input);
+
+  /* ---------- ACTIONS ---------- */
+  const actions = document.createElement("div");
+  actions.style.cssText = `
+    display:flex;
+    justify-content:flex-end;
+    gap:12px;
+    margin-top:14px;
+  `;
+
+  const cancel = document.createElement("button");
+  cancel.textContent = "Cancel";
+  cancel.onclick = cleanup;
+
+  const confirm = document.createElement("button");
+  confirm.textContent = "Confirm";
+  confirm.style.cssText = `
+    background:#1f5e3b;
+    color:white;
+    border:none;
+    padding:6px 12px;
+    border-radius:8px;
+  `;
+
+  confirm.onclick = () => {
+    const typed = input.value.trim();
+
+    if (typed) {
+      targetList = typed;
+    } else if (selectedList) {
+      targetList = selectedList;
+    } else {
+      return;
+    }
+
+    console.log("targetList:", targetList);
+    cleanup();
+  };
+
+  actions.appendChild(cancel);
+  actions.appendChild(confirm);
+  popup.appendChild(actions);
+
+  document.body.appendChild(overlay);
+  document.body.appendChild(popup);
+
+  overlay.onclick = e => {
+    if (e.target === overlay) cleanup();
+  };
+
+  function cleanup() {
+    overlay.remove();
+    popup.remove();
+  }
+}
 
 function openPrintSummary() {
   const printWindow = window.open("print-summary.html", "_blank");
