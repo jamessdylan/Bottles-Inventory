@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Keys</title>
+<title>SM Wine key</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1691,15 +1691,22 @@ else if (GroupFilter === "Special") {
     }
   }
 
-  else {
-    subgroup1A = ItemFilter === "None"
-      ? standardSort(group1incomplete)
-      : [...group1incomplete];
+else {
+  // group sorting already handled above for Special
+  // - if ItemFilter !== "None", group1 order is preserved
+  // - group2 may already be sorted
+  subgroup1A = [...group1incomplete];
+  subgroup2A = [...group2incomplete];
 
-    subgroup2A = ItemFilter === "None"
-      ? standardSort(group2incomplete)
-      : [...group2incomplete];
+  // For non-Special modes, keep original behavior:
+  if (GroupFilter !== "Special") {
+    if (ItemFilter === "None") {
+      subgroup1A = standardSort(subgroup1A);
+      subgroup2A = standardSort(subgroup2A);
+    }
   }
+}
+
 
   subgroup1C = standardSort(group1complete);
   subgroup2C = standardSort(group2complete);
@@ -1718,8 +1725,8 @@ else if (GroupFilter === "Special") {
   }
 
   else if (GroupFilter === "Special") {
-    renderGroup(“Suggested”, subgroup1A, subgroup1B, subgroup1C);
-    renderGroup(“Other”, subgroup2A, subgroup2B, subgroup2C);
+    renderGroup("Suggested", subgroup1A, subgroup1B, subgroup1C);
+    renderGroup("Other", subgroup2A, subgroup2B, subgroup2C);
   }
 
   else {
