@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM new colors key</title>
+<title>SM Wine key</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1692,6 +1692,8 @@ async function renderItems() {
     // Back-compat: migrate old combined color to Rose
     if (i.color === "Rose/Sparkling") i.color = "Rose";
 
+   i.color = normalizeColor(i.color);
+
   });
 
   // ---------- ARCHIVE ----------
@@ -1872,6 +1874,7 @@ function openEditBottle(item) {
 
    newBottleColor = normalizeColor(item.color || "White");
    updateColorUI();
+
 
 
   brandInput.value = item.brand !== "N/A" ? item.brand : "";
@@ -2386,6 +2389,23 @@ smartSortBtn.onclick = () => {
   renderItems();
 };
 
+function normalizeColor(v) {
+  const c = (v ?? "").toString().trim();
+
+  // Legacy combined value defaults to Rose
+  if (c === "Rose/Sparkling") return "Rose";
+
+  // Accept common variants (optional but safe)
+  const lower = c.toLowerCase();
+  if (lower === "rosé") return "Rose";
+  if (lower === "rose") return "Rose";
+  if (lower === "sparkling") return "Sparkling";
+  if (lower === "white") return "White";
+  if (lower === "red") return "Red";
+
+  // Default fallback
+  return "White";
+}
 
 function resetNewBottleDefaults() {
   editingItem = null;
@@ -2678,23 +2698,23 @@ function normalizeColor(v) {
 }
 
 function updateColorUI() {
-  // Always normalize before display
   newBottleColor = normalizeColor(newBottleColor);
 
   if (newBottleColor === "White") {
     colorValue.textContent = "White";
-    colorValue.style.color = "#c9b037"; // gold
+    colorValue.style.color = "#c9b037";
   } else if (newBottleColor === "Rose") {
-    colorValue.textContent = "Rosé / Still";
-    colorValue.style.color = "#d97c8a"; // rosé
+    colorValue.textContent = "Rose";
+    colorValue.style.color = "#d97c8a";
   } else if (newBottleColor === "Sparkling") {
     colorValue.textContent = "Sparkling";
-    colorValue.style.color = "#fff2cf"; // sparkling reference
-  } else {
+    colorValue.style.color = "#fff2cf";
+  } else { // Red
     colorValue.textContent = "Red";
-    colorValue.style.color = "#7b1e1e"; // red
+    colorValue.style.color = "#7b1e1e";
   }
 }
+
 
 colorToggle.onclick = () => {
   newBottleColor = normalizeColor(newBottleColor);
@@ -3121,12 +3141,13 @@ confirmNewBottle.onclick = () => {
     region: newBottleRegion || "N/A",
     note: newBottleNote || "",
     base64: newBottleBase64,
-    icon: newBottleBase64
-      ? newBottleIcon
-      : (newBottleColor === "White" ? "#c9b037"
-         : newBottleColor === "Rose" ? "#d97c8a"
-         : newBottleColor === "Sparkling" ? "#fff2cf"
-         : "#7b1e1e")
+   icon: newBottleBase64
+  ? newBottleIcon
+  : (newBottleColor === "White" ? "#c9b037"
+     : newBottleColor === "Rose" ? "#d97c8a"
+     : newBottleColor === "Sparkling" ? "#fff2cf"
+     : "#7b1e1e")
+
 
   });
 
