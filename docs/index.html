@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Winef key</title>
+<title>SM Wine key</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1663,6 +1663,14 @@ else if (GroupFilter === "Special") {
 
   console.log("Special group UUID order for", Source, uuidList);
 }
+// ---------- COMPLETE / INCOMPLETE ----------
+  const group1incomplete = group1items.filter(i => i[completeKey] === false);
+  const group1complete   = group1items.filter(i => i[completeKey] === true);
+
+  const group2incomplete = group2items.filter(i => i[completeKey] === false);
+  const group2complete   = group2items.filter(i => i[completeKey] === true);
+
+
 
 // ---------- SUBGROUP ----------
 let subgroup1A = [], subgroup1B = [], subgroup1C = [];
@@ -1672,50 +1680,33 @@ const isSpecial = (GroupFilter === "Special");
 const itemNone  = (ItemFilter === "None");
 
 if (SubgroupFilter === "Color") {
-  // Preserve original order by filtering in-order
+  // group1 incomplete (depends on ItemFilter)
   subgroup1A = group1incomplete.filter(i => i.color !== "Red");
   subgroup1B = group1incomplete.filter(i => i.color === "Red");
 
-  subgroup2A = group2incomplete.filter(i => i.color !== "Red");
-  subgroup2B = group2incomplete.filter(i => i.color === "Red");
+  // group2 incomplete (ALWAYS standard sorted per your new rule)
+  subgroup2A = standardSort(group2incomplete.filter(i => i.color !== "Red"));
+  subgroup2B = standardSort(group2incomplete.filter(i => i.color === "Red"));
 
-  // Incomplete sorting rules
+  // If ItemFilter is None, also sort group1 incomplete
   if (itemNone) {
-    // sort both groups
     subgroup1A = standardSort(subgroup1A);
     subgroup1B = standardSort(subgroup1B);
-    subgroup2A = standardSort(subgroup2A);
-    subgroup2B = standardSort(subgroup2B);
-  } else if (isSpecial) {
-    // sort only group2; leave group1 alone
-    subgroup2A = standardSort(subgroup2A);
-    subgroup2B = standardSort(subgroup2B);
   }
 } else {
-  // No color subgrouping (incomplete)
-  if (itemNone) {
-    subgroup1A = standardSort(group1incomplete);
-    subgroup2A = standardSort(group2incomplete);
-  } else if (isSpecial) {
-    subgroup1A = [...group1incomplete];          // untouched
-    subgroup2A = standardSort(group2incomplete); // sorted
-  } else {
-    subgroup1A = [...group1incomplete];
-    subgroup2A = [...group2incomplete];
-  }
+  // No color subgrouping
+
+  // group1 incomplete depends on ItemFilter
+  subgroup1A = itemNone ? standardSort(group1incomplete) : [...group1incomplete];
+
+  // group2 incomplete ALWAYS sorted (your rule)
+  subgroup2A = standardSort(group2incomplete);
 }
 
-// ✅ Complete buckets are ALWAYS standard sorted (regardless of ItemFilter)
+// Complete buckets ALWAYS sorted
 subgroup1C = standardSort(group1complete);
 subgroup2C = standardSort(group2complete);
 
-
-  // ---------- COMPLETE / INCOMPLETE ----------
-  const group1incomplete = group1items.filter(i => i[completeKey] === false);
-  const group1complete   = group1items.filter(i => i[completeKey] === true);
-
-  const group2incomplete = group2items.filter(i => i[completeKey] === false);
-  const group2complete   = group2items.filter(i => i[completeKey] === true);
 
   
 
