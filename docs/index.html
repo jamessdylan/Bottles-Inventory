@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM new wine key</title>
+<title>SM Wine key</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2207,9 +2207,9 @@ groupBtn.onpointerleave = () => {
 groupBtn.onclick = e => {
   // 🚫 suppress click if long-press fired
   if (groupLongPressFired) {
-    let targetList = Source;
-    console.log("targetList:", targetList);
-    openListEditorPopup();
+    const targetList = Source;
+    console.log("Opening list for:”, targetList);
+    openListEditorPopup(targetList);
     e.preventDefault();
     e.stopPropagation();
     return;
