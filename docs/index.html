@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine key</title>
+<title>SM Wine Update</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -3214,23 +3214,23 @@ function openListEditorPopup() {
     color:#7b1e1e;
   `;
 
-  deleteBtn.onclick = () => {
-    if (!confirm("Delete this list?")) return;
+ deleteBtn.onclick = async () => {
+  if (!confirm("Delete this list?")) return;
 
-    const updated = smartLists.filter(
-      l => l.list !== targetList
-    );
+  const updated = smartLists.filter(l => l.list !== targetList);
 
-    localStorage.setItem(
-      "Smart Lists",
-      JSON.stringify(updated)
-    );
+  localStorage.setItem("Smart Lists", JSON.stringify(updated));
 
-    console.log("Updated Smart Lists:");
-    console.log(updated);
+  console.log("Updated Smart Lists:");
+  console.log(updated);
 
-    close();
-  };
+  close();
+
+  // ✅ re-render after deletion
+  updateGlobalFilters();
+  await renderItems();
+};
+
 
   popup.appendChild(deleteBtn);
 
@@ -3247,26 +3247,25 @@ function openListEditorPopup() {
     width:100%;
   `;
 
-  confirmBtn.onclick = () => {
-    const filtered = smartLists.filter(
-      l => l.list !== targetList
-    );
+  confirmBtn.onclick = async () => {
+  const filtered = smartLists.filter(l => l.list !== targetList);
 
-    filtered.push({
-      list: targetList,
-      members: tempCurrent
-    });
+  filtered.push({
+    list: targetList,
+    members: tempCurrent
+  });
 
-    localStorage.setItem(
-      "Smart Lists",
-      JSON.stringify(filtered)
-    );
+  localStorage.setItem("Smart Lists", JSON.stringify(filtered));
 
-    console.log("Updated Smart Lists:");
-    console.log(filtered);
+  console.log("Updated Smart Lists:");
+  console.log(filtered);
 
-    close();
-  };
+  close();
+
+  // ✅ re-render with latest smart list changes
+  updateGlobalFilters();
+  await renderItems();
+};
 
   popup.appendChild(confirmBtn);
 
