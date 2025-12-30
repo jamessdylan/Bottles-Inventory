@@ -2207,8 +2207,8 @@ groupBtn.onpointerleave = () => {
 groupBtn.onclick = e => {
   // 🚫 suppress click if long-press fired
   if (groupLongPressFired) {
-    let targetList = Source
-    openListEditorPopup();
+    openTargetListPopup();
+    openListEditorPopup()
     e.preventDefault();
     e.stopPropagation();
     return;
@@ -2946,6 +2946,37 @@ function openTargetListPopup() {
   }
 }
 
+function openPrintSummary() {
+  const printWindow = window.open("print-summary.html", "_blank");
+  if (!printWindow) return;
+
+  const payload = items.map(item => {
+    const quantity = totalQuantity(item);
+    const price = Number(item.price) || 0;
+
+    return {
+      title: smartItemTitle(item),
+      color: item.color,
+      tier: item.tier,
+      quantity,
+      price,
+      total: quantity * price
+    };
+  });
+
+  // Wait until the new window is ready
+  const sendData = () => {
+    printWindow.printItems = payload;
+    printWindow.sourcePageTitle = document.title;
+  };
+
+  if (printWindow.document.readyState === "complete") {
+    sendData();
+  } else {
+    printWindow.onload = sendData;
+  }
+}
+
 function buildListEditorData(targetList, items) {
   const smartLists = JSON.parse(
     localStorage.getItem("Smart Lists") || "[]"
@@ -2974,7 +3005,6 @@ function buildListEditorData(targetList, items) {
 
   return { currentList, suggestedList, smartLists };
 }
-
 
 function openListEditorPopup() {
   const {
@@ -3182,37 +3212,6 @@ function openListEditorPopup() {
   function close() {
     overlay.remove();
     popup.remove();
-  }
-}
-
-function openPrintSummary() {
-  const printWindow = window.open("print-summary.html", "_blank");
-  if (!printWindow) return;
-
-  const payload = items.map(item => {
-    const quantity = totalQuantity(item);
-    const price = Number(item.price) || 0;
-
-    return {
-      title: smartItemTitle(item),
-      color: item.color,
-      tier: item.tier,
-      quantity,
-      price,
-      total: quantity * price
-    };
-  });
-
-  // Wait until the new window is ready
-  const sendData = () => {
-    printWindow.printItems = payload;
-    printWindow.sourcePageTitle = document.title;
-  };
-
-  if (printWindow.document.readyState === "complete") {
-    sendData();
-  } else {
-    printWindow.onload = sendData;
   }
 }
 
