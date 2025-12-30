@@ -624,6 +624,81 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   ></div>
 </div>
 
+<!-- DOMAIN -->
+<div style="display:flex; flex-direction:column; gap:8px; position:relative; margin-top:14px;">
+  <div style="font-family:'Copperplate',serif; padding-left:4px;">Domain</div>
+
+  <input
+    id="domainInput"
+    type="text"
+    placeholder="Enter domain"
+    autocomplete="off"
+    style="
+      padding:14px 16px;
+      border-radius:12px;
+      border:none;
+      background:rgba(0,0,0,.05);
+      font-size:16px;
+      outline:none;
+    "
+  />
+
+  <div
+    id="domainSuggestions"
+    style="
+      display:none;
+      flex-direction:column;
+      position:absolute;
+      top:100%;
+      left:0;
+      right:0;
+      background:white;
+      border-radius:12px;
+      box-shadow:0 6px 18px rgba(0,0,0,.15);
+      overflow:hidden;
+      z-index:500;
+    "
+  ></div>
+</div>
+
+<!-- REGION -->
+<div style="display:flex; flex-direction:column; gap:8px; position:relative; margin-top:10px;">
+  <div style="font-family:'Copperplate',serif; padding-left:4px;">Region</div>
+
+  <input
+    id="regionInput"
+    type="text"
+    placeholder="Select a domain first"
+    autocomplete="off"
+    style="
+      padding:14px 16px;
+      border-radius:12px;
+      border:none;
+      background:rgba(0,0,0,.05);
+      font-size:16px;
+      outline:none;
+    "
+  />
+
+  <div
+    id="regionSuggestions"
+    style="
+      display:none;
+      flex-direction:column;
+      position:absolute;
+      top:100%;
+      left:0;
+      right:0;
+      background:white;
+      border-radius:12px;
+      box-shadow:0 6px 18px rgba(0,0,0,.15);
+      overflow:hidden;
+      z-index:500;
+    "
+  ></div>
+</div>
+
+
 <!-- NOTES -->
 <div style="
   display:flex;
@@ -1811,6 +1886,17 @@ function openEditBottle(item) {
 
   noteInput.value = item.note || "";
   newBottleNote = item.note || "";
+
+  // domain / region (supports legacy keys too)
+  domainInput.value = (item.domain ?? item.Domain ?? "") || "";
+  newBottleDomain = domainInput.value;
+
+  regionInput.value = (item.region ?? item.Region ?? "") || "";
+  newBottleRegion = regionInput.value;
+
+  regionInput.placeholder = newBottleDomain ? "Enter region" : "Select a domain first";
+
+
 deleteBottleBtn.style.display = "block";
 
 
@@ -2332,6 +2418,10 @@ function resetNewBottleDefaults() {
   yearInput.value = "";
   priceInput.value = "";
   noteInput.value = "";
+  domainInput.value = "";
+  regionInput.value = "";
+  regionInput.placeholder = "Select a domain first";
+
 
   // featured buttons
   document.querySelectorAll(".featured-btn").forEach(btn =>
@@ -2471,6 +2561,9 @@ let newBottlePrice = null;
 let newBottleBase64 = false;
 let newBottleIcon = null;
 let newBottleNote = "";
+let newBottleDomain = "";
+let newBottleRegion = "";
+
 
 newBottleBtn.onclick = () => {
 resetNewBottleDefaults();
@@ -2821,6 +2914,134 @@ distributorInput.onblur = () => {
   setTimeout(() => distributorSuggestions.style.display = "none", 150);
 };
 
+/* ---------- DOMAIN / REGION ---------- */
+const domainInput = document.getElementById("domainInput");
+const domainSuggestions = document.getElementById("domainSuggestions");
+
+const regionInput = document.getElementById("regionInput");
+const regionSuggestions = document.getElementById("regionSuggestions");
+
+function norm(v) {
+  return (v ?? "").toString().trim();
+}
+
+function getItemDomain(i) {
+  return norm(i.domain || i.Domain);
+}
+
+function getItemRegion(i) {
+  return norm(i.region || i.Region);
+}
+
+function uniqueSorted(arr) {
+  return [...new Set(arr.filter(v => v && v !== "N/A"))].sort((a,b) =>
+    a.localeCompare(b, undefined, { sensitivity:"base" })
+  );
+}
+
+function buildSuggestionList(container, values, onPick) {
+  container.innerHTML = "";
+  values.forEach(val => {
+    const div = document.createElement("div");
+    div.textContent = val;
+    div.style.padding = "12px 16px";
+    div.style.cursor = "pointer";
+    div.onclick = () => onPick(val);
+    container.appendChild(div);
+  });
+  container.style.display = values.length ? "flex" : "none";
+}
+
+function domainsFromItems() {
+  return uniqueSorted(items.map(getItemDomain));
+}
+
+function regionsForDomain(domain) {
+  const d = norm(domain).toLowerCase();
+  if (!d) return [];
+  return uniqueSorted(
+    items
+      .filter(i => getItemDomain(i).toLowerCase() === d)
+      .map(getItemRegion)
+  );
+}
+
+// DOMAIN input autocomplete
+domainInput.oninput = () => {
+  const typed = norm(domainInput.value);
+  newBottleDomain = typed;
+
+  // If domain changes, clear region (because it is dependent)
+  newBottleRegion = "";
+  regionInput.value = "";
+  regionSuggestions.style.display = "none";
+  regionInput.placeholder = typed ? "Enter region" : "Select a domain first";
+
+  const q = typed.toLowerCase();
+  if (!q) {
+    domainSuggestions.style.display = "none";
+    return;
+  }
+
+  const matches = domainsFromItems().filter(d =>
+    d.toLowerCase().includes(q)
+  );
+
+  buildSuggestionList(domainSuggestions, matches, picked => {
+    domainInput.value = picked;
+    newBottleDomain = picked;
+
+    // Clear region on pick too, then unlock region placeholder
+    newBottleRegion = "";
+    regionInput.value = "";
+    regionInput.placeholder = "Enter region";
+
+    domainSuggestions.style.display = "none";
+  });
+};
+
+// REGION input autocomplete (depends on domain)
+regionInput.oninput = () => {
+  const domain = norm(domainInput.value);
+  newBottleDomain = domain;
+
+  // must have domain to suggest regions
+  if (!domain) {
+    regionSuggestions.style.display = "none";
+    regionInput.placeholder = "Select a domain first";
+    newBottleRegion = norm(regionInput.value);
+    return;
+  }
+
+  const typed = norm(regionInput.value);
+  newBottleRegion = typed;
+
+  const q = typed.toLowerCase();
+  const pool = regionsForDomain(domain);
+
+  if (!q) {
+    // If they haven’t typed yet, show the full list for that domain
+    buildSuggestionList(regionSuggestions, pool, picked => {
+      regionInput.value = picked;
+      newBottleRegion = picked;
+      regionSuggestions.style.display = "none";
+    });
+    return;
+  }
+
+  const matches = pool.filter(r => r.toLowerCase().includes(q));
+  buildSuggestionList(regionSuggestions, matches, picked => {
+    regionInput.value = picked;
+    newBottleRegion = picked;
+    regionSuggestions.style.display = "none";
+  });
+};
+
+// Hide suggestion popovers on blur (delay allows click)
+domainInput.onblur = () => setTimeout(() => (domainSuggestions.style.display = "none"), 150);
+regionInput.onblur = () => setTimeout(() => (regionSuggestions.style.display = "none"), 150);
+
+
 const noteInput = document.getElementById("noteInput");
 
 noteInput.oninput = () => {
@@ -2856,6 +3077,8 @@ confirmNewBottle.onclick = () => {
     price: newBottlePrice || 0,
     featured: newBottleFeatured.join(", "),
     distributor: newBottleDistributor || "N/A",
+    domain: newBottleDomain || "N/A",
+    region: newBottleRegion || "N/A",
     note: newBottleNote || "",
     base64: newBottleBase64,
     icon: newBottleBase64
