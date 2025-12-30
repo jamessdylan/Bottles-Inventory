@@ -2208,7 +2208,7 @@ groupBtn.onclick = e => {
   // 🚫 suppress click if long-press fired
   if (groupLongPressFired) {
     let targetList = Source
-    openListEditorPopup();
+    openListEditorPopup(targetList);
     e.preventDefault();
     e.stopPropagation();
     return;
