@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine key</title>
+<title>Base File Change</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -941,8 +941,7 @@ const baseFileBtn = document.getElementById("baseFileBtn");
 baseFileBtn.onclick = () => {
   drawer.classList.remove("open");
   overlay.classList.remove("show");
-
-  generateBaseFile();
+  openBaseFileDownloadPopup();
 };
 
 
@@ -2475,10 +2474,6 @@ let newBottleNote = "";
 
 newBottleBtn.onclick = () => {
 resetNewBottleDefaults();
-
-document.getElementById("newBottleTitle").textContent = "Edit Bottle";
-
-
 document.body.style.overflow = "hidden";
 newBottleSheet.style.opacity = "1";
 newBottleSheet.style.pointerEvents = "auto";
@@ -3287,8 +3282,97 @@ function openListEditorPopup() {
   }
 }
 
+function openBaseFileDownloadPopup() {
+  /* ---------- OVERLAY ---------- */
+  const ov = document.createElement("div");
+  ov.className = "overlay show";
+
+  /* ---------- POPUP ---------- */
+  const popup = document.createElement("div");
+  popup.style.cssText = `
+    position:fixed;
+    inset:auto 20px 20px 20px;
+    background:white;
+    border-radius:14px;
+    padding:16px;
+    z-index:400;
+  `;
+
+  popup.innerHTML = `
+    <div style="font-weight:bold;margin-bottom:12px">
+      Base File Downloads
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button id="dlItems" style="
+        width:100%;
+        padding:12px;
+        border-radius:10px;
+        border:none;
+        background:#1f5e3b;
+        color:white;
+        font-size:16px;
+        cursor:pointer;
+      ">⬇ Download items.json</button>
+
+      <button id="dlLists" style="
+        width:100%;
+        padding:12px;
+        border-radius:10px;
+        border:none;
+        background:rgba(0,0,0,.08);
+        color:#000;
+        font-size:16px;
+        cursor:pointer;
+      ">⬇ Download Smart Lists.json</button>
+
+      <button id="closeBasePopup" style="
+        width:100%;
+        padding:10px;
+        border-radius:10px;
+        border:none;
+        background:transparent;
+        color:#555;
+        font-size:15px;
+        cursor:pointer;
+      ">Close</button>
+    </div>
+  `;
+
+  document.body.appendChild(ov);
+  document.body.appendChild(popup);
+
+  popup.querySelector("#dlItems").onclick = () => {
+    generateBaseFile();
+  };
+
+  popup.querySelector("#dlLists").onclick = () => {
+    generateSmartListsFile();
+  };
+
+  popup.querySelector("#closeBasePopup").onclick = cleanup;
+  ov.onclick = e => { if (e.target === ov) cleanup(); };
+
+  function cleanup() {
+    ov.remove();
+    popup.remove();
+  }
+}
+
+function generateSmartListsFile() {
+  let smartLists;
+  try {
+    smartLists = JSON.parse(localStorage.getItem(SMART_LISTS_KEY) || "[]");
+    if (!Array.isArray(smartLists)) smartLists = [];
+  } catch {
+    smartLists = [];
+  }
+
+  const json = JSON.stringify(smartLists, null, 2);
+  openJSONInNewWindow(json, "Smart Lists.json");
+}
 
 </script>
 
 </body>
-</html>
+</html> 
