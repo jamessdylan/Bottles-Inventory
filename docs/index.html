@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine fkey</title>
+<title>SM Wine key</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -681,9 +681,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
     <button id="baseFileBtn">Base File</button>
     <button id="csvFileBtn">CSV File</button>
     <button id="printSummaryBtn">Print Summary</button>
-<button id="excelTableBtn">Excel Table</button>
-<button id="exportBtn">Export</button>
-
+    <button id="exportBtn">Export</button>
     <button id="clearCacheBtn" style="
   position:absolute;
   left:20px;
@@ -947,7 +945,6 @@ baseFileBtn.onclick = () => {
 };
 
 
-
     // Handle the "Export" button click
     exportBtn.onclick = () => {
       drawer.classList.remove("open");
@@ -965,244 +962,6 @@ csvFileBtn.onclick = () => {
 
   generateCSVFile();
 };
-
-const excelTableBtn = document.getElementById("excelTableBtn");
-excelTableBtn.onclick = () => {
-  drawer.classList.remove("open");
-  overlay.classList.remove("show");
-  openExcelTable(items);
-};
-
-/* 3) Paste these helpers anywhere in your <script> (below your other helpers is fine) */
-
-/* Smart title (you already have smartItemTitle; using yours if present) */
-function smartTitleForExport(item) {
-  // use your existing function if you want:
-  if (typeof smartItemTitle === "function") return smartItemTitle(item);
-  return [item.brand, item.identifier, item.varietal, item.year]
-    .filter(v => v && v !== "N/A")
-    .join(" ");
-}
-
-function exportQuantityTotal(item) {
-  // total across ALL sources (not just current Source)
-  return SOURCES.reduce((sum, src) => sum + (Number(item[src]) || 0), 0);
-}
-
-function fmtMoney(n) {
-  const x = Number(n) || 0;
-  return x.toLocaleString(undefined, { style: "currency", currency: "USD" });
-}
-
-function fmtNumber(n) {
-  const x = Number(n) || 0;
-  return x.toLocaleString(undefined, { maximumFractionDigits: 0 });
-}
-
-function tierOrder(tier) {
-  // House first, Reserve second, everything else last
-  if (tier === "House") return 0;
-  if (tier === "Reserve") return 1;
-  return 2;
-}
-
-function safeColor(c) {
-  const v = (c || "").toLowerCase();
-  if (v === "red") return "red";
-  if (v === "rose" || v === "rosé" || v.includes("rose")) return "rose";
-  return "white";
-}
-
-/* Main: opens a new window with a copy/paste-friendly table for Excel */
-function openExcelTable(items) {
-  // Build export rows (only ACTIVE unless ArchiveFilter is on)
-  const activeItems = ArchiveFilter ? [...items] : items.filter(i => i.status === true);
-
-  const rows = activeItems.map(item => {
-    const qty = exportQuantityTotal(item);
-    const price = Number(item.price) || 0;
-    const total = qty * price;
-
-    return {
-      tier: item.tier || "House",
-      title: smartTitleForExport(item),
-      price,
-      qty,
-      total,
-      color: safeColor(item.color)
-    };
-  });
-
-  // Sort: Tier -> Smart Title (case-insensitive)
-  rows.sort((a, b) => {
-    const t = tierOrder(a.tier) - tierOrder(b.tier);
-    if (t !== 0) return t;
-    return a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
-  });
-
-  // Group by tier for subtotals
-  const tiers = [];
-  const tierMap = new Map();
-
-  rows.forEach(r => {
-    if (!tierMap.has(r.tier)) {
-      tierMap.set(r.tier, []);
-      tiers.push(r.tier);
-    }
-    tierMap.get(r.tier).push(r);
-  });
-
-  let grandQty = 0;
-  let grandTotal = 0;
-
-  // Minimal styling tuned for Excel copy/paste
-  const css = `
-    body { font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; padding: 18px; }
-    h1 { font-size: 18px; margin: 0 0 12px; font-family: "Copperplate", serif; }
-    .meta { color:#555; margin-bottom: 12px; font-size: 12px; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #d0d0d0; padding: 8px 10px; font-size: 13px; }
-    th { background: #f2f2f2; text-align: left; }
-    td.num { text-align: right; font-variant-numeric: tabular-nums; }
-
-    /* row tint by wine color */
-    tr.color-white td { background: rgba(201,176,55,0.10); }  /* gold-ish */
-    tr.color-rose  td { background: rgba(217,124,138,0.12); } /* rose */
-    tr.color-red   td { background: rgba(123,30,30,0.10); }   /* red */
-
-    /* tier subtotal rows */
-    tr.subtotal td {
-      background: #f7f7f7 !important;
-      font-weight: 700;
-    }
-
-    /* grand total */
-    tr.grand td {
-      background: #eaf6ef !important;
-      font-weight: 800;
-      border-top: 2px solid #333;
-    }
-
-    .btnbar {
-      display:flex; gap:10px; flex-wrap: wrap;
-      margin: 0 0 14px;
-    }
-    button {
-      border:none; border-radius:10px; padding:10px 12px;
-      background: rgba(0,0,0,.08); cursor:pointer; font-size:13px;
-    }
-  `;
-
-  // Build table HTML
-  let html = `
-    <html>
-      <head>
-        <title>${(pageTitleEl?.textContent || "Wine Inventory").replace(/</g,"&lt;")}</title>
-        <style>${css}</style>
-      </head>
-      <body>
-        <h1>${(pageTitleEl?.textContent || "Wine Inventory").replace(/</g,"&lt;")}</h1>
-        <div class="meta">
-          Tip: Select the table → copy → paste into Excel (it will keep columns).
-        </div>
-
-        <div class="btnbar">
-          <button onclick="selectTable()">Select Table</button>
-          <button onclick="copyTable()">Copy Table</button>
-        </div>
-
-        <table id="excelTable">
-          <thead>
-            <tr>
-              <th>Smart Title</th>
-              <th class="num">Price</th>
-              <th class="num">Quantity</th>
-              <th class="num">Total Value</th>
-            </tr>
-          </thead>
-          <tbody>
-  `;
-
-  tiers.forEach(tier => {
-    const tierRows = tierMap.get(tier) || [];
-
-    let tierQty = 0;
-    let tierTotal = 0;
-
-    // Tier header row (Excel-friendly: just a normal row)
-    html += `
-      <tr class="subtotal">
-        <td colspan="4">${tier} (Subtotal)</td>
-      </tr>
-    `;
-
-    tierRows.forEach(r => {
-      tierQty += r.qty;
-      tierTotal += r.total;
-
-      grandQty += r.qty;
-      grandTotal += r.total;
-
-      html += `
-        <tr class="color-${r.color}">
-          <td>${r.title.replace(/</g,"&lt;")}</td>
-          <td class="num">${fmtMoney(r.price)}</td>
-          <td class="num">${fmtNumber(r.qty)}</td>
-          <td class="num">${fmtMoney(r.total)}</td>
-        </tr>
-      `;
-    });
-
-    html += `
-      <tr class="subtotal">
-        <td>Subtotal — ${tier}</td>
-        <td class="num"></td>
-        <td class="num">${fmtNumber(tierQty)}</td>
-        <td class="num">${fmtMoney(tierTotal)}</td>
-      </tr>
-    `;
-  });
-
-  html += `
-          <tr class="grand">
-            <td>Grand Total</td>
-            <td class="num"></td>
-            <td class="num">${fmtNumber(grandQty)}</td>
-            <td class="num">${fmtMoney(grandTotal)}</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <script>
-        function selectTable(){
-          const table = document.getElementById("excelTable");
-          const range = document.createRange();
-          range.selectNodeContents(table);
-          const sel = window.getSelection();
-          sel.removeAllRanges();
-          sel.addRange(range);
-        }
-
-        async function copyTable(){
-          selectTable();
-          try {
-            document.execCommand("copy");
-          } catch(e) {}
-        }
-      </script>
-      </body>
-    </html>
-  `;
-
-  const win = window.open("", "_blank");
-  if (!win) {
-    alert("Popup blocked — allow popups to open the Excel table.");
-    return;
-  }
-  win.document.open();
-  win.document.write(html);
-  win.document.close();
-}
 
 
 function openClearCachePopup() {
