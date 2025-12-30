@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine key</title>
+<title>SM Wine 57</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1670,21 +1670,18 @@ else if (GroupFilter === "Special") {
   const group2incomplete = group2items.filter(i => i[completeKey] === false);
   const group2complete   = group2items.filter(i => i[completeKey] === true);
 
-
-
 // ---------- SUBGROUP ----------
 let subgroup1A = [], subgroup1B = [], subgroup1C = [];
 let subgroup2A = [], subgroup2B = [], subgroup2C = [];
 
-const isSpecial = (GroupFilter === "Special");
-const itemNone  = (ItemFilter === "None");
+const itemNone = (ItemFilter === "None");
 
 if (SubgroupFilter === "Color") {
   // group1 incomplete (depends on ItemFilter)
   subgroup1A = group1incomplete.filter(i => i.color !== "Red");
   subgroup1B = group1incomplete.filter(i => i.color === "Red");
 
-  // group2 incomplete (ALWAYS standard sorted per your new rule)
+  // group2 incomplete (ALWAYS standard sorted)
   subgroup2A = standardSort(group2incomplete.filter(i => i.color !== "Red"));
   subgroup2B = standardSort(group2incomplete.filter(i => i.color === "Red"));
 
@@ -1695,18 +1692,15 @@ if (SubgroupFilter === "Color") {
   }
 } else {
   // No color subgrouping
-
-  // group1 incomplete depends on ItemFilter
   subgroup1A = itemNone ? standardSort(group1incomplete) : [...group1incomplete];
 
-  // group2 incomplete ALWAYS sorted (your rule)
+  // group2 incomplete ALWAYS sorted
   subgroup2A = standardSort(group2incomplete);
 }
 
 // Complete buckets ALWAYS sorted
 subgroup1C = standardSort(group1complete);
 subgroup2C = standardSort(group2complete);
-
 
   
 
