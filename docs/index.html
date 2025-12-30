@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine key</title>
+<title>SM Wine Keys</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -814,7 +814,6 @@ let Source="Emporio";
 const undoStack = [];
 const UNDO_LIMIT = 5;
 
-const SMART_LISTS_KEY = "Smart Lists";
 let targetList = null;
 
 let templateItems = [];
@@ -824,6 +823,31 @@ const patchItems = JSON.parse(
 );
 
 const mergedItems = applyPatchToTemplate(templateItems, patchItems);
+
+
+const SMART_LISTS_KEY = "Smart Lists";
+
+function getSmartListsFromStorage() {
+  try {
+    const raw = localStorage.getItem(SMART_LISTS_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    console.warn("Smart Lists parse failed:", e);
+    return [];
+  }
+}
+
+function getSmartListUUIDsForListName(listName, items) {
+  const smartLists = getSmartListsFromStorage();
+
+  const match = smartLists.find(obj => obj && obj.list === listName);
+  const members = Array.isArray(match?.members) ? match.members : [];
+
+  // Only keep UUIDs that exist in current items
+  const valid = new Set(items.map(i => i.UUID));
+  return members.filter(uuid => valid.has(uuid));
+}
 
 
 // ---------- GLOBAL FILTERS ----------
@@ -1612,8 +1636,34 @@ async function renderItems() {
   }
 
 else if (GroupFilter === "Special") {
-    renderGroup(null, subgroup1A, subgroup1B, subgroup1C);
+  // UUIDs come from Smart Lists localStorage, keyed by list name == Source
+  const uuidList = getSmartListUUIDsForListName(Source, items);
+  const orderMap = new Map(uuidList.map((uuid, idx) => [uuid, idx]));
+  const uuidSet = new Set(uuidList);
+
+  // group1 = items whose UUID is in the Smart List
+  group1items = allItems.filter(i => uuidSet.has(i.UUID));
+
+  // group2 = everything else
+  group2items = allItems.filter(i => !uuidSet.has(i.UUID));
+
+  // ✅ SORT RULES:
+  // - If ItemFilter === "None": standard sort BOTH groups
+  // - Else: only standard sort group2 (keep group1 in Smart List order)
+  if (ItemFilter === "None") {
+    group1items = standardSort(group1items);
+    group2items = standardSort(group2items);
+  } else {
+    // preserve Smart List ordering for group1
+    group1items.sort(
+      (a, b) => (orderMap.get(a.UUID) ?? 1e9) - (orderMap.get(b.UUID) ?? 1e9)
+    );
+    group2items = standardSort(group2items);
+  }
+
+  console.log("Special group UUID order for", Source, uuidList);
 }
+
 
   // ---------- COMPLETE / INCOMPLETE ----------
   const group1incomplete = group1items.filter(i => i[completeKey] === false);
@@ -1668,7 +1718,8 @@ else if (GroupFilter === "Special") {
   }
 
   else if (GroupFilter === "Special") {
-    renderGroup(null, subgroup1A, subgroup1B, subgroup1C);
+    renderGroup(“Suggested”, subgroup1A, subgroup1B, subgroup1C);
+    renderGroup(“Other”, subgroup2A, subgroup2B, subgroup2C);
   }
 
   else {
