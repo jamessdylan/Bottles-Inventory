@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Pop-Up List</title>
+<title>Here Goes Nothing</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2146,6 +2146,18 @@ async function prepareSmartLists(items) {
   return smartLists;
 }
 
+function getDragAfterElement(container, y) {
+  const els = [...container.querySelectorAll(".drag-row:not(.dragging)")];
+  return els.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if (offset < 0 && offset > closest.offset) {
+      return { offset, element: child };
+    }
+    return closest;
+  }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
 
 /* ---------- INIT ---------- */
 buildSourceTabs();
@@ -2208,6 +2220,7 @@ groupBtn.onclick = e => {
   // 🚫 suppress click if long-press fired
   if (groupLongPressFired) {
     openTargetListPopup();
+    openSmartListEditor(targetList);
     e.preventDefault();
     e.stopPropagation();
     return;
@@ -2945,6 +2958,209 @@ function openTargetListPopup() {
   }
 }
 
+function openSmartListEditor(targetList) {
+  console.group("Opening Smart List Editor");
+  console.log("Target List:", targetList);
+
+  // 1. Prepare data
+  buildListEditorData(targetList);
+
+  // 2. Open overlay (use your existing popup system)
+  openOverlay({
+    title: targetList,
+    content: `
+      <div class="list-editor">
+        <h2>${targetList}</h2>
+
+        <div class="editor-section">
+          <h3>Current List</h3>
+          <div id="currentList" class="list-zone" data-zone="current"></div>
+        </div>
+
+        <div class="editor-section">
+          <h3>Suggested Items</h3>
+          <div id="suggestedList" class="list-zone" data-zone="suggested"></div>
+        </div>
+
+        <div class="editor-actions">
+          <button id="deleteListBtn">Delete List</button>
+          <button id="confirmListBtn">Confirm</button>
+          <button id="cancelListBtn">Cancel</button>
+        </div>
+      </div>
+    `
+  });
+
+  // 3. Enable drag & drop
+  enableDropZone(document.getElementById("currentList"));
+  enableDropZone(document.getElementById("suggestedList"));
+
+  enableReorder(
+    document.getElementById("currentList"),
+    currentListUUIDs
+  );
+
+  // 4. Initial render
+  renderListEditor();
+
+  // 5. Wire actions
+  document.getElementById("confirmListBtn").onclick = () => {
+    saveSmartList(targetList);
+    closeOverlay();
+  };
+
+  document.getElementById("deleteListBtn").onclick = () => {
+    if (confirm(`Delete list "${targetList}"?`)) {
+      deleteSmartList(targetList);
+      closeOverlay();
+    }
+  };
+
+  document.getElementById("cancelListBtn").onclick = () => {
+    console.log("List editor cancelled");
+    closeOverlay();
+  };
+
+  console.groupEnd();
+}
+
+function buildListEditorData(targetList) {
+  const smartLists = JSON.parse(localStorage.getItem("Smart Lists") || "[]");
+
+  const listEntry = smartLists.find(l => l.list === targetList);
+
+  const validUUIDs = new Set(items.map(i => i.UUID));
+
+  // Current list
+  currentListUUIDs = Array.isArray(listEntry?.members)
+    ? listEntry.members.filter(uuid => validUUIDs.has(uuid))
+    : [];
+
+  // Suggested list = everything else
+  suggestedUUIDs = items
+    .map(i => i.UUID)
+    .filter(uuid => !currentListUUIDs.includes(uuid));
+
+  console.debug("Current List UUIDs:", currentListUUIDs);
+  console.debug("Suggested UUIDs:", suggestedUUIDs);
+}
+
+function createDraggableRow(uuid) {
+  const item = items.find(i => i.UUID === uuid);
+  if (!item) return null;
+
+  const row = document.createElement("div");
+  row.className = "drag-row";
+  row.draggable = true;
+  row.dataset.uuid = uuid;
+  row.textContent = smartItemTitle(item);
+
+  addDragHandlers(row);
+
+  return row;
+}
+
+let draggedUUID = null;
+let draggedFrom = null;
+
+function addDragHandlers(el) {
+  el.addEventListener("dragstart", e => {
+    draggedUUID = el.dataset.uuid;
+    draggedFrom = el.closest(".list-zone").dataset.zone;
+    el.classList.add("dragging");
+  });
+
+  el.addEventListener("dragend", () => {
+    draggedUUID = null;
+    draggedFrom = null;
+    el.classList.remove("dragging");
+  });
+}
+
+let draggedUUID = null;
+let draggedFrom = null;
+
+function addDragHandlers(el) {
+  el.addEventListener("dragstart", e => {
+    draggedUUID = el.dataset.uuid;
+    draggedFrom = el.closest(".list-zone").dataset.zone;
+    el.classList.add("dragging");
+  });
+
+  el.addEventListener("dragend", () => {
+    draggedUUID = null;
+    draggedFrom = null;
+    el.classList.remove("dragging");
+  });
+}
+
+function enableReorder(container, listRef) {
+  container.addEventListener("dragover", e => {
+    e.preventDefault();
+    const after = getDragAfterElement(container, e.clientY);
+    const dragging = document.querySelector(".dragging");
+    if (!dragging) return;
+
+    if (after == null) {
+      container.appendChild(dragging);
+    } else {
+      container.insertBefore(dragging, after);
+    }
+  });
+
+  container.addEventListener("drop", () => {
+    listRef.length = 0;
+    container.querySelectorAll(".drag-row").forEach(row => {
+      listRef.push(row.dataset.uuid);
+    });
+
+    console.debug("Reordered current list:", listRef);
+  });
+}
+
+function renderListEditor() {
+  const currentEl = document.getElementById("currentList");
+  const suggestedEl = document.getElementById("suggestedList");
+
+  currentEl.innerHTML = "";
+  suggestedEl.innerHTML = "";
+
+  currentListUUIDs.forEach(uuid => {
+    const row = createDraggableRow(uuid);
+    if (row) currentEl.appendChild(row);
+  });
+
+  suggestedUUIDs.forEach(uuid => {
+    const row = createDraggableRow(uuid);
+    if (row) suggestedEl.appendChild(row);
+  });
+}
+
+function saveSmartList(targetList) {
+  let smartLists = JSON.parse(localStorage.getItem("Smart Lists") || "[]");
+
+  smartLists = smartLists.filter(l => l.list !== targetList);
+
+  smartLists.push({
+    list: targetList,
+    members: currentListUUIDs
+  });
+
+  localStorage.setItem("Smart Lists", JSON.stringify(smartLists));
+
+  console.log("Saved Smart Lists:", smartLists);
+}
+
+function deleteSmartList(targetList) {
+  let smartLists = JSON.parse(localStorage.getItem("Smart Lists") || "[]");
+
+  smartLists = smartLists.filter(l => l.list !== targetList);
+
+  localStorage.setItem("Smart Lists", JSON.stringify(smartLists));
+
+  console.log("Deleted list. New Smart Lists:", smartLists);
+}
+
 function openPrintSummary() {
   const printWindow = window.open("print-summary.html", "_blank");
   if (!printWindow) return;
@@ -2975,7 +3191,6 @@ function openPrintSummary() {
     printWindow.onload = sendData;
   }
 }
-
 
 </script>
 
