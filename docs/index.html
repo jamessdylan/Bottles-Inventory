@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Update</title>
+<title>SM Wine key</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -343,7 +343,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 
   <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
     <button id="cancelNewBottle">Cancel</button>
-    <div style="font-family:'Copperplate',serif;">New Bottle</div>
+    <div id="newBottleTitle" style="font-family:'Copperplate',serif;">New Bottle</div>
 <button id="confirmNewBottle">Done</button>
   </div>
 
@@ -1780,6 +1780,8 @@ function savePatchItems(newPatches) {
 function openEditBottle(item) {
   editingItem = item;
 
+ document.getElementById("newBottleTitle").textContent = "Edit Bottle";
+
 
   // --- populate values ---
   newBottleStatus = item.status;
@@ -2473,6 +2475,10 @@ let newBottleNote = "";
 
 newBottleBtn.onclick = () => {
 resetNewBottleDefaults();
+
+document.getElementById("newBottleTitle").textContent = "Edit Bottle";
+
+
 document.body.style.overflow = "hidden";
 newBottleSheet.style.opacity = "1";
 newBottleSheet.style.pointerEvents = "auto";
@@ -3285,4 +3291,4 @@ function openListEditorPopup() {
 </script>
 
 </body>
-</html> 
+</html>
