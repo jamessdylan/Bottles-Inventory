@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine key</title>
+<title>SM new colors key</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2686,15 +2686,14 @@ const colorToggle = document.getElementById("colorToggle");
 const colorValue = document.getElementById("colorValue");
 
 function normalizeColor(v) {
-  const c = (v || "").toString().trim();
-
-  // Back-compat: old combined value defaults to Rose
-  if (c === "Rose/Sparkling") return "Rose";
-
-  // If someone typed rosé etc, keep it simple (optional)
-  if (c.toLowerCase() === "rosé") return "Rose";
-
-  return c || "White";
+  const c = (v ?? "").toString().trim();
+  if (c === "Rose/Sparkling") return "Rose"; // legacy → Rose
+  const lower = c.toLowerCase();
+  if (lower === "rosé" || lower === "rose") return "Rose";
+  if (lower === "sparkling") return "Sparkling";
+  if (lower === "white") return "White";
+  if (lower === "red") return "Red";
+  return "White";
 }
 
 function updateColorUI() {
@@ -2709,40 +2708,23 @@ function updateColorUI() {
   } else if (newBottleColor === "Sparkling") {
     colorValue.textContent = "Sparkling";
     colorValue.style.color = "#fff2cf";
-  } else { // Red
+  } else {
     colorValue.textContent = "Red";
     colorValue.style.color = "#7b1e1e";
   }
 }
 
-
 colorToggle.onclick = () => {
   newBottleColor = normalizeColor(newBottleColor);
 
-  if (newBottleColor === "White") {
-    newBottleColor = "Rose";
-  } else if (newBottleColor === "Rose") {
-    newBottleColor = "Sparkling";
-  } else if (newBottleColor === "Sparkling") {
-    newBottleColor = "Red";
-  } else {
-    newBottleColor = "White";
-  }
+  if (newBottleColor === "White") newBottleColor = "Rose";
+  else if (newBottleColor === "Rose") newBottleColor = "Sparkling";
+  else if (newBottleColor === "Sparkling") newBottleColor = "Red";
+  else newBottleColor = "White";
 
   updateColorUI();
 };
 
-
-colorToggle.onclick = () => {
-  if (newBottleColor === "White") {
-    newBottleColor = "Rose";
-  } else if (newBottleColor === "Rose") {
-    newBottleColor = "Red";
-  } else {
-    newBottleColor = "White";
-  }
-  updateColorUI();
-};
 
 const brandInput = document.getElementById("brandInput");
 const brandSuggestions = document.getElementById("brandSuggestions");
