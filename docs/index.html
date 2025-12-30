@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Here Goes Nothing</title>
+<title>SM Wine key</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2146,18 +2146,6 @@ async function prepareSmartLists(items) {
   return smartLists;
 }
 
-function getDragAfterElement(container, y) {
-  const els = [...container.querySelectorAll(".drag-row:not(.dragging)")];
-  return els.reduce((closest, child) => {
-    const box = child.getBoundingClientRect();
-    const offset = y - box.top - box.height / 2;
-    if (offset < 0 && offset > closest.offset) {
-      return { offset, element: child };
-    }
-    return closest;
-  }, { offset: Number.NEGATIVE_INFINITY }).element;
-}
-
 
 /* ---------- INIT ---------- */
 buildSourceTabs();
@@ -2219,8 +2207,7 @@ groupBtn.onpointerleave = () => {
 groupBtn.onclick = e => {
   // 🚫 suppress click if long-press fired
   if (groupLongPressFired) {
-    openTargetListPopup();
-    openSmartListEditor(targetList);
+    openListEditorPopup();
     e.preventDefault();
     e.stopPropagation();
     return;
@@ -2958,207 +2945,243 @@ function openTargetListPopup() {
   }
 }
 
-function openSmartListEditor(targetList) {
-  console.group("Opening Smart List Editor");
-  console.log("Target List:", targetList);
-
-  // 1. Prepare data
-  buildListEditorData(targetList);
-
-  // 2. Open overlay (use your existing popup system)
-  openOverlay({
-    title: targetList,
-    content: `
-      <div class="list-editor">
-        <h2>${targetList}</h2>
-
-        <div class="editor-section">
-          <h3>Current List</h3>
-          <div id="currentList" class="list-zone" data-zone="current"></div>
-        </div>
-
-        <div class="editor-section">
-          <h3>Suggested Items</h3>
-          <div id="suggestedList" class="list-zone" data-zone="suggested"></div>
-        </div>
-
-        <div class="editor-actions">
-          <button id="deleteListBtn">Delete List</button>
-          <button id="confirmListBtn">Confirm</button>
-          <button id="cancelListBtn">Cancel</button>
-        </div>
-      </div>
-    `
-  });
-
-  // 3. Enable drag & drop
-  enableDropZone(document.getElementById("currentList"));
-  enableDropZone(document.getElementById("suggestedList"));
-
-  enableReorder(
-    document.getElementById("currentList"),
-    currentListUUIDs
+function buildListEditorData(targetList, items) {
+  const smartLists = JSON.parse(
+    localStorage.getItem("Smart Lists") || "[]"
   );
 
-  // 4. Initial render
-  renderListEditor();
+  const match = smartLists.find(
+    l => l.list === targetList
+  );
 
-  // 5. Wire actions
-  document.getElementById("confirmListBtn").onclick = () => {
-    saveSmartList(targetList);
-    closeOverlay();
-  };
-
-  document.getElementById("deleteListBtn").onclick = () => {
-    if (confirm(`Delete list "${targetList}"?`)) {
-      deleteSmartList(targetList);
-      closeOverlay();
-    }
-  };
-
-  document.getElementById("cancelListBtn").onclick = () => {
-    console.log("List editor cancelled");
-    closeOverlay();
-  };
-
-  console.groupEnd();
-}
-
-function buildListEditorData(targetList) {
-  const smartLists = JSON.parse(localStorage.getItem("Smart Lists") || "[]");
-
-  const listEntry = smartLists.find(l => l.list === targetList);
-
+  let currentList = [];
   const validUUIDs = new Set(items.map(i => i.UUID));
 
-  // Current list
-  currentListUUIDs = Array.isArray(listEntry?.members)
-    ? listEntry.members.filter(uuid => validUUIDs.has(uuid))
-    : [];
+  if (match && Array.isArray(match.members)) {
+    match.members.forEach(uuid => {
+      if (validUUIDs.has(uuid)) {
+        currentList.push(uuid);
+      }
+    });
+  }
 
-  // Suggested list = everything else
-  suggestedUUIDs = items
+  const currentSet = new Set(currentList);
+
+  const suggestedList = items
     .map(i => i.UUID)
-    .filter(uuid => !currentListUUIDs.includes(uuid));
+    .filter(uuid => !currentSet.has(uuid));
 
-  console.debug("Current List UUIDs:", currentListUUIDs);
-  console.debug("Suggested UUIDs:", suggestedUUIDs);
+  return { currentList, suggestedList, smartLists };
 }
 
-function createDraggableRow(uuid) {
-  const item = items.find(i => i.UUID === uuid);
-  if (!item) return null;
 
-  const row = document.createElement("div");
-  row.className = "drag-row";
-  row.draggable = true;
-  row.dataset.uuid = uuid;
-  row.textContent = smartItemTitle(item);
+function openListEditorPopup() {
+  const {
+    currentList,
+    suggestedList,
+    smartLists
+  } = buildListEditorData(targetList, items);
 
-  addDragHandlers(row);
+  let tempCurrent = [...currentList];
+  let tempSuggested = [...suggestedList];
 
-  return row;
-}
+  /* ---------- OVERLAY ---------- */
+  const overlay = document.createElement("div");
+  overlay.className = "overlay show";
 
-let draggedUUID = null;
-let draggedFrom = null;
+  /* ---------- POPUP ---------- */
+  const popup = document.createElement("div");
+  popup.style.cssText = `
+    position:fixed;
+    inset:20px;
+    background:white;
+    border-radius:16px;
+    padding:16px;
+    overflow:auto;
+    z-index:400;
+  `;
 
-function addDragHandlers(el) {
-  el.addEventListener("dragstart", e => {
-    draggedUUID = el.dataset.uuid;
-    draggedFrom = el.closest(".list-zone").dataset.zone;
-    el.classList.add("dragging");
-  });
+  popup.innerHTML = `
+    <div style="font-weight:bold;font-size:18px;margin-bottom:12px">
+      ${targetList}
+    </div>
+  `;
 
-  el.addEventListener("dragend", () => {
-    draggedUUID = null;
-    draggedFrom = null;
-    el.classList.remove("dragging");
-  });
-}
+  /* ---------- CURRENT LIST ---------- */
+  const currentWrap = document.createElement("div");
+  popup.appendChild(currentWrap);
 
-let draggedUUID = null;
-let draggedFrom = null;
+  function renderCurrentList() {
+    currentWrap.innerHTML = "";
 
-function addDragHandlers(el) {
-  el.addEventListener("dragstart", e => {
-    draggedUUID = el.dataset.uuid;
-    draggedFrom = el.closest(".list-zone").dataset.zone;
-    el.classList.add("dragging");
-  });
+    tempCurrent.forEach((uuid, index) => {
+      const item = items.find(i => i.UUID === uuid);
+      if (!item) return;
 
-  el.addEventListener("dragend", () => {
-    draggedUUID = null;
-    draggedFrom = null;
-    el.classList.remove("dragging");
-  });
-}
+      const row = document.createElement("div");
+      row.style.cssText = `
+        display:flex;
+        align-items:center;
+        gap:8px;
+        padding:8px;
+        margin-bottom:6px;
+        background:#f2f2f2;
+        border-radius:8px;
+        cursor:grab;
+      `;
 
-function enableReorder(container, listRef) {
-  container.addEventListener("dragover", e => {
-    e.preventDefault();
-    const after = getDragAfterElement(container, e.clientY);
-    const dragging = document.querySelector(".dragging");
-    if (!dragging) return;
+      const title = document.createElement("div");
+      title.textContent = smartItemTitle(item);
+      title.style.flex = "1";
 
-    if (after == null) {
-      container.appendChild(dragging);
-    } else {
-      container.insertBefore(dragging, after);
-    }
-  });
+      const del = document.createElement("div");
+      del.textContent = "✕";
+      del.style.cursor = "pointer";
 
-  container.addEventListener("drop", () => {
-    listRef.length = 0;
-    container.querySelectorAll(".drag-row").forEach(row => {
-      listRef.push(row.dataset.uuid);
+      del.onclick = () => {
+        tempCurrent.splice(index, 1);
+        tempSuggested.push(uuid);
+        renderCurrentList();
+        renderSuggestions();
+      };
+
+      row.appendChild(title);
+      row.appendChild(del);
+      currentWrap.appendChild(row);
+
+      /* 🔹 Reorder (long press move up/down) */
+      let hold;
+      row.onpointerdown = () => {
+        hold = setTimeout(() => {
+          if (index > 0) {
+            [tempCurrent[index - 1], tempCurrent[index]] =
+              [tempCurrent[index], tempCurrent[index - 1]];
+            renderCurrentList();
+          }
+        }, 600);
+      };
+      row.onpointerup = () => clearTimeout(hold);
+      row.onpointerleave = () => clearTimeout(hold);
+    });
+  }
+
+  /* ---------- SUGGEST INPUT ---------- */
+  const input = document.createElement("input");
+  input.placeholder = "Add item…";
+  input.style.cssText = `
+    width:100%;
+    padding:10px;
+    margin:10px 0;
+  `;
+
+  const datalist = document.createElement("datalist");
+  datalist.id = "suggestions";
+
+  function renderSuggestions() {
+    datalist.innerHTML = "";
+    tempSuggested.forEach(uuid => {
+      const item = items.find(i => i.UUID === uuid);
+      if (!item) return;
+      const opt = document.createElement("option");
+      opt.value = smartItemTitle(item);
+      datalist.appendChild(opt);
+    });
+  }
+
+  input.setAttribute("list", "suggestions");
+
+  input.onchange = () => {
+    const match = tempSuggested.find(uuid => {
+      const item = items.find(i => i.UUID === uuid);
+      return item && smartItemTitle(item) === input.value;
     });
 
-    console.debug("Reordered current list:", listRef);
-  });
-}
+    if (match) {
+      tempCurrent.push(match);
+      tempSuggested = tempSuggested.filter(u => u !== match);
+      input.value = "";
+      renderCurrentList();
+      renderSuggestions();
+    }
+  };
 
-function renderListEditor() {
-  const currentEl = document.getElementById("currentList");
-  const suggestedEl = document.getElementById("suggestedList");
+  popup.appendChild(input);
+  popup.appendChild(datalist);
 
-  currentEl.innerHTML = "";
-  suggestedEl.innerHTML = "";
+  /* ---------- DELETE LIST ---------- */
+  const deleteBtn = document.createElement("button");
+  deleteBtn.textContent = "Delete List";
+  deleteBtn.style.cssText = `
+    margin-top:10px;
+    color:#7b1e1e;
+  `;
 
-  currentListUUIDs.forEach(uuid => {
-    const row = createDraggableRow(uuid);
-    if (row) currentEl.appendChild(row);
-  });
+  deleteBtn.onclick = () => {
+    if (!confirm("Delete this list?")) return;
 
-  suggestedUUIDs.forEach(uuid => {
-    const row = createDraggableRow(uuid);
-    if (row) suggestedEl.appendChild(row);
-  });
-}
+    const updated = smartLists.filter(
+      l => l.list !== targetList
+    );
 
-function saveSmartList(targetList) {
-  let smartLists = JSON.parse(localStorage.getItem("Smart Lists") || "[]");
+    localStorage.setItem(
+      "Smart Lists",
+      JSON.stringify(updated)
+    );
 
-  smartLists = smartLists.filter(l => l.list !== targetList);
+    console.log("Updated Smart Lists:");
+    console.log(updated);
 
-  smartLists.push({
-    list: targetList,
-    members: currentListUUIDs
-  });
+    close();
+  };
 
-  localStorage.setItem("Smart Lists", JSON.stringify(smartLists));
+  popup.appendChild(deleteBtn);
 
-  console.log("Saved Smart Lists:", smartLists);
-}
+  /* ---------- CONFIRM ---------- */
+  const confirmBtn = document.createElement("button");
+  confirmBtn.textContent = "Confirm";
+  confirmBtn.style.cssText = `
+    margin-top:12px;
+    background:#1f5e3b;
+    color:white;
+    padding:10px;
+    border-radius:10px;
+    border:none;
+    width:100%;
+  `;
 
-function deleteSmartList(targetList) {
-  let smartLists = JSON.parse(localStorage.getItem("Smart Lists") || "[]");
+  confirmBtn.onclick = () => {
+    const filtered = smartLists.filter(
+      l => l.list !== targetList
+    );
 
-  smartLists = smartLists.filter(l => l.list !== targetList);
+    filtered.push({
+      list: targetList,
+      members: tempCurrent
+    });
 
-  localStorage.setItem("Smart Lists", JSON.stringify(smartLists));
+    localStorage.setItem(
+      "Smart Lists",
+      JSON.stringify(filtered)
+    );
 
-  console.log("Deleted list. New Smart Lists:", smartLists);
+    console.log("Updated Smart Lists:");
+    console.log(filtered);
+
+    close();
+  };
+
+  popup.appendChild(confirmBtn);
+
+  document.body.appendChild(overlay);
+  document.body.appendChild(popup);
+
+  renderCurrentList();
+  renderSuggestions();
+
+  function close() {
+    overlay.remove();
+    popup.remove();
+  }
 }
 
 function openPrintSummary() {
@@ -3191,6 +3214,7 @@ function openPrintSummary() {
     printWindow.onload = sendData;
   }
 }
+
 
 </script>
 
