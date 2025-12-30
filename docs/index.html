@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine 57</title>
+<title>SM Wine key</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1670,38 +1670,48 @@ else if (GroupFilter === "Special") {
   const group2incomplete = group2items.filter(i => i[completeKey] === false);
   const group2complete   = group2items.filter(i => i[completeKey] === true);
 
-// ---------- SUBGROUP ----------
+
+// ---------- SUBGROUP (FORMATION ONLY) ----------
 let subgroup1A = [], subgroup1B = [], subgroup1C = [];
 let subgroup2A = [], subgroup2B = [], subgroup2C = [];
 
-const itemNone = (ItemFilter === "None");
-
 if (SubgroupFilter === "Color") {
-  // group1 incomplete (depends on ItemFilter)
+  // Incomplete split into A (non-red) and B (red)
   subgroup1A = group1incomplete.filter(i => i.color !== "Red");
   subgroup1B = group1incomplete.filter(i => i.color === "Red");
 
-  // group2 incomplete (ALWAYS standard sorted)
-  subgroup2A = standardSort(group2incomplete.filter(i => i.color !== "Red"));
-  subgroup2B = standardSort(group2incomplete.filter(i => i.color === "Red"));
-
-  // If ItemFilter is None, also sort group1 incomplete
-  if (itemNone) {
-    subgroup1A = standardSort(subgroup1A);
-    subgroup1B = standardSort(subgroup1B);
-  }
+  subgroup2A = group2incomplete.filter(i => i.color !== "Red");
+  subgroup2B = group2incomplete.filter(i => i.color === "Red");
 } else {
-  // No color subgrouping
-  subgroup1A = itemNone ? standardSort(group1incomplete) : [...group1incomplete];
-
-  // group2 incomplete ALWAYS sorted
-  subgroup2A = standardSort(group2incomplete);
+  // No color splitting: everything sits in A
+  subgroup1A = [...group1incomplete];
+  subgroup2A = [...group2incomplete];
 }
 
-// Complete buckets ALWAYS sorted
-subgroup1C = standardSort(group1complete);
-subgroup2C = standardSort(group2complete);
+// Complete bucket always goes in C
+subgroup1C = [...group1complete];
+subgroup2C = [...group2complete];
 
+
+// ---------- SUBGROUP (SORTING RULES ONLY) ----------
+// Helper: only sort if it exists + has items (safe even if empty)
+const sortIf = arr => (Array.isArray(arr) ? standardSort(arr) : arr);
+
+// Your rule (as you stated):
+// Subgroup1C, Subgroup2A, Subgroup2B, Subgroup2C are ALWAYS standard sorted.
+// All others depend on ItemFilter (and whatever other conditions you want).
+subgroup1C = sortIf(subgroup1C);
+subgroup2A = sortIf(subgroup2A);
+subgroup2B = sortIf(subgroup2B);
+subgroup2C = sortIf(subgroup2C);
+
+// “Others depend on ItemFilter”:
+// In your current logic, that means subgroup1A/subgroup1B only sort when ItemFilter === "None".
+if (ItemFilter === "None") {
+  subgroup1A = sortIf(subgroup1A);
+  subgroup1B = sortIf(subgroup1B);
+}
+// else leave subgroup1A/subgroup1B completely untouched
   
 
   // ---------- RENDER ----------
