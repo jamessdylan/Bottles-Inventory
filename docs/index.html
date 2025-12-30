@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine key</title>
+<title>SM omg key</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -815,6 +815,7 @@ const undoStack = [];
 const UNDO_LIMIT = 5;
 
 const SMART_LISTS_KEY = "Smart Lists";
+let targetList = null;
 
 let templateItems = [];
 let currentItems = [];
@@ -830,7 +831,7 @@ let ArchiveFilter = false;   // true | false
 let GroupFilter   = "None";  // None | Tier | Special
 let SubgroupFilter = "None"; // None | Color
 let ItemFilter    = "None";  // None | Special
-let targetList = “”;
+
 
 
 const list=document.getElementById("list");
@@ -2207,8 +2208,12 @@ groupBtn.onpointerleave = () => {
 groupBtn.onclick = e => {
   // 🚫 suppress click if long-press fired
   if (groupLongPressFired) {
-    const targetList = Source;
+
+    targetList = Source;
+    console.log(“targetList set to:”, targetList);
+
     openListEditorPopup();
+
     e.preventDefault();
     e.stopPropagation();
     return;
