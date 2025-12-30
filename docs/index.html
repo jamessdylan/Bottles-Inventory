@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine key</title>
+<title>SM Winef key</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1664,6 +1664,51 @@ else if (GroupFilter === "Special") {
   console.log("Special group UUID order for", Source, uuidList);
 }
 
+// ---------- SUBGROUP ----------
+let subgroup1A = [], subgroup1B = [], subgroup1C = [];
+let subgroup2A = [], subgroup2B = [], subgroup2C = [];
+
+const isSpecial = (GroupFilter === "Special");
+const itemNone  = (ItemFilter === "None");
+
+if (SubgroupFilter === "Color") {
+  // Preserve original order by filtering in-order
+  subgroup1A = group1incomplete.filter(i => i.color !== "Red");
+  subgroup1B = group1incomplete.filter(i => i.color === "Red");
+
+  subgroup2A = group2incomplete.filter(i => i.color !== "Red");
+  subgroup2B = group2incomplete.filter(i => i.color === "Red");
+
+  // Incomplete sorting rules
+  if (itemNone) {
+    // sort both groups
+    subgroup1A = standardSort(subgroup1A);
+    subgroup1B = standardSort(subgroup1B);
+    subgroup2A = standardSort(subgroup2A);
+    subgroup2B = standardSort(subgroup2B);
+  } else if (isSpecial) {
+    // sort only group2; leave group1 alone
+    subgroup2A = standardSort(subgroup2A);
+    subgroup2B = standardSort(subgroup2B);
+  }
+} else {
+  // No color subgrouping (incomplete)
+  if (itemNone) {
+    subgroup1A = standardSort(group1incomplete);
+    subgroup2A = standardSort(group2incomplete);
+  } else if (isSpecial) {
+    subgroup1A = [...group1incomplete];          // untouched
+    subgroup2A = standardSort(group2incomplete); // sorted
+  } else {
+    subgroup1A = [...group1incomplete];
+    subgroup2A = [...group2incomplete];
+  }
+}
+
+// ✅ Complete buckets are ALWAYS standard sorted (regardless of ItemFilter)
+subgroup1C = standardSort(group1complete);
+subgroup2C = standardSort(group2complete);
+
 
   // ---------- COMPLETE / INCOMPLETE ----------
   const group1incomplete = group1items.filter(i => i[completeKey] === false);
@@ -1672,44 +1717,7 @@ else if (GroupFilter === "Special") {
   const group2incomplete = group2items.filter(i => i[completeKey] === false);
   const group2complete   = group2items.filter(i => i[completeKey] === true);
 
-  // ---------- SUBGROUP ----------
-  let subgroup1A = [], subgroup1B = [], subgroup1C = [];
-  let subgroup2A = [], subgroup2B = [], subgroup2C = [];
-
-  if (SubgroupFilter === "Color") {
-    subgroup1A = group1incomplete.filter(i => i.color !== "Red");
-    subgroup1B = group1incomplete.filter(i => i.color === "Red");
-
-    subgroup2A = group2incomplete.filter(i => i.color !== "Red");
-    subgroup2B = group2incomplete.filter(i => i.color === "Red");
-
-    if (ItemFilter === "None") {
-      subgroup1A = standardSort(subgroup1A);
-      subgroup1B = standardSort(subgroup1B);
-      subgroup2A = standardSort(subgroup2A);
-      subgroup2B = standardSort(subgroup2B);
-    }
-  }
-
-else {
-  // group sorting already handled above for Special
-  // - if ItemFilter !== "None", group1 order is preserved
-  // - group2 may already be sorted
-  subgroup1A = [...group1incomplete];
-  subgroup2A = [...group2incomplete];
-
-  // For non-Special modes, keep original behavior:
-  if (GroupFilter !== "Special") {
-    if (ItemFilter === "None") {
-      subgroup1A = standardSort(subgroup1A);
-      subgroup2A = standardSort(subgroup2A);
-    }
-  }
-}
-
-
-  subgroup1C = standardSort(group1complete);
-  subgroup2C = standardSort(group2complete);
+  
 
   // ---------- RENDER ----------
   function renderGroup(label, a, b, c) {
@@ -1724,10 +1732,11 @@ else {
     renderGroup("Reserve", subgroup2A, subgroup2B, subgroup2C);
   }
 
-  else if (GroupFilter === "Special") {
-    renderGroup("Suggested", subgroup1A, subgroup1B, subgroup1C);
-    renderGroup("Other", subgroup2A, subgroup2B, subgroup2C);
-  }
+ else if (GroupFilter === "Special") {
+  renderGroup("Suggested", subgroup1A, subgroup1B, subgroup1C);
+  renderGroup("Other", subgroup2A, subgroup2B, subgroup2C);
+}
+
 
   else {
     renderGroup(null, subgroup1A, subgroup1B, subgroup1C);
