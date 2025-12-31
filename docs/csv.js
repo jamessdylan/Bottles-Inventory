@@ -2,85 +2,47 @@ console.log("[csv.js] loaded");
 
 function generateCSVFile() {
   const pageTitle = document.title || "Inventory";
+
   const rows = [];
 
-  // 1) TITLE ROW (only the title in the first cell)
-  rows.push([pageTitle]);
+  // 🔹 HEADER ROW
+  rows.push([
+    pageTitle,
+    "tier",
+    "color",
+    "brand",
+    "varietal",
+    "identifier",
+    "quantity",
+    "previous quantity",
+    "price",
+    "total"
+  ]);
 
-  // 2) COLUMN HEADERS (your requested categories)
-  rows.push(["Bottle", "Color", "Quantity", "Price", "Total"]);
-
-  // Helpers
-  const csvEscape = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
-
-  function itemRow(item) {
+  // 🔹 ITEM ROWS
+  items.forEach(item => {
     const quantity = totalQuantity(item);
     const price = Number(item.price) || 0;
     const total = quantity * price;
 
-    return [
-      smartItemTitle(item),
+    rows.push([
+      smartItemTitle(item),     // ← item title here (not page title)
+      item.tier || "",
       item.color || "",
+      item.brand || "",
+      item.varietal || "",
+      item.identifier || "",
       quantity,
-      price.toFixed(2),
+      item.TotalPrev || 0,
+      price,
       total.toFixed(2)
-    ];
-  }
+    ]);
+  });
 
-  function groupTotalRow(label, sum) {
-    // Put the label in Bottle column, leave others blank except Total
-    return [label, "", "", "", sum.toFixed(2)];
-  }
-
-  // 3) GROUP items by tier
-  const houseItems = items.filter(i => (i.tier || "") === "House");
-  const reserveItems = items.filter(i => (i.tier || "") === "Reserve");
-
-  // OPTIONAL: sort within groups (keeps export stable/readable)
-  // Comment these out if you want raw order.
-  const sortedHouse = standardSort(houseItems);
-  const sortedReserve = standardSort(reserveItems);
-
-  let houseSum = 0;
-  let reserveSum = 0;
-
-  // 4) HOUSE GROUP
-  if (sortedHouse.length) {
-    rows.push(["House"]); // group label row (single cell)
-    sortedHouse.forEach(item => {
-      const quantity = totalQuantity(item);
-      const price = Number(item.price) || 0;
-      const total = quantity * price;
-
-      houseSum += total;
-      rows.push(itemRow(item));
-    });
-    rows.push(groupTotalRow("House Total", houseSum));
-    rows.push([""]); // spacer row (optional, remove if you don’t want blank lines)
-  }
-
-  // 5) RESERVE GROUP
-  if (sortedReserve.length) {
-    rows.push(["Reserve"]); // group label row (single cell)
-    sortedReserve.forEach(item => {
-      const quantity = totalQuantity(item);
-      const price = Number(item.price) || 0;
-      const total = quantity * price;
-
-      reserveSum += total;
-      rows.push(itemRow(item));
-    });
-    rows.push(groupTotalRow("Reserve Total", reserveSum));
-    rows.push([""]); // spacer row (optional)
-  }
-
-  // 6) GRAND TOTAL
-  const grandTotal = houseSum + reserveSum;
-  rows.push(groupTotalRow("Grand Total", grandTotal));
-
-  // Build CSV
   const csv = rows
-    .map(row => row.map(csvEscape).join(","))
+    .map(row =>
+      row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")
+    )
     .join("\n");
 
   openCSVInNewWindow(csv, "items.csv");
