@@ -74,6 +74,31 @@ background:rgba(240,233,233,.65);
   filter:saturate(1.1);
 }
 
+/* ---------- FLOATING CURRENT SOURCE (TEXT ONLY) ---------- */
+.floating-source{
+  position:fixed;
+  top:calc(8px + env(safe-area-inset-top));
+  left:50%;
+  transform:translateX(-50%) translateY(-6px);
+  padding:8px 12px;
+  border-radius:12px;
+  background:rgba(255,255,255,.75);
+  backdrop-filter:blur(10px);
+  font-family:"Copperplate",serif;
+  font-size:14px;
+  letter-spacing:.2px;
+  z-index:260;              /* above tabs (default) and above list items */
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .18s ease, transform .18s ease;
+  box-shadow:0 6px 18px rgba(0,0,0,.10);
+}
+
+.floating-source.show{
+  opacity:1;
+  transform:translateX(-50%) translateY(0);
+}
+
 
 /* ---------- LIST ---------- */
 .list{padding:8px 16px 140px;}
@@ -775,7 +800,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 </div>
 
 <header><img src="SiennaTransparent.png"></header>
-
+<div id="floatingSource" class="floating-source"></div>
 <div class="tabs" id="sourceTabs"></div>
 <div class="list" id="list"></div>
 <nav class="action-bar">
@@ -1201,6 +1226,8 @@ tab.onclick = async () => {
     t.classList.remove("active")
   );
   tab.classList.add("active");
+updateFloatingSourceText();
+updateFloatingSourceVisibility();
 
   renderItems();
 };
@@ -3643,6 +3670,34 @@ function generateSmartListsFile() {
   const json = JSON.stringify(smartLists, null, 2);
   openJSONInNewWindow(json, "Smart Lists.json");
 }
+
+/* ---------- FLOATING SOURCE LABEL ---------- */
+const floatingSourceEl = document.getElementById("floatingSource");
+
+function updateFloatingSourceText() {
+  if (!floatingSourceEl) return;
+  floatingSourceEl.textContent = Source || "";
+}
+
+function updateFloatingSourceVisibility() {
+  if (!floatingSourceEl || !tabsEl) return;
+
+  const tabsRect = tabsEl.getBoundingClientRect();
+
+  // Show once the tabs have scrolled past the top edge
+  if (tabsRect.bottom <= 10) {
+    floatingSourceEl.classList.add("show");
+  } else {
+    floatingSourceEl.classList.remove("show");
+  }
+}
+
+// Keep it in sync
+updateFloatingSourceText();
+updateFloatingSourceVisibility();
+
+window.addEventListener("scroll", updateFloatingSourceVisibility, { passive: true });
+window.addEventListener("resize", updateFloatingSourceVisibility);
 
 </script>
 
