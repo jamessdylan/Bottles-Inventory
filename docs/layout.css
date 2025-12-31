@@ -16,9 +16,9 @@ body::after{
   background:linear-gradient(
     to bottom,
     rgba(255,255,255,.95) 0%,
-    rgba(255,255,255,.7) 80px,
-    rgba(255,255,255,.3) 160px,
-    rgba(255,255,255,0) 260px
+    rgba(255,255,255,.7) 200px,
+    rgba(255,255,255,.3) 400px,
+    rgba(255,255,255,0) 600px
   );
   pointer-events:none;
   z-index:-1;
