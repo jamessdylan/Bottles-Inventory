@@ -1004,21 +1004,30 @@ newProjectBtn.onclick = () => {
 };
 
 
-    // Handle the "Reserve List" button click
-    reserveListBtn.onclick = () => {
-      drawer.classList.remove("open");
-      overlay.classList.remove("show");
-      const itemsPatch = localStorage.getItem("itemsPatch.json");
+reserveListBtn.onclick = () => {
+  drawer.classList.remove("open");
+  overlay.classList.remove("show");
 
-  if (itemsPatch) {
-    // If itemsPatch exists in localStorage, display it
-    const jsonContent = JSON.stringify(JSON.parse(itemsPatch), null, 2); // Pretty-print JSON
-    alert("Items Patch Loaded: \n\n" + jsonContent); // Display in alert (could be a modal in the future)
+  const win = window.open("reserve-list.html", "_blank");
+  if (!win) return;
+
+  // Prepare payload
+  const payload = {
+    title: document.title,
+    items: items
+  };
+
+  // Send once the page is ready
+  const send = () => win.postMessage(payload, "*");
+
+  if (win.document.readyState === "complete") {
+    send();
   } else {
-    // If itemsPatch does not exist, show an error message
-    alert("The values could not be loaded.");
+    win.onload = send;
   }
-    };
+};
+
+
 
     // Handle the "Sales Report" button click
     salesReportBtn.onclick = () => {
