@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Colors</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -819,8 +819,10 @@ function defaultTitle(){
   return d.toLocaleString("default",{month:"long",year:"numeric"})+" Wine Inventory";
 }
 
-let pageTitle=defaultTitle();
-pageTitleEl.textContent=pageTitle;
+let pageTitle = defaultTitle();
+pageTitleEl.textContent = pageTitle;
+document.title = pageTitle;
+
 
 const picker=document.getElementById("datePicker");
 const pickerOverlay=document.getElementById("datePickerOverlay");
@@ -859,11 +861,13 @@ cancelDate.onclick=()=>{
   pickerOverlay.classList.remove("show");
 };
 
-confirmDate.onclick=()=>{
-  pageTitle=`${monthPicker.value} ${yearPicker.value} Wine Inventory`;
-  pageTitleEl.textContent=pageTitle;
+confirmDate.onclick = () => {
+  pageTitle = `${monthPicker.value} ${yearPicker.value} Wine Inventory`;
+  pageTitleEl.textContent = pageTitle;
+  document.title = pageTitle;
   cancelDate.onclick();
 };
+
 ;
 
 /* ---------------- STATE ---------------- */
