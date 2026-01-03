@@ -1030,13 +1030,6 @@ reserveListBtn.onclick = () => {
   }
 };
 
-const customFileBtn = document.getElementById("customFileBtn");
-
-customFileBtn.onclick = () => {
-  drawer.classList.remove("open");
-  overlay.classList.remove("show");
-  openCustomFilePopup();
-};
 
 
     // Handle the "Sales Report" button click
@@ -1217,333 +1210,6 @@ function openClearCachePopup() {
     popup.remove();
   }
 }
-
-function getAllUniqueKeysExcludingUUID() {
-  const set = new Set();
-  (items || []).forEach(it => {
-    if (!it || typeof it !== "object") return;
-    Object.keys(it).forEach(k => {
-      if (k !== "UUID") set.add(k);
-    });
-  });
-
-  return Array.from(set).sort((a, b) =>
-    a.localeCompare(b, undefined, { sensitivity: "base" })
-  );
-}
-
-function csvEscape(v) {
-  // keep simple but safe: quote if comma/quote/newline present
-  const s = v === undefined || v === null ? "" : String(v);
-  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-  return s;
-}
-
-function openTextInNewWindow(content, filename, mime = "text/plain") {
-  const blob = new Blob([content], { type: mime });
-  const url = URL.createObjectURL(blob);
-
-  const win = window.open("", "_blank");
-  if (!win) return;
-
-  win.document.write(`
-    <html>
-      <head>
-        <title>${filename}</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <style>
-          body{font-family:monospace;padding:16px;margin:0;}
-          .download{
-            display:inline-block;padding:8px 12px;background:#eee;border-radius:8px;
-            text-decoration:none;color:#000;font-weight:600;
-          }
-          pre{white-space:pre-wrap;padding-bottom:90px;}
-          .bottom-bar{
-            position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #ddd;
-            padding:10px;text-align:center;
-          }
-        </style>
-      </head>
-      <body>
-        <a class="download" href="${url}" download="${filename}">⬇ Download ${filename}</a>
-        <pre>${String(content).replace(/</g, "&lt;")}</pre>
-        <div class="bottom-bar">
-          <a class="download" href="${url}" download="${filename}">⬇ Download ${filename}</a>
-        </div>
-      </body>
-    </html>
-  `);
-  win.document.close();
-}
-
-function openTwoFilePreview(csvText, csvName, jsonText, jsonName) {
-  const csvBlob = new Blob([csvText], { type: "text/csv" });
-  const jsonBlob = new Blob([jsonText], { type: "application/json" });
-
-  const csvUrl = URL.createObjectURL(csvBlob);
-  const jsonUrl = URL.createObjectURL(jsonBlob);
-
-  const win = window.open("", "_blank");
-  if (!win) return;
-
-  win.document.write(`
-    <html>
-      <head>
-        <title>Custom File Output</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <style>
-          body{font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;margin:0;padding:16px;}
-          .bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
-          a.btn{
-            display:inline-block;padding:10px 12px;border-radius:10px;text-decoration:none;
-            background:#eee;color:#000;font-weight:600;
-          }
-          .grid{display:grid;grid-template-columns:1fr;gap:14px;}
-          @media (min-width: 900px){ .grid{grid-template-columns:1fr 1fr;} }
-          .card{
-            background:rgba(0,0,0,.04);
-            border-radius:14px;
-            padding:12px;
-          }
-          .title{font-family:monospace;font-weight:700;margin-bottom:8px;}
-          pre{margin:0;white-space:pre-wrap;font-family:monospace;font-size:12px;max-height:60vh;overflow:auto;}
-        </style>
-      </head>
-      <body>
-        <div class="bar">
-          <a class="btn" href="${csvUrl}" download="${csvName}">⬇ Download ${csvName}</a>
-          <a class="btn" href="${jsonUrl}" download="${jsonName}">⬇ Download ${jsonName}</a>
-        </div>
-
-        <div class="grid">
-          <div class="card">
-            <div class="title">${csvName}</div>
-            <pre>${csvEscapePreview(csvText).replace(/</g,"&lt;")}</pre>
-          </div>
-
-          <div class="card">
-            <div class="title">${jsonName}</div>
-            <pre>${jsonText.replace(/</g,"&lt;")}</pre>
-          </div>
-        </div>
-
-        <script>
-          function noop(){}
-        </script>
-      </body>
-    </html>
-  `);
-
-  win.document.close();
-
-  function csvEscapePreview(t){
-    // avoid huge previews
-    const lines = String(t).split(/\\r?\\n/);
-    if (lines.length > 120) {
-      return lines.slice(0,120).join("\\n") + "\\n... (truncated)";
-    }
-    return t;
-  }
-}
-
-function openCustomFilePopup() {
-  const allKeys = getAllUniqueKeysExcludingUUID();
-
-  // Map item UUID -> title
-  const itemRows = (items || []).map(it => ({
-    uuid: it.UUID,
-    title: smartItemTitle(it) || it.UUID || "(Untitled)"
-  }))
-  .filter(x => x.uuid)
-  .sort((a,b) => a.title.localeCompare(b.title, undefined, { sensitivity:"base" }));
-
-  const ov = document.createElement("div");
-  ov.className = "overlay show";
-
-  const popup = document.createElement("div");
-  popup.style.cssText = `
-    position:fixed;
-    inset:20px;
-    background:rgba(255,255,255,.96);
-    backdrop-filter:blur(16px);
-    border-radius:16px;
-    padding:16px;
-    z-index:720;
-    overflow:auto;
-  `;
-
-  popup.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-      <div style="font-family:'Copperplate',serif;font-size:18px;">Custom File</div>
-      <button id="cfClose" style="
-        border:none;background:rgba(0,0,0,.06);
-        padding:8px 12px;border-radius:10px;cursor:pointer;
-      ">Cancel</button>
-    </div>
-
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
-      <button id="cfSelectAllItems" style="border:none;background:rgba(0,0,0,.06);padding:8px 10px;border-radius:10px;cursor:pointer;">Select all items</button>
-      <button id="cfClearItems" style="border:none;background:rgba(0,0,0,.06);padding:8px 10px;border-radius:10px;cursor:pointer;">Clear items</button>
-      <button id="cfSelectAllKeys" style="border:none;background:rgba(0,0,0,.06);padding:8px 10px;border-radius:10px;cursor:pointer;">Select all keys</button>
-      <button id="cfClearKeys" style="border:none;background:rgba(0,0,0,.06);padding:8px 10px;border-radius:10px;cursor:pointer;">Clear keys</button>
-    </div>
-
-    <div style="display:grid;grid-template-columns:1fr;gap:12px;">
-      <div style="background:rgba(0,0,0,.04);border-radius:14px;padding:12px;">
-        <div style="font-weight:700;margin-bottom:8px;">Items</div>
-        <input id="cfItemSearch" placeholder="Search items…" style="width:100%;padding:10px;border-radius:10px;border:none;background:white;margin-bottom:10px;">
-        <div id="cfItemsList" style="display:flex;flex-direction:column;gap:6px;max-height:40vh;overflow:auto;"></div>
-      </div>
-
-      <div style="background:rgba(0,0,0,.04);border-radius:14px;padding:12px;">
-        <div style="font-weight:700;margin-bottom:8px;">Keys (excluding UUID)</div>
-        <input id="cfKeySearch" placeholder="Search keys…" style="width:100%;padding:10px;border-radius:10px;border:none;background:white;margin-bottom:10px;">
-        <div id="cfKeysList" style="display:flex;flex-direction:column;gap:6px;max-height:30vh;overflow:auto;"></div>
-      </div>
-    </div>
-
-    <button id="cfConfirm" style="
-      margin-top:14px;width:100%;
-      background:#1f5e3b;color:white;border:none;
-      padding:12px;border-radius:14px;font-size:16px;cursor:pointer;
-    ">Generate Files</button>
-  `;
-
-  document.body.appendChild(ov);
-  document.body.appendChild(popup);
-
-  const itemsListEl = popup.querySelector("#cfItemsList");
-  const keysListEl = popup.querySelector("#cfKeysList");
-
-  const selectedUUIDs = new Set();
-  const selectedKeys = new Set();
-
-  function renderItemsList(filterText="") {
-    itemsListEl.innerHTML = "";
-    const q = filterText.trim().toLowerCase();
-
-    itemRows
-      .filter(r => !q || r.title.toLowerCase().includes(q))
-      .forEach(r => {
-        const row = document.createElement("label");
-        row.style.cssText = `
-          display:flex;gap:10px;align-items:flex-start;
-          padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.8);
-          cursor:pointer;
-        `;
-
-        const checked = selectedUUIDs.has(r.uuid);
-        row.innerHTML = `
-          <input type="checkbox" ${checked ? "checked" : ""} style="margin-top:3px;">
-          <div style="flex:1;">
-            <div style="font-size:14px;">${r.title}</div>
-            <div style="font-size:11px;color:#666;font-family:monospace;">${r.uuid}</div>
-          </div>
-        `;
-
-        const cb = row.querySelector("input");
-        cb.onchange = () => {
-          if (cb.checked) selectedUUIDs.add(r.uuid);
-          else selectedUUIDs.delete(r.uuid);
-        };
-
-        itemsListEl.appendChild(row);
-      });
-  }
-
-  function renderKeysList(filterText="") {
-    keysListEl.innerHTML = "";
-    const q = filterText.trim().toLowerCase();
-
-    allKeys
-      .filter(k => !q || k.toLowerCase().includes(q))
-      .forEach(k => {
-        const row = document.createElement("label");
-        row.style.cssText = `
-          display:flex;gap:10px;align-items:center;
-          padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.8);
-          cursor:pointer;font-family:monospace;font-size:13px;
-        `;
-
-        const checked = selectedKeys.has(k);
-        row.innerHTML = `
-          <input type="checkbox" ${checked ? "checked" : ""}>
-          <div style="flex:1;">${k}</div>
-        `;
-
-        const cb = row.querySelector("input");
-        cb.onchange = () => {
-          if (cb.checked) selectedKeys.add(k);
-          else selectedKeys.delete(k);
-        };
-
-        keysListEl.appendChild(row);
-      });
-  }
-
-  // initial render
-  renderItemsList("");
-  renderKeysList("");
-
-  // search
-  popup.querySelector("#cfItemSearch").oninput = (e) => renderItemsList(e.target.value || "");
-  popup.querySelector("#cfKeySearch").oninput = (e) => renderKeysList(e.target.value || "");
-
-  // bulk buttons
-  popup.querySelector("#cfSelectAllItems").onclick = () => { itemRows.forEach(r => selectedUUIDs.add(r.uuid)); renderItemsList(popup.querySelector("#cfItemSearch").value || ""); };
-  popup.querySelector("#cfClearItems").onclick = () => { selectedUUIDs.clear(); renderItemsList(popup.querySelector("#cfItemSearch").value || ""); };
-
-  popup.querySelector("#cfSelectAllKeys").onclick = () => { allKeys.forEach(k => selectedKeys.add(k)); renderKeysList(popup.querySelector("#cfKeySearch").value || ""); };
-  popup.querySelector("#cfClearKeys").onclick = () => { selectedKeys.clear(); renderKeysList(popup.querySelector("#cfKeySearch").value || ""); };
-
-  // close
-  const close = () => { ov.remove(); popup.remove(); };
-  popup.querySelector("#cfClose").onclick = close;
-  ov.onclick = e => { if (e.target === ov) close(); };
-
-  // confirm -> generate
-  popup.querySelector("#cfConfirm").onclick = () => {
-    const uuids = Array.from(selectedUUIDs);
-    const keys = Array.from(selectedKeys);
-
-    if (!uuids.length) { alert("Select at least 1 item."); return; }
-    if (!keys.length)  { alert("Select at least 1 key."); return; }
-
-    // Build selected item objects
-    const selectedItems = uuids
-      .map(u => items.find(it => it.UUID === u))
-      .filter(Boolean);
-
-    // --- CSV ---
-    const header = ["UUID", ...keys].join(",");
-    const rows = selectedItems.map(it => {
-      const vals = [it.UUID, ...keys.map(k => csvEscape(it[k]))];
-      // note: csvEscape already quotes as needed
-      return vals.join(",");
-    });
-    const csvText = [header, ...rows].join("\n");
-
-    // --- JSON array of dicts ---
-    const jsonArr = selectedItems.map(it => {
-      const obj = { UUID: it.UUID };
-      keys.forEach(k => {
-        if (Object.prototype.hasOwnProperty.call(it, k)) obj[k] = it[k];
-        else obj[k] = ""; // keep stable column presence; change to omit if you prefer
-      });
-      return obj;
-    });
-    const jsonText = JSON.stringify(jsonArr, null, 2);
-
-    close();
-
-    // filenames
-    const csvName = "custom-file.csv";
-    const jsonName = "custom-file.json";
-
-    openTwoFilePreview(csvText, csvName, jsonText, jsonName);
-  };
-}
-
 
 function openMassEditPopup() {
   let selectedFile = null;
@@ -2295,6 +1961,331 @@ function openWineStructureEntryPopup(entry) {
   ov.onclick = e => { if (e.target === ov) close(); };
 }
 
+function getAllUniqueKeysExcludingUUID() {
+  const set = new Set();
+  (items || []).forEach(it => {
+    if (!it || typeof it !== "object") return;
+    Object.keys(it).forEach(k => {
+      if (k !== "UUID") set.add(k);
+    });
+  });
+
+  return Array.from(set).sort((a, b) =>
+    a.localeCompare(b, undefined, { sensitivity: "base" })
+  );
+}
+
+function csvEscape(v) {
+  // keep simple but safe: quote if comma/quote/newline present
+  const s = v === undefined || v === null ? "" : String(v);
+  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function openTextInNewWindow(content, filename, mime = "text/plain") {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+
+  const win = window.open("", "_blank");
+  if (!win) return;
+
+  win.document.write(`
+    <html>
+      <head>
+        <title>${filename}</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <style>
+          body{font-family:monospace;padding:16px;margin:0;}
+          .download{
+            display:inline-block;padding:8px 12px;background:#eee;border-radius:8px;
+            text-decoration:none;color:#000;font-weight:600;
+          }
+          pre{white-space:pre-wrap;padding-bottom:90px;}
+          .bottom-bar{
+            position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #ddd;
+            padding:10px;text-align:center;
+          }
+        </style>
+      </head>
+      <body>
+        <a class="download" href="${url}" download="${filename}">⬇ Download ${filename}</a>
+        <pre>${String(content).replace(/</g, "&lt;")}</pre>
+        <div class="bottom-bar">
+          <a class="download" href="${url}" download="${filename}">⬇ Download ${filename}</a>
+        </div>
+      </body>
+    </html>
+  `);
+  win.document.close();
+}
+
+function openTwoFilePreview(csvText, csvName, jsonText, jsonName) {
+  const csvBlob = new Blob([csvText], { type: "text/csv" });
+  const jsonBlob = new Blob([jsonText], { type: "application/json" });
+
+  const csvUrl = URL.createObjectURL(csvBlob);
+  const jsonUrl = URL.createObjectURL(jsonBlob);
+
+  const win = window.open("", "_blank");
+  if (!win) return;
+
+  win.document.write(`
+    <html>
+      <head>
+        <title>Custom File Output</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <style>
+          body{font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;margin:0;padding:16px;}
+          .bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+          a.btn{
+            display:inline-block;padding:10px 12px;border-radius:10px;text-decoration:none;
+            background:#eee;color:#000;font-weight:600;
+          }
+          .grid{display:grid;grid-template-columns:1fr;gap:14px;}
+          @media (min-width: 900px){ .grid{grid-template-columns:1fr 1fr;} }
+          .card{
+            background:rgba(0,0,0,.04);
+            border-radius:14px;
+            padding:12px;
+          }
+          .title{font-family:monospace;font-weight:700;margin-bottom:8px;}
+          pre{margin:0;white-space:pre-wrap;font-family:monospace;font-size:12px;max-height:60vh;overflow:auto;}
+        </style>
+      </head>
+      <body>
+        <div class="bar">
+          <a class="btn" href="${csvUrl}" download="${csvName}">⬇ Download ${csvName}</a>
+          <a class="btn" href="${jsonUrl}" download="${jsonName}">⬇ Download ${jsonName}</a>
+        </div>
+
+        <div class="grid">
+          <div class="card">
+            <div class="title">${csvName}</div>
+            <pre>${csvEscapePreview(csvText).replace(/</g,"&lt;")}</pre>
+          </div>
+
+          <div class="card">
+            <div class="title">${jsonName}</div>
+            <pre>${jsonText.replace(/</g,"&lt;")}</pre>
+          </div>
+        </div>
+
+        <script>
+          function noop(){}
+        </script>
+      </body>
+    </html>
+  `);
+
+  win.document.close();
+
+  function csvEscapePreview(t){
+    // avoid huge previews
+    const lines = String(t).split(/\\r?\\n/);
+    if (lines.length > 120) {
+      return lines.slice(0,120).join("\\n") + "\\n... (truncated)";
+    }
+    return t;
+  }
+}
+
+function openCustomFilePopup() {
+  const allKeys = getAllUniqueKeysExcludingUUID();
+
+  // Map item UUID -> title
+  const itemRows = (items || []).map(it => ({
+    uuid: it.UUID,
+    title: smartItemTitle(it) || it.UUID || "(Untitled)"
+  }))
+  .filter(x => x.uuid)
+  .sort((a,b) => a.title.localeCompare(b.title, undefined, { sensitivity:"base" }));
+
+  const ov = document.createElement("div");
+  ov.className = "overlay show";
+
+  const popup = document.createElement("div");
+  popup.style.cssText = `
+    position:fixed;
+    inset:20px;
+    background:rgba(255,255,255,.96);
+    backdrop-filter:blur(16px);
+    border-radius:16px;
+    padding:16px;
+    z-index:720;
+    overflow:auto;
+  `;
+
+  popup.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div style="font-family:'Copperplate',serif;font-size:18px;">Custom File</div>
+      <button id="cfClose" style="
+        border:none;background:rgba(0,0,0,.06);
+        padding:8px 12px;border-radius:10px;cursor:pointer;
+      ">Cancel</button>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+      <button id="cfSelectAllItems" style="border:none;background:rgba(0,0,0,.06);padding:8px 10px;border-radius:10px;cursor:pointer;">Select all items</button>
+      <button id="cfClearItems" style="border:none;background:rgba(0,0,0,.06);padding:8px 10px;border-radius:10px;cursor:pointer;">Clear items</button>
+      <button id="cfSelectAllKeys" style="border:none;background:rgba(0,0,0,.06);padding:8px 10px;border-radius:10px;cursor:pointer;">Select all keys</button>
+      <button id="cfClearKeys" style="border:none;background:rgba(0,0,0,.06);padding:8px 10px;border-radius:10px;cursor:pointer;">Clear keys</button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr;gap:12px;">
+      <div style="background:rgba(0,0,0,.04);border-radius:14px;padding:12px;">
+        <div style="font-weight:700;margin-bottom:8px;">Items</div>
+        <input id="cfItemSearch" placeholder="Search items…" style="width:100%;padding:10px;border-radius:10px;border:none;background:white;margin-bottom:10px;">
+        <div id="cfItemsList" style="display:flex;flex-direction:column;gap:6px;max-height:40vh;overflow:auto;"></div>
+      </div>
+
+      <div style="background:rgba(0,0,0,.04);border-radius:14px;padding:12px;">
+        <div style="font-weight:700;margin-bottom:8px;">Keys (excluding UUID)</div>
+        <input id="cfKeySearch" placeholder="Search keys…" style="width:100%;padding:10px;border-radius:10px;border:none;background:white;margin-bottom:10px;">
+        <div id="cfKeysList" style="display:flex;flex-direction:column;gap:6px;max-height:30vh;overflow:auto;"></div>
+      </div>
+    </div>
+
+    <button id="cfConfirm" style="
+      margin-top:14px;width:100%;
+      background:#1f5e3b;color:white;border:none;
+      padding:12px;border-radius:14px;font-size:16px;cursor:pointer;
+    ">Generate Files</button>
+  `;
+
+  document.body.appendChild(ov);
+  document.body.appendChild(popup);
+
+  const itemsListEl = popup.querySelector("#cfItemsList");
+  const keysListEl = popup.querySelector("#cfKeysList");
+
+  const selectedUUIDs = new Set();
+  const selectedKeys = new Set();
+
+  function renderItemsList(filterText="") {
+    itemsListEl.innerHTML = "";
+    const q = filterText.trim().toLowerCase();
+
+    itemRows
+      .filter(r => !q || r.title.toLowerCase().includes(q))
+      .forEach(r => {
+        const row = document.createElement("label");
+        row.style.cssText = `
+          display:flex;gap:10px;align-items:flex-start;
+          padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.8);
+          cursor:pointer;
+        `;
+
+        const checked = selectedUUIDs.has(r.uuid);
+        row.innerHTML = `
+          <input type="checkbox" ${checked ? "checked" : ""} style="margin-top:3px;">
+          <div style="flex:1;">
+            <div style="font-size:14px;">${r.title}</div>
+            <div style="font-size:11px;color:#666;font-family:monospace;">${r.uuid}</div>
+          </div>
+        `;
+
+        const cb = row.querySelector("input");
+        cb.onchange = () => {
+          if (cb.checked) selectedUUIDs.add(r.uuid);
+          else selectedUUIDs.delete(r.uuid);
+        };
+
+        itemsListEl.appendChild(row);
+      });
+  }
+
+  function renderKeysList(filterText="") {
+    keysListEl.innerHTML = "";
+    const q = filterText.trim().toLowerCase();
+
+    allKeys
+      .filter(k => !q || k.toLowerCase().includes(q))
+      .forEach(k => {
+        const row = document.createElement("label");
+        row.style.cssText = `
+          display:flex;gap:10px;align-items:center;
+          padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.8);
+          cursor:pointer;font-family:monospace;font-size:13px;
+        `;
+
+        const checked = selectedKeys.has(k);
+        row.innerHTML = `
+          <input type="checkbox" ${checked ? "checked" : ""}>
+          <div style="flex:1;">${k}</div>
+        `;
+
+        const cb = row.querySelector("input");
+        cb.onchange = () => {
+          if (cb.checked) selectedKeys.add(k);
+          else selectedKeys.delete(k);
+        };
+
+        keysListEl.appendChild(row);
+      });
+  }
+
+  // initial render
+  renderItemsList("");
+  renderKeysList("");
+
+  // search
+  popup.querySelector("#cfItemSearch").oninput = (e) => renderItemsList(e.target.value || "");
+  popup.querySelector("#cfKeySearch").oninput = (e) => renderKeysList(e.target.value || "");
+
+  // bulk buttons
+  popup.querySelector("#cfSelectAllItems").onclick = () => { itemRows.forEach(r => selectedUUIDs.add(r.uuid)); renderItemsList(popup.querySelector("#cfItemSearch").value || ""); };
+  popup.querySelector("#cfClearItems").onclick = () => { selectedUUIDs.clear(); renderItemsList(popup.querySelector("#cfItemSearch").value || ""); };
+
+  popup.querySelector("#cfSelectAllKeys").onclick = () => { allKeys.forEach(k => selectedKeys.add(k)); renderKeysList(popup.querySelector("#cfKeySearch").value || ""); };
+  popup.querySelector("#cfClearKeys").onclick = () => { selectedKeys.clear(); renderKeysList(popup.querySelector("#cfKeySearch").value || ""); };
+
+  // close
+  const close = () => { ov.remove(); popup.remove(); };
+  popup.querySelector("#cfClose").onclick = close;
+  ov.onclick = e => { if (e.target === ov) close(); };
+
+  // confirm -> generate
+  popup.querySelector("#cfConfirm").onclick = () => {
+    const uuids = Array.from(selectedUUIDs);
+    const keys = Array.from(selectedKeys);
+
+    if (!uuids.length) { alert("Select at least 1 item."); return; }
+    if (!keys.length)  { alert("Select at least 1 key."); return; }
+
+    // Build selected item objects
+    const selectedItems = uuids
+      .map(u => items.find(it => it.UUID === u))
+      .filter(Boolean);
+
+    // --- CSV ---
+    const header = ["UUID", ...keys].join(",");
+    const rows = selectedItems.map(it => {
+      const vals = [it.UUID, ...keys.map(k => csvEscape(it[k]))];
+      // note: csvEscape already quotes as needed
+      return vals.join(",");
+    });
+    const csvText = [header, ...rows].join("\n");
+
+    // --- JSON array of dicts ---
+    const jsonArr = selectedItems.map(it => {
+      const obj = { UUID: it.UUID };
+      keys.forEach(k => {
+        if (Object.prototype.hasOwnProperty.call(it, k)) obj[k] = it[k];
+        else obj[k] = ""; // keep stable column presence; change to omit if you prefer
+      });
+      return obj;
+    });
+    const jsonText = JSON.stringify(jsonArr, null, 2);
+
+    close();
+
+    // filenames
+    const csvName = "custom-file.csv";
+    const jsonName = "custom-file.json";
+
+    openTwoFilePreview(csvText, csvName, jsonText, jsonName);
+  };
+}
 
 
 
