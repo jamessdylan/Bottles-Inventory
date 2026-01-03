@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM </title>
+<title>SM Colors</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -3379,19 +3379,36 @@ function openJSONInNewWindow(json, filename) {
   const blob = new Blob([json], { type: "application/json" });
   const url = URL.createObjectURL(blob);
 
+  // Try to open a preview tab (may be blocked by Safari)
   const win = window.open("", "_blank");
+
+  // ✅ Popup blocked → fallback: trigger a download instead
+  if (!win) {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename || "data.json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    // Cleanup URL soon after
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+
+    alert("Popup blocked — downloaded the file instead.");
+    return;
+  }
+
+  // ✅ Popup allowed → write preview UI
+  win.document.open();
   win.document.write(`
     <html>
       <head>
         <title>${filename}</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
         <style>
-          body {
-            font-family: monospace;
-            padding: 16px;
-            margin: 0;
-          }
+          body { font-family: monospace; padding: 16px; margin: 0; }
           .download {
-            display: inline-block;
+            display:inline-block;
             padding: 8px 12px;
             background: #eee;
             border-radius: 6px;
@@ -3399,18 +3416,11 @@ function openJSONInNewWindow(json, filename) {
             color: #000;
             font-weight: 600;
           }
-          .top {
-            margin-bottom: 12px;
-          }
-          pre {
-            white-space: pre-wrap;
-            padding-bottom: 80px; /* space for bottom button */
-          }
+          .top { margin-bottom: 12px; }
+          pre { white-space: pre-wrap; padding-bottom: 80px; }
           .bottom-bar {
             position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
+            bottom: 0; left: 0; right: 0;
             background: #fff;
             border-top: 1px solid #ccc;
             padding: 10px;
@@ -3423,7 +3433,7 @@ function openJSONInNewWindow(json, filename) {
           ⬇ Download ${filename}
         </a>
 
-        <pre>${json.replace(/</g, "&lt;")}</pre>
+        <pre>${String(json).replace(/</g, "&lt;")}</pre>
 
         <div class="bottom-bar">
           <a class="download" href="${url}" download="${filename}">
@@ -3433,9 +3443,12 @@ function openJSONInNewWindow(json, filename) {
       </body>
     </html>
   `);
-
   win.document.close();
+
+  // Cleanup URL later (leave time for download clicks)
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
+
 
 /* ---------- CSV ESCAPE (needed by Export) ---------- */
 function csvEscape(v) {
