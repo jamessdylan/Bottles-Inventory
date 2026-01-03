@@ -2124,40 +2124,47 @@ function openLoadValuesPopup() {
   ov.onclick = (e) => { if (e.target === ov) cleanup(); };
 
   popup.querySelector("#lvConfirm").onclick = async () => {
-    const file = fileInput.files?.[0];
-    if (!file) {
-      alert("Please attach a file.");
-      return;
+  const file = fileInput.files?.[0];
+  if (!file) {
+    alert("Please attach a file.");
+    return;
+  }
+
+  try {
+    let text = await file.text();
+
+    // Strip UTF-8 BOM if present
+    if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+
+    const name = (file.name || "").toLowerCase().trim();
+    const type = (file.type || "").toLowerCase();
+
+    // Stronger detection: extension first, then MIME, then sniff
+    let kind = "csv";
+    if (name.endsWith(".json")) kind = "json";
+    else if (name.endsWith(".csv")) kind = "csv";
+    else if (type.includes("json")) kind = "json";
+    else if (type.includes("csv") || type.includes("excel")) kind = "csv";
+    else {
+      const t = text.trim();
+      kind = (t.startsWith("{") || t.startsWith("[")) ? "json" : "csv";
     }
 
-    try {
-      const text = await file.text();
-      const name = (file.name || "").toLowerCase().trim();
-
-      // Decide by extension first, then by content-type fallback
-      const looksCSV = name.endsWith(".csv") || (file.type || "").includes("csv");
-      const looksJSON = name.endsWith(".json") || (file.type || "").includes("json");
-
-      let arr;
-
-      if (looksCSV && !looksJSON) {
-        arr = csvToArrayOfDicts(text);
-      } else if (looksJSON && !looksCSV) {
-        arr = jsonToArray(text);
-      } else {
-        // ambiguous: sniff content
-        const t = text.trim();
-        if (t.startsWith("[") || t.startsWith("{")) arr = jsonToArray(text);
-        else arr = csvToArrayOfDicts(text);
-      }
-
-      openJSONInNewWindow(JSON.stringify(arr, null, 2), "LoadedValues.json");
-      cleanup();
-    } catch (err) {
-      console.error("Load Values failed:", err);
-      alert("Failed to read/parse file. Check console for details.");
+    let arr;
+    if (kind === "json") {
+      arr = jsonToArray(text);
+    } else {
+      arr = csvToArrayOfDictsRobust(text);
     }
-  };
+
+    openJSONInNewWindow(JSON.stringify(arr, null, 2), "LoadedValues.json");
+    cleanup();
+  } catch (err) {
+    console.error("Load Values failed:", err);
+    alert("Failed to read/parse file. Check console for details.");
+  }
+};
+
 
   function cleanup() {
     ov.remove();
@@ -2167,27 +2174,28 @@ function openLoadValuesPopup() {
 
 /* ---------- CSV -> Array<Dict> ---------- */
 /* NOTE: This is a simple comma-split parser (matches your spec). */
-function csvToArrayOfDicts(csvText) {
-  const lines = String(csvText)
-    .replace(/\r\n/g, "\n")
-    .replace(/\r/g, "\n")
-    .split("\n")
-    .map(l => l.trim())
-    .filter(l => l.length > 0);
+ffunction csvToArrayOfDictsRobust(csvText) {
+  const rows = parseCSV(csvText);
 
-  if (lines.length < 2) return [];
+  if (!rows.length) return [];
+  const headers = rows[0].map(h => String(h ?? "").trim());
 
-  const headers = lines[0].split(",").map(h => h.trim());
+  // If headers are all empty, treat as invalid
+  if (!headers.some(h => h.length > 0)) return [];
 
   const out = [];
-  for (let i = 1; i < lines.length; i++) {
-    const parts = lines[i].split(","); // simple split per your requirement
+
+  for (let r = 1; r < rows.length; r++) {
+    const row = rows[r];
+    // Skip fully-empty rows
+    if (!row || !row.some(v => String(v ?? "").trim() !== "")) continue;
+
     const obj = {};
-
     headers.forEach((key, idx) => {
-      const raw = (parts[idx] ?? "").trim();
+      if (!key) return;
+      const raw = (row[idx] ?? "").toString().trim();
 
-      // try to coerce booleans/numbers lightly (optional but useful)
+      // light coercion (optional)
       if (raw === "true") obj[key] = true;
       else if (raw === "false") obj[key] = false;
       else if (raw !== "" && !isNaN(Number(raw))) obj[key] = Number(raw);
@@ -2199,6 +2207,76 @@ function csvToArrayOfDicts(csvText) {
 
   return out;
 }
+
+/* Quote-aware CSV parser (handles commas/newlines inside quotes) */
+function parseCSV(text) {
+  const s = String(text ?? "");
+
+  const rows = [];
+  let row = [];
+  let field = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    const next = s[i + 1];
+
+    if (inQuotes) {
+      if (c === '"' && next === '"') {
+        // Escaped quote
+        field += '"';
+        i++;
+      } else if (c === '"') {
+        inQuotes = false;
+      } else {
+        field += c;
+      }
+      continue;
+    }
+
+    if (c === '"') {
+      inQuotes = true;
+      continue;
+    }
+
+    if (c === ",") {
+      row.push(field);
+      field = "";
+      continue;
+    }
+
+    if (c === "\r" && next === "\n") {
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = "";
+      i++;
+      continue;
+    }
+
+    if (c === "\n" || c === "\r") {
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = "";
+      continue;
+    }
+
+    field += c;
+  }
+
+  // last field
+  row.push(field);
+  rows.push(row);
+
+  // Trim off trailing completely-empty rows
+  while (rows.length && rows[rows.length - 1].every(v => String(v ?? "").trim() === "")) {
+    rows.pop();
+  }
+
+  return rows;
+}
+
 
 /* ---------- JSON -> Array<Dict> ---------- */
 function jsonToArray(text) {
