@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM </title>
+<title>SM Colors</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2449,7 +2449,6 @@ tab.onclick = async () => {
   );
   tab.classList.add("active");
 updateFloatingSourceText();
-updateFloatingSourceVisibility();
 
   renderItems();
 };
@@ -5147,7 +5146,7 @@ function updateFloatingSourceText() {
   floatingSourceEl.textContent = Source || "";
 }
 
-/* ---------- FLOATING SOURCE LABEL ---------- */
+/*/* ---------- FLOATING SOURCE LABEL (CLEAN) ---------- */
 const floatingSourceEl = document.getElementById("floatingSource");
 const tabsSentinelEl = document.getElementById("tabsSentinel");
 
@@ -5156,30 +5155,48 @@ function updateFloatingSourceText() {
   floatingSourceEl.textContent = Source || "";
 }
 
-function updateFloatingSourceVisibility() {
-  if (!floatingSourceEl || !tabsSentinelEl) return;
-
-  const r = tabsSentinelEl.getBoundingClientRect();
-
-  // Threshold accounts for safe-area + a little breathing room
-  const threshold = (parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--safeTop")) || 0);
-
-  // If the sentinel is at/above the top, tabs are past -> show label
-  if (r.top <= 10) {
-    floatingSourceEl.classList.add("show");
-  } else {
-    floatingSourceEl.classList.remove("show");
-  }
+function setFloatingSourceVisible(visible) {
+  if (!floatingSourceEl) return;
+  floatingSourceEl.classList.toggle("show", !!visible);
 }
 
-// Keep it in sync
-updateFloatingSourceText();
-updateFloatingSourceVisibility();
+/*
+  Best approach: IntersectionObserver watches a 1px sentinel below the tabs.
+  When the sentinel scrolls OUT of view (above the top), we show the label.
+*/
+(function initFloatingSourceObserver() {
+  updateFloatingSourceText();
+  setFloatingSourceVisible(false);
 
-window.addEventListener("scroll", updateFloatingSourceVisibility, { passive: true });
-window.addEventListener("resize", updateFloatingSourceVisibility);
+  if (!tabsSentinelEl) return;
 
-window.addEventListener("resize", updateFloatingSourceVisibility);
+  if ("IntersectionObserver" in window) {
+    const io = new IntersectionObserver(
+      entries => {
+        const entry = entries[0];
+        // If sentinel is not intersecting, it has passed the top -> show label
+        setFloatingSourceVisible(!entry.isIntersecting);
+      },
+      {
+        root: null,
+        threshold: 0,
+        // This moves the “top” line down a bit so it feels nicer
+        rootMargin: "-10px 0px 0px 0px"
+      }
+    );
+
+    io.observe(tabsSentinelEl);
+  } else {
+    // Fallback for older browsers: scroll check
+    const onScroll = () => {
+      const r = tabsSentinelEl.getBoundingClientRect();
+      setFloatingSourceVisible(r.top <= 10);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    onScroll();
+  }
+})();
 
 </script>
 
