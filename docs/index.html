@@ -1359,48 +1359,46 @@ function openQuickFilterPopup() {
     }
   }
 
-  function buildNumericOptions() {
-    // Helper safe numbers
-    const num = v => {
-      const n = Number(v);
-      return isNaN(n) ? 0 : n;
-    };
+ function buildNumericOptions() {
+  const num = v => {
+    const n = Number(v);
+    return isNaN(n) ? 0 : n;
+  };
 
-    const opts = [
-      // Interpreting these as CURRENT SOURCE + SOURCE PREV
-      {
-        id: "prev_qty_current_source",
-        label: "Previous Quantity (Current Source)",
-        getter: (it) => num(it[`${Source}Prev`])
-      },
-      {
-        id: "qty_current_source",
-        label: "Quantity (Current Source)",
-        getter: (it) => num(it[Source])
-      },
-      {
-        id: "price",
-        label: "Price",
-        getter: (it) => num(it.price)
-      },
-      {
-        id: "total_value",
-        label: "Total (Qty × Price)",
-        getter: (it) => num(totalQuantity(it)) * num(it.price)
-      }
-    ];
+  const opts = [
+    {
+      id: "prev_total_qty",
+      label: "Previous Quantity (Total)",
+      getter: (it) => num(it.TotalPrev)
+    },
+    {
+      id: "total_qty",
+      label: "Quantity (Total)",
+      getter: (it) => num(totalQuantity(it))
+    },
+    {
+      id: "price",
+      label: "Price",
+      getter: (it) => num(it.price)
+    },
+    {
+      id: "total_value",
+      label: "Total (Qty × Price)",
+      getter: (it) => num(totalQuantity(it)) * num(it.price)
+    }
+  ];
 
-    // Add each source quantity
-    (SOURCES || []).forEach(src => {
-      opts.push({
-        id: `src_${src}`,
-        label: `Quantity (${src})`,
-        getter: (it) => num(it[src])
-      });
+  // Still allow per-source quantities as additional options
+  (SOURCES || []).forEach(src => {
+    opts.push({
+      id: `src_${src}`,
+      label: `Quantity (${src})`,
+      getter: (it) => num(it[src])
     });
+  });
 
-    return opts;
-  }
+  return opts;
+}
 
   // ---------- numeric filters UI ----------
   function renderNumericFilters() {
