@@ -3622,45 +3622,56 @@ function openBaseFileDownloadPopup() {
   `;
 
   popup.innerHTML = `
-    <div style="font-weight:bold;margin-bottom:12px">
-      Base File Downloads
-    </div>
+  <div style="font-weight:bold;margin-bottom:12px">
+    Base File Downloads
+  </div>
 
-    <div style="display:flex;flex-direction:column;gap:10px;">
-      <button id="dlItems" style="
-        width:100%;
-        padding:12px;
-        border-radius:10px;
-        border:none;
-        background:#1f5e3b;
-        color:white;
-        font-size:16px;
-        cursor:pointer;
-      ">⬇ Download items.json</button>
+  <div style="display:flex;flex-direction:column;gap:10px;">
+    <button id="dlItems" style="
+      width:100%;
+      padding:12px;
+      border-radius:10px;
+      border:none;
+      background:#1f5e3b;
+      color:white;
+      font-size:16px;
+      cursor:pointer;
+    ">⬇ Download items.json</button>
 
-      <button id="dlLists" style="
-        width:100%;
-        padding:12px;
-        border-radius:10px;
-        border:none;
-        background:rgba(0,0,0,.08);
-        color:#000;
-        font-size:16px;
-        cursor:pointer;
-      ">⬇ Download Smart Lists.json</button>
+    <button id="dlLists" style="
+      width:100%;
+      padding:12px;
+      border-radius:10px;
+      border:none;
+      background:rgba(0,0,0,.08);
+      color:#000;
+      font-size:16px;
+      cursor:pointer;
+    ">⬇ Download Smart Lists.json</button>
 
-      <button id="closeBasePopup" style="
-        width:100%;
-        padding:10px;
-        border-radius:10px;
-        border:none;
-        background:transparent;
-        color:#555;
-        font-size:15px;
-        cursor:pointer;
-      ">Close</button>
-    </div>
-  `;
+    <button id="dlPatch" style="
+      width:100%;
+      padding:12px;
+      border-radius:10px;
+      border:none;
+      background:rgba(0,0,0,.08);
+      color:#000;
+      font-size:16px;
+      cursor:pointer;
+    ">⬇ Download patchItems.json</button>
+
+    <button id="closeBasePopup" style="
+      width:100%;
+      padding:10px;
+      border-radius:10px;
+      border:none;
+      background:transparent;
+      color:#555;
+      font-size:15px;
+      cursor:pointer;
+    ">Close</button>
+  </div>
+`;
 
   document.body.appendChild(ov);
   document.body.appendChild(popup);
@@ -3672,6 +3683,11 @@ function openBaseFileDownloadPopup() {
   popup.querySelector("#dlLists").onclick = () => {
     generateSmartListsFile();
   };
+
+popup.querySelector("#dlPatch").onclick = () => {
+  generatePatchItemsFile();
+};
+
 
   popup.querySelector("#closeBasePopup").onclick = cleanup;
   ov.onclick = e => { if (e.target === ov) cleanup(); };
@@ -3694,6 +3710,20 @@ function generateSmartListsFile() {
   const json = JSON.stringify(smartLists, null, 2);
   openJSONInNewWindow(json, "Smart Lists.json");
 }
+
+function generatePatchItemsFile() {
+  let patches;
+  try {
+    patches = JSON.parse(localStorage.getItem("patchItems") || "[]");
+    if (!Array.isArray(patches)) patches = [];
+  } catch {
+    patches = [];
+  }
+
+  const json = JSON.stringify(patches, null, 2);
+  openJSONInNewWindow(json, "patchItems.json");
+}
+
 
 /* ---------- FLOATING SOURCE LABEL ---------- */
 const floatingSourceEl = document.getElementById("floatingSource");
