@@ -776,7 +776,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   <div class="drawer" id="drawer">
     <div class="drawer-title" id="pageTitle"></div>
     <button id="newProjectBtn">New Project</button>
-    <button id=“loadValuesBtn">Load Values</button>
+<button id="loadValuesBtn">Load Values</button>
     <button id="reserveListBtn">Reserve List</button>
     <button id="salesReportBtn">Sales Report</button>
     <button id="baseFileBtn">Base File</button>
@@ -805,6 +805,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 <header><img src="SiennaTransparent.png"></header>
 <div id="floatingSource" class="floating-source"></div>
 <div class="tabs" id="sourceTabs"></div>
+<div id="tabsSentinel" style="height:1px;"></div>
 <div class="list" id="list"></div>
 <nav class="action-bar">
 
@@ -5146,13 +5147,25 @@ function updateFloatingSourceText() {
   floatingSourceEl.textContent = Source || "";
 }
 
+/* ---------- FLOATING SOURCE LABEL ---------- */
+const floatingSourceEl = document.getElementById("floatingSource");
+const tabsSentinelEl = document.getElementById("tabsSentinel");
+
+function updateFloatingSourceText() {
+  if (!floatingSourceEl) return;
+  floatingSourceEl.textContent = Source || "";
+}
+
 function updateFloatingSourceVisibility() {
-  if (!floatingSourceEl || !tabsEl) return;
+  if (!floatingSourceEl || !tabsSentinelEl) return;
 
-  const tabsRect = tabsEl.getBoundingClientRect();
+  const r = tabsSentinelEl.getBoundingClientRect();
 
-  // Show once the tabs have scrolled past the top edge
-  if (tabsRect.bottom <= 10) {
+  // Threshold accounts for safe-area + a little breathing room
+  const threshold = (parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--safeTop")) || 0);
+
+  // If the sentinel is at/above the top, tabs are past -> show label
+  if (r.top <= 10) {
     floatingSourceEl.classList.add("show");
   } else {
     floatingSourceEl.classList.remove("show");
@@ -5164,6 +5177,8 @@ updateFloatingSourceText();
 updateFloatingSourceVisibility();
 
 window.addEventListener("scroll", updateFloatingSourceVisibility, { passive: true });
+window.addEventListener("resize", updateFloatingSourceVisibility);
+
 window.addEventListener("resize", updateFloatingSourceVisibility);
 
 </script>
