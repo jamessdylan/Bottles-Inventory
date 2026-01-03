@@ -1286,6 +1286,12 @@ function openStructurePopup() {
           ${count}/${items.length}
         </div>
       `;
+row.style.cursor = "pointer";
+
+row.onclick = async () => {
+  const entry = await getOrCreateWineStructureEntry(k);
+  openWineStructureEntryPopup(entry);
+};
 
       list.appendChild(row);
     });
@@ -1589,6 +1595,138 @@ function handleQuantityChange(item, newValue) {
 
 
 
+const WINE_STRUCTURE_KEY = "wineStructure";
+
+async function loadWineStructure() {
+  // 1) localStorage first
+  try {
+    const raw = localStorage.getItem(WINE_STRUCTURE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {
+    console.warn("wineStructure parse failed:", e);
+  }
+
+  // 2) fallback: fetch from repo
+  try {
+    const res = await fetch("./wineStructure.json", { cache: "no-store" });
+    const data = await res.json();
+    const structure = Array.isArray(data) ? data : [];
+
+    localStorage.setItem(WINE_STRUCTURE_KEY, JSON.stringify(structure, null, 2));
+    console.log("wineStructure loaded from GitHub");
+    return structure;
+  } catch (e) {
+    console.warn("wineStructure fetch failed:", e);
+    // last resort: empty
+    localStorage.setItem(WINE_STRUCTURE_KEY, JSON.stringify([], null, 2));
+    return [];
+  }
+}
+
+function saveWineStructure(structure) {
+  localStorage.setItem(WINE_STRUCTURE_KEY, JSON.stringify(structure, null, 2));
+}
+
+async function getOrCreateWineStructureEntry(detailKey) {
+  const structure = await loadWineStructure();
+
+  let entry = structure.find(obj => obj && obj.detail === detailKey);
+
+  if (!entry) {
+    entry = {
+      detail: detailKey,
+      type: "N/A",
+      default: "N/A"
+      // options intentionally omitted unless you add them later
+    };
+    structure.push(entry);
+    saveWineStructure(structure);
+    console.log("wineStructure: created entry for", detailKey);
+  }
+
+  return entry;
+}
+
+function openWineStructureEntryPopup(entry) {
+  const ov = document.createElement("div");
+  ov.className = "overlay show";
+
+  const popup = document.createElement("div");
+  popup.style.cssText = `
+    position:fixed;
+    inset:20px;
+    background:rgba(255,255,255,.96);
+    backdrop-filter:blur(16px);
+    border-radius:16px;
+    padding:16px;
+    z-index:750;
+    overflow:auto;
+  `;
+
+  const optionsBlock = Array.isArray(entry.options)
+    ? `<div style="margin-top:10px;">
+         <div style="font-family:'Copperplate',serif; margin-bottom:6px;">Options</div>
+         <div style="
+           background:rgba(0,0,0,.05);
+           border-radius:12px;
+           padding:10px 12px;
+           font-family:monospace;
+           font-size:13px;
+           white-space:pre-wrap;
+         ">${entry.options.join(", ")}</div>
+       </div>`
+    : `<div style="margin-top:10px;color:#666;font-size:12px;">
+         Options: N/A
+       </div>`;
+
+  popup.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div style="font-family:'Copperplate',serif;font-size:18px;">Key Details</div>
+      <button id="closeWineStructure" style="
+        border:none;
+        background:rgba(0,0,0,.06);
+        padding:8px 12px;
+        border-radius:10px;
+        cursor:pointer;
+      ">Done</button>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="background:rgba(0,0,0,.05);border-radius:12px;padding:10px 12px;">
+        <div style="font-size:12px;color:#666;margin-bottom:4px;">detail</div>
+        <div style="font-family:monospace;font-size:14px;">${entry.detail ?? "N/A"}</div>
+      </div>
+
+      <div style="background:rgba(0,0,0,.05);border-radius:12px;padding:10px 12px;">
+        <div style="font-size:12px;color:#666;margin-bottom:4px;">type</div>
+        <div style="font-family:monospace;font-size:14px;">${entry.type ?? "N/A"}</div>
+      </div>
+
+      <div style="background:rgba(0,0,0,.05);border-radius:12px;padding:10px 12px;">
+        <div style="font-size:12px;color:#666;margin-bottom:4px;">default</div>
+        <div style="font-family:monospace;font-size:14px;">${
+          entry.default === undefined ? "N/A" : String(entry.default)
+        }</div>
+      </div>
+
+      ${optionsBlock}
+    </div>
+  `;
+
+  document.body.appendChild(ov);
+  document.body.appendChild(popup);
+
+  const close = () => {
+    ov.remove();
+    popup.remove();
+  };
+
+  popup.querySelector("#closeWineStructure").onclick = close;
+  ov.onclick = e => { if (e.target === ov) close(); };
+}
 
 
 
