@@ -1092,6 +1092,14 @@ csvFileBtn.onclick = () => {
   generateCSVFile();
 };
 
+const customFileBtn = document.getElementById("customFileBtn");
+
+customFileBtn.onclick = () => {
+  drawer.classList.remove("open");
+  overlay.classList.remove("show");
+  openCustomFilePopup();
+};
+
 
 function openClearCachePopup() {
   let selectedAction = null;
@@ -4568,3 +4576,4 @@ window.addEventListener("resize", updateFloatingSourceVisibility);
 
 </body>
 </html> 
+
