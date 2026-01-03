@@ -2199,45 +2199,60 @@ promptNumber("Enter value", item[Source], v => {
   valueEl.onpointerleave=()=>clearTimeout(pressTimer);
 
    const minusBtn = row.querySelector(".minus");
-  const plusBtn  = row.querySelector(".plus");
+const plusBtn  = row.querySelector(".plus");
 
-  let holdTimerBtn;
+let holdTimerBtn = null;
+let longPressFired = false;
 
-  /* ----- MINUS ----- */
-minusBtn.onclick = () => {
-  handleQuantityChange(item, item[Source] - 1);
-};
-
-
-  minusBtn.onpointerdown = () => {
+/* helper: start a long-press safely */
+function startHold(cb){
+  longPressFired = false;
+  clearTimeout(holdTimerBtn);
   holdTimerBtn = setTimeout(() => {
-   promptNumber("Subtract how many?", 0, v => {
-  handleQuantityChange(item, item[Source] - v);
-});
+    longPressFired = true;
+    cb();
   }, 450);
+}
+
+function endHold(){
+  clearTimeout(holdTimerBtn);
+}
+
+/* ----- MINUS (tap = -1, hold = subtract N) ----- */
+minusBtn.onclick = (e) => {
+  if (longPressFired) { e.preventDefault(); e.stopPropagation(); return; }
+  handleQuantityChange(item, (Number(item[Source]) || 0) - 1);
 };
 
-
-  minusBtn.onpointerup = () => clearTimeout(holdTimerBtn);
-  minusBtn.onpointerleave = () => clearTimeout(holdTimerBtn);
-
-  /* ----- PLUS ----- */
-plusBtn.onclick = () => {
-  handleQuantityChange(item, item[Source] + 1);
+minusBtn.onpointerdown = (e) => {
+  e.preventDefault();
+  startHold(() => {
+    promptNumber("Subtract how many?", 0, v => {
+      handleQuantityChange(item, (Number(item[Source]) || 0) - (Number(v) || 0));
+    });
+  });
 };
 
+minusBtn.onpointerup = endHold;
+minusBtn.onpointerleave = endHold;
 
-plusBtn.onpointerdown  = () => {
-  holdTimerBtn = setTimeout(() => {
-promptNumber("Enter value", item[Source], v => {
-  handleQuantityChange(item, v);
-});
-  }, 450);
+/* ----- PLUS (tap = +1, hold = add N) ----- */
+plusBtn.onclick = (e) => {
+  if (longPressFired) { e.preventDefault(); e.stopPropagation(); return; }
+  handleQuantityChange(item, (Number(item[Source]) || 0) + 1);
 };
 
+plusBtn.onpointerdown = (e) => {
+  e.preventDefault();
+  startHold(() => {
+    promptNumber("Add how many?", 0, v => {
+      handleQuantityChange(item, (Number(item[Source]) || 0) + (Number(v) || 0));
+    });
+  });
+};
 
-  plusBtn.onpointerup = () => clearTimeout(holdTimerBtn);
-  plusBtn.onpointerleave = () => clearTimeout(holdTimerBtn);
+plusBtn.onpointerup = endHold;
+plusBtn.onpointerleave = endHold;
 
 
   row.querySelector(".toggle").onclick=()=>{item[key]=!item[key];renderItems();}
