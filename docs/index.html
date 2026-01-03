@@ -776,6 +776,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   <div class="drawer" id="drawer">
     <div class="drawer-title" id="pageTitle"></div>
     <button id="newProjectBtn">New Project</button>
+    <button id=“loadValuesBtn">Load Values</button>
     <button id="reserveListBtn">Reserve List</button>
     <button id="salesReportBtn">Sales Report</button>
     <button id="baseFileBtn">Base File</button>
@@ -1003,6 +1004,14 @@ newProjectBtn.onclick = () => {
   overlay.classList.remove("show");
 
   startNewProject();
+};
+
+const loadValuesBtn = document.getElementById("loadValuesBtn");
+
+loadValuesBtn.onclick = () => {
+  drawer.classList.remove("open");
+  overlay.classList.remove("show");
+  openLoadValuesPopup();
 };
 
 
@@ -1548,6 +1557,234 @@ function openQuickFilterPopup() {
     popup.remove();
   }
 }
+
+function openLoadValuesPopup() {
+  const ov = document.createElement("div");
+  ov.className = "overlay show";
+
+  const popup = document.createElement("div");
+  popup.style.cssText = `
+    position:fixed;
+    inset:auto 20px 20px 20px;
+    background:rgba(255,255,255,.96);
+    backdrop-filter:blur(16px);
+    border-radius:16px;
+    padding:16px;
+    z-index:800;
+  `;
+
+  popup.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div style="font-family:'Copperplate',serif;font-size:18px;">Load Values</div>
+      <button id="lvCancel" style="
+        border:none;background:rgba(0,0,0,.06);
+        padding:8px 12px;border-radius:10px;cursor:pointer;
+      ">Cancel</button>
+    </div>
+
+    <div style="font-size:13px;color:#666;margin-bottom:12px;">
+      Upload a .csv or .json file. It will be converted to an array of dictionaries and shown in a new window.
+    </div>
+
+    <input id="lvFile" type="file" accept=".csv,.json,application/json,text/csv" style="
+      width:100%;
+      padding:12px;
+      border-radius:12px;
+      border:none;
+      background:rgba(0,0,0,.05);
+      margin-bottom:12px;
+    ">
+
+    <button id="lvConfirm" style="
+      width:100%;
+      background:#1f5e3b;
+      color:white;
+      border:none;
+      padding:12px;
+      border-radius:14px;
+      font-size:16px;
+      cursor:pointer;
+    ">Confirm</button>
+  `;
+
+  document.body.appendChild(ov);
+  document.body.appendChild(popup);
+
+  const fileInput = popup.querySelector("#lvFile");
+
+  popup.querySelector("#lvCancel").onclick = cleanup;
+  ov.onclick = (e) => { if (e.target === ov) cleanup(); };
+
+  popup.querySelector("#lvConfirm").onclick = async () => {
+    const file = fileInput.files?.[0];
+    if (!file) {
+      alert("Please choose a file.");
+      return;
+    }
+
+    try {
+      let text = await file.text();
+
+      // Strip UTF-8 BOM if present (very common from Excel/Numbers exports)
+      if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+
+      const name = (file.name || "").toLowerCase().trim();
+      const type = (file.type || "").toLowerCase();
+      const trimmed = text.trim();
+
+      // Decide CSV vs JSON robustly
+      let kind = "csv";
+      if (name.endsWith(".json")) kind = "json";
+      else if (name.endsWith(".csv")) kind = "csv";
+      else if (type.includes("json")) kind = "json";
+      else if (type.includes("csv") || type.includes("excel")) kind = "csv";
+      else kind = (trimmed.startsWith("{") || trimmed.startsWith("[")) ? "json" : "csv";
+
+      let arr;
+      if (kind === "json") {
+        arr = jsonToArrayOfDicts(text);
+      } else {
+        arr = csvToArrayOfDicts(text);
+      }
+
+      openJSONInNewWindow(JSON.stringify(arr, null, 2), "LoadedValues.json");
+      cleanup();
+    } catch (err) {
+      console.error("Load Values failed:", err);
+      alert("Failed to parse file (check console). If it’s a CSV from Excel/Numbers, this parser should still work — so the console error will tell us what’s off.");
+    }
+  };
+
+  function cleanup() {
+    ov.remove();
+    popup.remove();
+  }
+}
+
+/* ---------- JSON -> array of dictionaries ---------- */
+function jsonToArrayOfDicts(text) {
+  const parsed = JSON.parse(text);
+
+  // Accept [ {...}, {...} ]
+  if (Array.isArray(parsed)) return parsed;
+
+  // Accept { items: [ ... ] }
+  if (parsed && Array.isArray(parsed.items)) return parsed.items;
+
+  // Accept single object { ... } -> wrap
+  if (parsed && typeof parsed === "object") return [parsed];
+
+  throw new Error("JSON must be an array, or an object (optionally with .items as an array).");
+}
+
+/* ---------- CSV -> array of dictionaries (quote-aware, newline-safe) ---------- */
+function csvToArrayOfDicts(csvText) {
+  const rows = parseCSV(csvText);
+  if (!rows.length) return [];
+
+  const headers = rows[0].map(h => String(h ?? "").trim());
+
+  if (!headers.some(h => h.length > 0)) {
+    throw new Error("CSV header row is empty.");
+  }
+
+  const out = [];
+
+  for (let r = 1; r < rows.length; r++) {
+    const row = rows[r];
+
+    // skip fully empty rows
+    if (!row || !row.some(v => String(v ?? "").trim() !== "")) continue;
+
+    const obj = {};
+    headers.forEach((key, idx) => {
+      if (!key) return;
+
+      const raw = (row[idx] ?? "").toString().trim();
+
+      // Light coercion (safe defaults)
+      if (raw === "true") obj[key] = true;
+      else if (raw === "false") obj[key] = false;
+      else if (raw !== "" && !isNaN(Number(raw))) obj[key] = Number(raw);
+      else obj[key] = raw;
+    });
+
+    out.push(obj);
+  }
+
+  return out;
+}
+
+/* Quote-aware CSV parser: handles commas/newlines inside quotes and escaped quotes ("") */
+function parseCSV(text) {
+  const s = String(text ?? "");
+
+  const rows = [];
+  let row = [];
+  let field = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    const next = s[i + 1];
+
+    if (inQuotes) {
+      if (c === '"' && next === '"') {
+        field += '"';
+        i++;
+      } else if (c === '"') {
+        inQuotes = false;
+      } else {
+        field += c;
+      }
+      continue;
+    }
+
+    if (c === '"') {
+      inQuotes = true;
+      continue;
+    }
+
+    if (c === ",") {
+      row.push(field);
+      field = "";
+      continue;
+    }
+
+    // Windows newlines
+    if (c === "\r" && next === "\n") {
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = "";
+      i++;
+      continue;
+    }
+
+    // Unix/Mac newlines
+    if (c === "\n" || c === "\r") {
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = "";
+      continue;
+    }
+
+    field += c;
+  }
+
+  // last field
+  row.push(field);
+  rows.push(row);
+
+  // Trim trailing empty rows
+  while (rows.length && rows[rows.length - 1].every(v => String(v ?? "").trim() === "")) {
+    rows.pop();
+  }
+
+  return rows;
+}
+
 
 function openClearCachePopup() {
   let selectedAction = null;
