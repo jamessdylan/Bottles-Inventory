@@ -2000,44 +2000,49 @@ function openExportPopup() {
 
   // ---- export file action ----
   popup.querySelector("#exExportFile").onclick = () => {
-    const modeItems = getModeItems();
+  const modeItems = getModeItems();
 
-    const chosenItems = modeItems
-      .filter(it => selectedUUIDs.has(it.UUID));
+  const chosenItems = modeItems
+    .filter(it => selectedUUIDs.has(it.UUID));
 
-    if (!chosenItems.length) {
-      alert("Select at least 1 item to export.");
-      return;
-    }
+  if (!chosenItems.length) {
+    alert("Select at least 1 item to export.");
+    return;
+  }
 
-    const keys = Array.from(selectedKeys);
-    if (!keys.length) {
-      alert("Select at least 1 key to export.");
-      return;
-    }
+  const keys = Array.from(selectedKeys);
+  if (!keys.length) {
+    alert("Select at least 1 key to export.");
+    return;
+  }
 
-    // CSV
-    const header = ["UUID", ...keys].join(",");
-    const rows = chosenItems.map(it => {
-      const vals = [it.UUID, ...keys.map(k => csvEscape(it[k]))];
-      return vals.join(",");
+  // -------- Custom CSV --------
+  const header = ["UUID", ...keys].join(",");
+  const rows = chosenItems.map(it => {
+    const vals = [it.UUID, ...keys.map(k => csvEscape(it[k]))];
+    return vals.join(",");
+  });
+  const customCSV = [header, ...rows].join("\n");
+
+  // -------- Custom JSON --------
+  // Array of dicts formatted like items.json, but only UUID + selected keys
+  const customJSONArray = chosenItems.map(it => {
+    const obj = { UUID: it.UUID };
+    keys.forEach(k => {
+      obj[k] = Object.prototype.hasOwnProperty.call(it, k) ? it[k] : "";
     });
-    const csvText = [header, ...rows].join("\n");
+    return obj;
+  });
+  const customJSON = JSON.stringify(customJSONArray, null, 2);
 
-    // JSON (array of dicts)
-    const jsonArr = chosenItems.map(it => {
-      const obj = { UUID: it.UUID };
-      keys.forEach(k => {
-        if (Object.prototype.hasOwnProperty.call(it, k)) obj[k] = it[k];
-        else obj[k] = "";
-      });
-      return obj;
-    });
-    const jsonText = JSON.stringify(jsonArr, null, 2);
-
-    // open preview window with downloads
-    openTwoFilePreview(csvText, "export.csv", jsonText, "export.json");
-  };
+  // -------- Show in new window with downloads --------
+  openTwoFilePreview(
+    customCSV,
+    "Custom CSV.csv",
+    customJSON,
+    "Custom JSON.json"
+  );
+};
 
   // ---- wiring ----
   popup.querySelector("#exClose").onclick = close;
