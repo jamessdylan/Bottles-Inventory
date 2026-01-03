@@ -5140,14 +5140,6 @@ function generatePatchItemsFile() {
 
 /* ---------- FLOATING SOURCE LABEL ---------- */
 const floatingSourceEl = document.getElementById("floatingSource");
-
-function updateFloatingSourceText() {
-  if (!floatingSourceEl) return;
-  floatingSourceEl.textContent = Source || "";
-}
-
-/*/* ---------- FLOATING SOURCE LABEL (CLEAN) ---------- */
-const floatingSourceEl = document.getElementById("floatingSource");
 const tabsSentinelEl = document.getElementById("tabsSentinel");
 
 function updateFloatingSourceText() {
@@ -5160,10 +5152,8 @@ function setFloatingSourceVisible(visible) {
   floatingSourceEl.classList.toggle("show", !!visible);
 }
 
-/*
-  Best approach: IntersectionObserver watches a 1px sentinel below the tabs.
-  When the sentinel scrolls OUT of view (above the top), we show the label.
-*/
+// Watches a 1px sentinel below the tabs.
+// When the sentinel scrolls OUT of view, we show the label.
 (function initFloatingSourceObserver() {
   updateFloatingSourceText();
   setFloatingSourceVisible(false);
@@ -5174,20 +5164,19 @@ function setFloatingSourceVisible(visible) {
     const io = new IntersectionObserver(
       entries => {
         const entry = entries[0];
-        // If sentinel is not intersecting, it has passed the top -> show label
+        // sentinel not intersecting => tabs have scrolled past the top
         setFloatingSourceVisible(!entry.isIntersecting);
       },
       {
         root: null,
         threshold: 0,
-        // This moves the “top” line down a bit so it feels nicer
         rootMargin: "-10px 0px 0px 0px"
       }
     );
 
     io.observe(tabsSentinelEl);
   } else {
-    // Fallback for older browsers: scroll check
+    // Fallback: scroll check
     const onScroll = () => {
       const r = tabsSentinelEl.getBoundingClientRect();
       setFloatingSourceVisible(r.top <= 10);
@@ -5197,6 +5186,7 @@ function setFloatingSourceVisible(visible) {
     onScroll();
   }
 })();
+
 
 </script>
 
