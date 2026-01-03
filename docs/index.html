@@ -781,6 +781,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
     <button id="baseFileBtn">Base File</button>
     <button id="csvFileBtn">CSV File</button>
     <button id="printSummaryBtn">Print Summary</button>
+<button id="structureBtn">Structure</button>
     <button id="exportBtn">Export</button>
     <button id="clearCacheBtn" style="
   position:absolute;
@@ -1057,6 +1058,13 @@ baseFileBtn.onclick = () => {
   openBaseFileDownloadPopup();
 };
 
+const structureBtn = document.getElementById("structureBtn");
+structureBtn.onclick = () => {
+  drawer.classList.remove("open");
+  overlay.classList.remove("show");
+  openStructurePopup();
+};
+
 
     // Handle the "Export" button click
     exportBtn.onclick = () => {
@@ -1193,6 +1201,106 @@ function openClearCachePopup() {
     overlay.remove();
     popup.remove();
   }
+}
+
+function openStructurePopup() {
+  // Collect unique keys across all items
+  const keySet = new Set();
+  (items || []).forEach(it => {
+    if (!it || typeof it !== "object") return;
+    Object.keys(it).forEach(k => keySet.add(k));
+  });
+
+  const keys = Array.from(keySet).sort((a, b) =>
+    a.localeCompare(b, undefined, { sensitivity: "base" })
+  );
+
+  /* ---------- OVERLAY ---------- */
+  const ov = document.createElement("div");
+  ov.className = "overlay show";
+
+  /* ---------- POPUP ---------- */
+  const popup = document.createElement("div");
+  popup.style.cssText = `
+    position:fixed;
+    inset:20px;
+    background:rgba(255,255,255,.96);
+    backdrop-filter:blur(16px);
+    border-radius:16px;
+    padding:16px;
+    z-index:700;
+    overflow:auto;
+  `;
+
+  popup.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div style="font-family:'Copperplate',serif;font-size:18px;">Structure</div>
+      <button id="closeStructure" style="
+        border:none;
+        background:rgba(0,0,0,.06);
+        padding:8px 12px;
+        border-radius:10px;
+        cursor:pointer;
+      ">Done</button>
+    </div>
+
+    <div style="font-size:12px;color:#666;margin-bottom:10px;">
+      ${keys.length} unique keys across ${items.length} items
+    </div>
+
+    <div id="structureList" style="
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      padding-bottom:30px;
+    "></div>
+  `;
+
+  const list = popup.querySelector("#structureList");
+
+  if (!keys.length) {
+    const empty = document.createElement("div");
+    empty.textContent = "No items found.";
+    empty.style.color = "#666";
+    list.appendChild(empty);
+  } else {
+    keys.forEach(k => {
+      const row = document.createElement("div");
+      row.style.cssText = `
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        padding:10px 12px;
+        border-radius:12px;
+        background:rgba(0,0,0,.05);
+        font-family:monospace;
+        font-size:13px;
+      `;
+
+      // optional: show count of items that contain the key
+      const count = (items || []).reduce((n, it) => (it && Object.prototype.hasOwnProperty.call(it, k) ? n + 1 : n), 0);
+
+      row.innerHTML = `
+        <div>${k}</div>
+        <div style="font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;font-size:12px;color:#666;">
+          ${count}/${items.length}
+        </div>
+      `;
+
+      list.appendChild(row);
+    });
+  }
+
+  document.body.appendChild(ov);
+  document.body.appendChild(popup);
+
+  const close = () => {
+    ov.remove();
+    popup.remove();
+  };
+
+  popup.querySelector("#closeStructure").onclick = close;
+  ov.onclick = e => { if (e.target === ov) close(); };
 }
 
 /* ---------------- LOAD ---------------- */
