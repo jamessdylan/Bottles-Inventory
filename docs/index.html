@@ -1066,13 +1066,12 @@ structureBtn.onclick = () => {
   openStructurePopup();
 };
 
+exportBtn.onclick = () => {
+  drawer.classList.remove("open");
+  overlay.classList.remove("show");
+  openExportPopup();
+};
 
-    // Handle the "Export" button click
-    exportBtn.onclick = () => {
-      drawer.classList.remove("open");
-      overlay.classList.remove("show");
-      alert("Export button clicked!");
-    };
 
 
 
@@ -1667,6 +1666,401 @@ function openClearCachePopup() {
     popup.remove();
   }
 }
+
+function openExportPopup() {
+  // ---- state ----
+  let mode = "All Items"; // default
+  let selectedKeys = new Set(); // none selected initially
+  let selectedUUIDs = new Set(); // items selected (default all)
+
+  // resolve items based on mode
+  function getModeItems() {
+    if (mode === "All Items") return (items || []).filter(it => it && it.UUID);
+
+    // Filtered List
+    let uuids = [];
+    try {
+      uuids = JSON.parse(localStorage.getItem("Filtered Items") || "[]");
+      if (!Array.isArray(uuids)) uuids = [];
+    } catch {
+      uuids = [];
+    }
+
+    const set = new Set(uuids);
+    return (items || []).filter(it => it && it.UUID && set.has(it.UUID));
+  }
+
+  // unique keys with SOURCES + Complete keys at bottom
+  function getExportKeysOrdered() {
+    const keySet = new Set();
+    (items || []).forEach(it => {
+      if (!it || typeof it !== "object") return;
+      Object.keys(it).forEach(k => {
+        if (k !== "UUID") keySet.add(k);
+      });
+    });
+
+    const all = Array.from(keySet);
+
+    const lower = s => String(s).toLowerCase();
+
+    const bottomSet = new Set();
+
+    // SOURCES
+    (SOURCES || []).forEach(src => {
+      bottomSet.add(src);
+      bottomSet.add(`${src}Complete`);
+    });
+
+    const top = all
+      .filter(k => !bottomSet.has(k))
+      .sort((a,b) => a.localeCompare(b, undefined, { sensitivity:"base" }));
+
+    const bottom = all
+      .filter(k => bottomSet.has(k))
+      .sort((a,b) => a.localeCompare(b, undefined, { sensitivity:"base" }));
+
+    return top.concat(bottom);
+  }
+
+  const allKeysOrdered = getExportKeysOrdered();
+
+  // ---- popup ----
+  const ov = document.createElement("div");
+  ov.className = "overlay show";
+
+  const popup = document.createElement("div");
+  popup.style.cssText = `
+    position:fixed;
+    inset:20px;
+    background:rgba(255,255,255,.96);
+    backdrop-filter:blur(16px);
+    border-radius:16px;
+    padding:16px;
+    z-index:780;
+    overflow:auto;
+  `;
+
+  popup.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <div style="font-family:'Copperplate',serif;font-size:18px;">Export</div>
+      <button id="exClose" style="
+        border:none;background:rgba(0,0,0,.06);
+        padding:8px 12px;border-radius:10px;cursor:pointer;
+      ">Done</button>
+    </div>
+
+    <div style="background:rgba(0,0,0,.04);border-radius:14px;padding:12px;margin-bottom:12px;">
+      <div style="font-weight:700;margin-bottom:8px;">Source</div>
+      <select id="exMode" style="
+        width:100%;
+        padding:12px;
+        border-radius:12px;
+        border:none;
+        background:white;
+        font-size:15px;
+      ">
+        <option>All Items</option>
+        <option>Filtered List</option>
+      </select>
+
+      <div id="exModeMeta" style="margin-top:8px;font-size:12px;color:#666;"></div>
+    </div>
+
+    <button id="exChooseKeys" style="
+      width:100%;
+      border:none;
+      background:rgba(0,0,0,.06);
+      padding:12px;
+      border-radius:14px;
+      cursor:pointer;
+      font-size:15px;
+      margin-bottom:12px;
+    ">Choose Keys (0 selected)</button>
+
+    <div style="font-weight:700;margin-bottom:8px;">Items</div>
+    <div id="exItemsMeta" style="font-size:12px;color:#666;margin-bottom:8px;"></div>
+    <div id="exItemsList" style="
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      background:rgba(0,0,0,.04);
+      border-radius:14px;
+      padding:10px;
+      max-height:42vh;
+      overflow:auto;
+      margin-bottom:14px;
+    "></div>
+
+    <button id="exExportFile" style="
+      width:100%;
+      background:#1f5e3b;
+      color:white;
+      border:none;
+      padding:12px;
+      border-radius:14px;
+      font-size:16px;
+      cursor:pointer;
+    ">Export File</button>
+  `;
+
+  document.body.appendChild(ov);
+  document.body.appendChild(popup);
+
+  const modeSel = popup.querySelector("#exMode");
+  const modeMeta = popup.querySelector("#exModeMeta");
+  const chooseKeysBtn = popup.querySelector("#exChooseKeys");
+  const itemsMeta = popup.querySelector("#exItemsMeta");
+  const itemsList = popup.querySelector("#exItemsList");
+
+  function refreshItemsUI() {
+    const modeItems = getModeItems();
+
+    // default select all items in the mode (only when switching mode)
+    selectedUUIDs = new Set(modeItems.map(it => it.UUID));
+
+    // meta
+    if (mode === "Filtered List") {
+      modeMeta.textContent = `Using UUIDs from localStorage["Filtered Items"] (${modeItems.length} matched item(s))`;
+    } else {
+      modeMeta.textContent = `${modeItems.length} total item(s)`;
+    }
+
+    renderItemsList(modeItems);
+    updateItemsMeta(modeItems);
+  }
+
+  function updateItemsMeta(modeItems) {
+    itemsMeta.textContent = `${selectedUUIDs.size}/${modeItems.length} selected`;
+  }
+
+  function updateKeysButton() {
+    chooseKeysBtn.textContent = `Choose Keys (${selectedKeys.size} selected)`;
+  }
+
+  function renderItemsList(modeItems) {
+    itemsList.innerHTML = "";
+
+    if (!modeItems.length) {
+      const empty = document.createElement("div");
+      empty.textContent = "No items found.";
+      empty.style.cssText = `color:#666;padding:10px;`;
+      itemsList.appendChild(empty);
+      return;
+    }
+
+    // show alphabetical by title
+    const sorted = modeItems.slice().sort((a,b) =>
+      smartItemTitle(a).localeCompare(smartItemTitle(b), undefined, { sensitivity:"base" })
+    );
+
+    sorted.forEach(it => {
+      const row = document.createElement("div");
+      const isOn = selectedUUIDs.has(it.UUID);
+
+      row.style.cssText = `
+        padding:10px 12px;
+        border-radius:12px;
+        background:${isOn ? "rgba(31,94,59,.14)" : "rgba(255,255,255,.85)"};
+        cursor:pointer;
+        font-size:14px;
+        display:flex;
+        justify-content:space-between;
+        gap:10px;
+      `;
+
+      row.innerHTML = `
+        <div style="flex:1;">${smartItemTitle(it)}</div>
+        <div style="font-family:monospace;font-size:11px;color:#666;">
+          ${isOn ? "✓" : ""}
+        </div>
+      `;
+
+      row.onclick = () => {
+        if (selectedUUIDs.has(it.UUID)) selectedUUIDs.delete(it.UUID);
+        else selectedUUIDs.add(it.UUID);
+
+        renderItemsList(modeItems);
+        updateItemsMeta(modeItems);
+      };
+
+      itemsList.appendChild(row);
+    });
+  }
+
+  // ---- Keys picker modal ----
+  function openKeysPicker() {
+    const ov2 = document.createElement("div");
+    ov2.className = "overlay show";
+
+    const sheet = document.createElement("div");
+    sheet.style.cssText = `
+      position:fixed;
+      inset:20px;
+      background:rgba(255,255,255,.98);
+      backdrop-filter:blur(16px);
+      border-radius:16px;
+      padding:16px;
+      z-index:820;
+      overflow:auto;
+    `;
+
+    sheet.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div style="font-family:'Copperplate',serif;font-size:18px;">Select Keys</div>
+        <button id="kpDone" style="
+          border:none;background:rgba(0,0,0,.06);
+          padding:8px 12px;border-radius:10px;cursor:pointer;
+        ">Done</button>
+      </div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+        <button id="kpSelectAll" style="border:none;background:rgba(0,0,0,.06);padding:8px 10px;border-radius:10px;cursor:pointer;">Select all</button>
+        <button id="kpClearAll" style="border:none;background:rgba(0,0,0,.06);padding:8px 10px;border-radius:10px;cursor:pointer;">Clear all</button>
+      </div>
+
+      <input id="kpSearch" placeholder="Search keys…" style="
+        width:100%;
+        padding:10px;
+        border-radius:12px;
+        border:none;
+        background:rgba(0,0,0,.05);
+        margin-bottom:10px;
+      ">
+
+      <div id="kpList" style="display:flex;flex-direction:column;gap:6px;"></div>
+    `;
+
+    document.body.appendChild(ov2);
+    document.body.appendChild(sheet);
+
+    const list = sheet.querySelector("#kpList");
+    const search = sheet.querySelector("#kpSearch");
+
+    function render(filter="") {
+      list.innerHTML = "";
+      const q = (filter || "").trim().toLowerCase();
+
+      allKeysOrdered
+        .filter(k => !q || String(k).toLowerCase().includes(q))
+        .forEach(k => {
+          const row = document.createElement("label");
+          row.style.cssText = `
+            display:flex;align-items:center;gap:10px;
+            padding:10px 12px;border-radius:12px;
+            background:rgba(0,0,0,.05);
+            cursor:pointer;
+            font-family:monospace;
+            font-size:13px;
+          `;
+
+          const on = selectedKeys.has(k);
+
+          row.innerHTML = `
+            <input type="checkbox" ${on ? "checked" : ""}>
+            <div style="flex:1;">${k}</div>
+          `;
+
+          const cb = row.querySelector("input");
+          cb.onchange = () => {
+            if (cb.checked) selectedKeys.add(k);
+            else selectedKeys.delete(k);
+            updateKeysButton();
+          };
+
+          list.appendChild(row);
+        });
+    }
+
+    render("");
+
+    search.oninput = e => render(e.target.value || "");
+
+    sheet.querySelector("#kpSelectAll").onclick = () => {
+      allKeysOrdered.forEach(k => selectedKeys.add(k));
+      render(search.value || "");
+      updateKeysButton();
+    };
+
+    sheet.querySelector("#kpClearAll").onclick = () => {
+      selectedKeys.clear();
+      render(search.value || "");
+      updateKeysButton();
+    };
+
+    const close = () => {
+      ov2.remove();
+      sheet.remove();
+      updateKeysButton();
+    };
+
+    sheet.querySelector("#kpDone").onclick = close;
+    ov2.onclick = e => { if (e.target === ov2) close(); };
+  }
+
+  // ---- export file action ----
+  popup.querySelector("#exExportFile").onclick = () => {
+    const modeItems = getModeItems();
+
+    const chosenItems = modeItems
+      .filter(it => selectedUUIDs.has(it.UUID));
+
+    if (!chosenItems.length) {
+      alert("Select at least 1 item to export.");
+      return;
+    }
+
+    const keys = Array.from(selectedKeys);
+    if (!keys.length) {
+      alert("Select at least 1 key to export.");
+      return;
+    }
+
+    // CSV
+    const header = ["UUID", ...keys].join(",");
+    const rows = chosenItems.map(it => {
+      const vals = [it.UUID, ...keys.map(k => csvEscape(it[k]))];
+      return vals.join(",");
+    });
+    const csvText = [header, ...rows].join("\n");
+
+    // JSON (array of dicts)
+    const jsonArr = chosenItems.map(it => {
+      const obj = { UUID: it.UUID };
+      keys.forEach(k => {
+        if (Object.prototype.hasOwnProperty.call(it, k)) obj[k] = it[k];
+        else obj[k] = "";
+      });
+      return obj;
+    });
+    const jsonText = JSON.stringify(jsonArr, null, 2);
+
+    // open preview window with downloads
+    openTwoFilePreview(csvText, "export.csv", jsonText, "export.json");
+  };
+
+  // ---- wiring ----
+  popup.querySelector("#exClose").onclick = close;
+  ov.onclick = e => { if (e.target === ov) close(); };
+
+  modeSel.value = "All Items";
+  modeSel.onchange = () => {
+    mode = modeSel.value;
+    refreshItemsUI();
+  };
+
+  chooseKeysBtn.onclick = openKeysPicker;
+
+  // initial render
+  updateKeysButton();
+  refreshItemsUI();
+
+  function close() {
+    ov.remove();
+    popup.remove();
+  }
+}
+
 
 function openStructurePopup() {
   // Collect unique keys across all items
