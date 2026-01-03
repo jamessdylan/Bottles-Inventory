@@ -1999,50 +1999,47 @@ function openExportPopup() {
   }
 
   // ---- export file action ----
-  popup.querySelector("#exExportFile").onclick = () => {
-  const modeItems = getModeItems();
+popup.querySelector("#exExportFile").onclick = () => {
+  try {
+    const modeItems = getModeItems();
 
-  const chosenItems = modeItems
-    .filter(it => selectedUUIDs.has(it.UUID));
+    const chosenItems = modeItems.filter(it => selectedUUIDs.has(it.UUID));
+    if (!chosenItems.length) {
+      alert("Select at least 1 item to export.");
+      return;
+    }
 
-  if (!chosenItems.length) {
-    alert("Select at least 1 item to export.");
-    return;
-  }
+    const keys = Array.from(selectedKeys);
+    if (!keys.length) {
+      alert("Select at least 1 key to export.");
+      return;
+    }
 
-  const keys = Array.from(selectedKeys);
-  if (!keys.length) {
-    alert("Select at least 1 key to export.");
-    return;
-  }
-
-  // -------- Custom CSV --------
-  const header = ["UUID", ...keys].join(",");
-  const rows = chosenItems.map(it => {
-    const vals = [it.UUID, ...keys.map(k => csvEscape(it[k]))];
-    return vals.join(",");
-  });
-  const customCSV = [header, ...rows].join("\n");
-
-  // -------- Custom JSON --------
-  // Array of dicts formatted like items.json, but only UUID + selected keys
-  const customJSONArray = chosenItems.map(it => {
-    const obj = { UUID: it.UUID };
-    keys.forEach(k => {
-      obj[k] = Object.prototype.hasOwnProperty.call(it, k) ? it[k] : "";
+    // -------- Custom CSV --------
+    const header = ["UUID", ...keys].join(",");
+    const rows = chosenItems.map(it => {
+      const vals = [it.UUID, ...keys.map(k => csvEscape(it[k]))];
+      return vals.join(",");
     });
-    return obj;
-  });
-  const customJSON = JSON.stringify(customJSONArray, null, 2);
+    const customCSV = [header, ...rows].join("\n");
 
-  // -------- Show in new window with downloads --------
-  openTwoFilePreview(
-    customCSV,
-    "Custom CSV.csv",
-    customJSON,
-    "Custom JSON.json"
-  );
+    // -------- Custom JSON --------
+    const customJSONArray = chosenItems.map(it => {
+      const obj = { UUID: it.UUID };
+      keys.forEach(k => {
+        obj[k] = Object.prototype.hasOwnProperty.call(it, k) ? it[k] : "";
+      });
+      return obj;
+    });
+    const customJSON = JSON.stringify(customJSONArray, null, 2);
+
+    openTwoFilePreview(customCSV, "Custom CSV.csv", customJSON, "Custom JSON.json");
+  } catch (err) {
+    console.error("Export failed:", err);
+    alert("Export failed — check console for details.");
+  }
 };
+
 
   // ---- wiring ----
   popup.querySelector("#exClose").onclick = close;
@@ -3195,6 +3192,68 @@ function openJSONInNewWindow(json, filename) {
           <a class="download" href="${url}" download="${filename}">
             ⬇ Download ${filename}
           </a>
+        </div>
+      </body>
+    </html>
+  `);
+
+  win.document.close();
+}
+
+/* ---------- CSV ESCAPE (needed by Export) ---------- */
+function csvEscape(v) {
+  const s = (v === undefined || v === null) ? "" : String(v);
+  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+/* ---------- TWO-FILE PREVIEW WINDOW (needed by Export) ---------- */
+function openTwoFilePreview(csvText, csvName, jsonText, jsonName) {
+  const csvBlob = new Blob([csvText], { type: "text/csv" });
+  const jsonBlob = new Blob([jsonText], { type: "application/json" });
+
+  const csvUrl = URL.createObjectURL(csvBlob);
+  const jsonUrl = URL.createObjectURL(jsonBlob);
+
+  const win = window.open("", "_blank");
+  if (!win) {
+    alert("Popup blocked — allow popups to export.");
+    return;
+  }
+
+  const safe = (t) => String(t).replace(/</g, "&lt;");
+
+  win.document.write(`
+    <html>
+      <head>
+        <title>Export</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+        <style>
+          body{font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;margin:0;padding:16px;}
+          .bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+          a.btn{display:inline-block;padding:10px 12px;border-radius:10px;text-decoration:none;background:#eee;color:#000;font-weight:700;}
+          .grid{display:grid;grid-template-columns:1fr;gap:14px;}
+          @media (min-width: 900px){ .grid{grid-template-columns:1fr 1fr;} }
+          .card{background:rgba(0,0,0,.04);border-radius:14px;padding:12px;}
+          .title{font-family:monospace;font-weight:800;margin-bottom:8px;}
+          pre{margin:0;white-space:pre-wrap;font-family:monospace;font-size:12px;max-height:60vh;overflow:auto;}
+        </style>
+      </head>
+      <body>
+        <div class="bar">
+          <a class="btn" href="${csvUrl}" download="${csvName}">⬇ Download ${csvName}</a>
+          <a class="btn" href="${jsonUrl}" download="${jsonName}">⬇ Download ${jsonName}</a>
+        </div>
+
+        <div class="grid">
+          <div class="card">
+            <div class="title">${safe(csvName)}</div>
+            <pre>${safe(csvText)}</pre>
+          </div>
+          <div class="card">
+            <div class="title">${safe(jsonName)}</div>
+            <pre>${safe(jsonText)}</pre>
+          </div>
         </div>
       </body>
     </html>
