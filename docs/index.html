@@ -782,6 +782,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
     <button id="csvFileBtn">CSV File</button>
     <button id="printSummaryBtn">Print Summary</button>
 <button id="structureBtn">Structure</button>
+<button id="quickFilterBtn">Quick Filter</button>
     <button id="exportBtn">Export</button>
     <button id="clearCacheBtn" style="
   position:absolute;
@@ -1084,6 +1085,472 @@ csvFileBtn.onclick = () => {
   generateCSVFile();
 };
 
+const quickFilterBtn = document.getElementById("quickFilterBtn");
+quickFilterBtn.onclick = () => {
+  drawer.classList.remove("open");
+  overlay.classList.remove("show");
+  openQuickFilterPopup();
+};
+
+function openQuickFilterPopup() {
+  // ----- default: all selected -----
+  const statusSet = new Set([true, false]);                 // Active / Inactive
+  const tierSet   = new Set(["House", "Reserve"]);
+  const colorSet  = new Set(["Sparkling", "White", "Rose", "Red"]);
+
+  // numeric filters: { id, label, getter(item)->number, min:"", max:"" }
+  const numericFilters = [];
+
+  const ov = document.createElement("div");
+  ov.className = "overlay show";
+
+  const popup = document.createElement("div");
+  popup.style.cssText = `
+    position:fixed;
+    inset:20px;
+    background:rgba(255,255,255,.96);
+    backdrop-filter:blur(16px);
+    border-radius:16px;
+    padding:16px;
+    z-index:760;
+    overflow:auto;
+  `;
+
+  popup.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <div style="font-family:'Copperplate',serif;font-size:18px;">Quick Filter</div>
+      <button id="qfClose" style="
+        border:none;background:rgba(0,0,0,.06);
+        padding:8px 12px;border-radius:10px;cursor:pointer;
+      ">Done</button>
+    </div>
+
+    <!-- FILTER TABS -->
+    <div id="qfTabsWrap" style="display:flex;flex-direction:column;gap:12px;margin-bottom:12px;"></div>
+
+    <!-- NUMERIC FILTERS -->
+    <button id="qfAddNumeric" style="
+      width:100%;
+      border:none;
+      background:rgba(0,0,0,.06);
+      padding:12px;
+      border-radius:14px;
+      cursor:pointer;
+      font-size:15px;
+      margin-bottom:12px;
+    ">＋ Add Numeric Filter</button>
+
+    <div id="qfNumericWrap" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;"></div>
+
+    <!-- RESULTS -->
+    <div style="font-weight:700;margin-bottom:8px;">Filtered Items</div>
+    <div id="qfResultsMeta" style="font-size:12px;color:#666;margin-bottom:8px;"></div>
+    <div id="qfResults" style="
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      background:rgba(0,0,0,.04);
+      border-radius:14px;
+      padding:10px;
+      max-height:42vh;
+      overflow:auto;
+      margin-bottom:14px;
+    "></div>
+
+    <!-- SAVE -->
+    <button id="qfSave" style="
+      width:100%;
+      background:#1f5e3b;
+      color:white;
+      border:none;
+      padding:12px;
+      border-radius:14px;
+      font-size:16px;
+      cursor:pointer;
+    ">Save Filtered Items</button>
+  `;
+
+  document.body.appendChild(ov);
+  document.body.appendChild(popup);
+
+  const tabsWrap = popup.querySelector("#qfTabsWrap");
+  const numericWrap = popup.querySelector("#qfNumericWrap");
+  const resultsEl = popup.querySelector("#qfResults");
+  const metaEl = popup.querySelector("#qfResultsMeta");
+
+  // ---------- tab UI helpers ----------
+  function makeTabRow(title, entries) {
+    const row = document.createElement("div");
+    row.style.cssText = `
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      background:rgba(0,0,0,.04);
+      padding:12px;
+      border-radius:14px;
+    `;
+
+    const head = document.createElement("div");
+    head.textContent = title;
+    head.style.cssText = `font-family:'Copperplate',serif;font-size:14px;opacity:.8;`;
+
+    const tabs = document.createElement("div");
+    tabs.style.cssText = `display:flex;flex-wrap:wrap;gap:8px;`;
+
+    entries.forEach(ent => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = ent.label;
+      btn.style.cssText = tabStyle(ent.isSelected());
+      btn.onclick = () => {
+        ent.toggle();
+        btn.style.cssText = tabStyle(ent.isSelected());
+        refresh();
+      };
+      tabs.appendChild(btn);
+    });
+
+    row.appendChild(head);
+    row.appendChild(tabs);
+    return row;
+  }
+
+  function tabStyle(active) {
+    return `
+      border:none;
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      font-size:14px;
+      background:${active ? "rgba(31,94,59,.18)" : "rgba(0,0,0,.06)"};
+      color:${active ? "#1f5e3b" : "#333"};
+      font-weight:${active ? "700" : "500"};
+    `;
+  }
+
+  function renderTabs() {
+    tabsWrap.innerHTML = "";
+
+    // Status tabs
+    tabsWrap.appendChild(makeTabRow("Status", [
+      {
+        label: "Active",
+        isSelected: () => statusSet.has(true),
+        toggle: () => (statusSet.has(true) ? statusSet.delete(true) : statusSet.add(true))
+      },
+      {
+        label: "Inactive",
+        isSelected: () => statusSet.has(false),
+        toggle: () => (statusSet.has(false) ? statusSet.delete(false) : statusSet.add(false))
+      }
+    ]));
+
+    // Tier tabs
+    tabsWrap.appendChild(makeTabRow("Tier", [
+      {
+        label: "House",
+        isSelected: () => tierSet.has("House"),
+        toggle: () => (tierSet.has("House") ? tierSet.delete("House") : tierSet.add("House"))
+      },
+      {
+        label: "Reserve",
+        isSelected: () => tierSet.has("Reserve"),
+        toggle: () => (tierSet.has("Reserve") ? tierSet.delete("Reserve") : tierSet.add("Reserve"))
+      }
+    ]));
+
+    // Color tabs
+    tabsWrap.appendChild(makeTabRow("Color", [
+      {
+        label: "Sparkling",
+        isSelected: () => colorSet.has("Sparkling"),
+        toggle: () => (colorSet.has("Sparkling") ? colorSet.delete("Sparkling") : colorSet.add("Sparkling"))
+      },
+      {
+        label: "White",
+        isSelected: () => colorSet.has("White"),
+        toggle: () => (colorSet.has("White") ? colorSet.delete("White") : colorSet.add("White"))
+      },
+      {
+        label: "Rose",
+        isSelected: () => colorSet.has("Rose"),
+        toggle: () => (colorSet.has("Rose") ? colorSet.delete("Rose") : colorSet.add("Rose"))
+      },
+      {
+        label: "Red",
+        isSelected: () => colorSet.has("Red"),
+        toggle: () => (colorSet.has("Red") ? colorSet.delete("Red") : colorSet.add("Red"))
+      }
+    ]));
+  }
+
+  // ---------- numeric filter picker ----------
+  function openNumericPicker() {
+    const ov2 = document.createElement("div");
+    ov2.className = "overlay show";
+
+    const sheet = document.createElement("div");
+    sheet.style.cssText = `
+      position:fixed;
+      left:16px; right:16px; bottom:16px;
+      background:white;
+      border-radius:16px;
+      padding:14px;
+      z-index:800;
+      max-height:70vh;
+      overflow:auto;
+    `;
+
+    const options = buildNumericOptions();
+
+    sheet.innerHTML = `
+      <div style="font-weight:700;margin-bottom:10px;">Add Numeric Filter</div>
+      <div id="qfOptList" style="display:flex;flex-direction:column;gap:8px;"></div>
+      <button id="qfOptClose" style="
+        margin-top:12px;
+        width:100%;
+        border:none;
+        background:rgba(0,0,0,.06);
+        padding:10px;
+        border-radius:12px;
+        cursor:pointer;
+      ">Cancel</button>
+    `;
+
+    const list = sheet.querySelector("#qfOptList");
+
+    options.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = opt.label;
+      btn.style.cssText = `
+        border:none;
+        background:rgba(0,0,0,.05);
+        padding:12px;
+        border-radius:14px;
+        cursor:pointer;
+        text-align:left;
+        font-size:14px;
+      `;
+      btn.onclick = () => {
+        numericFilters.push({
+          id: opt.id,
+          label: opt.label,
+          getter: opt.getter,
+          min: "",
+          max: ""
+        });
+        cleanup();
+        renderNumericFilters();
+        refresh();
+      };
+      list.appendChild(btn);
+    });
+
+    sheet.querySelector("#qfOptClose").onclick = cleanup;
+    ov2.onclick = e => { if (e.target === ov2) cleanup(); };
+
+    document.body.appendChild(ov2);
+    document.body.appendChild(sheet);
+
+    function cleanup() {
+      ov2.remove();
+      sheet.remove();
+    }
+  }
+
+  function buildNumericOptions() {
+    // Helper safe numbers
+    const num = v => {
+      const n = Number(v);
+      return isNaN(n) ? 0 : n;
+    };
+
+    const opts = [
+      // Interpreting these as CURRENT SOURCE + SOURCE PREV
+      {
+        id: "prev_qty_current_source",
+        label: "Previous Quantity (Current Source)",
+        getter: (it) => num(it[`${Source}Prev`])
+      },
+      {
+        id: "qty_current_source",
+        label: "Quantity (Current Source)",
+        getter: (it) => num(it[Source])
+      },
+      {
+        id: "price",
+        label: "Price",
+        getter: (it) => num(it.price)
+      },
+      {
+        id: "total_value",
+        label: "Total (Qty × Price)",
+        getter: (it) => num(totalQuantity(it)) * num(it.price)
+      }
+    ];
+
+    // Add each source quantity
+    (SOURCES || []).forEach(src => {
+      opts.push({
+        id: `src_${src}`,
+        label: `Quantity (${src})`,
+        getter: (it) => num(it[src])
+      });
+    });
+
+    return opts;
+  }
+
+  // ---------- numeric filters UI ----------
+  function renderNumericFilters() {
+    numericWrap.innerHTML = "";
+
+    if (!numericFilters.length) return;
+
+    numericFilters.forEach((f, idx) => {
+      const card = document.createElement("div");
+      card.style.cssText = `
+        background:rgba(0,0,0,.04);
+        border-radius:14px;
+        padding:12px;
+        display:flex;
+        flex-direction:column;
+        gap:10px;
+      `;
+
+      card.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+          <div style="font-weight:700;">${f.label}</div>
+          <button class="qfRemove" style="
+            border:none;background:rgba(0,0,0,.06);
+            padding:8px 10px;border-radius:10px;cursor:pointer;
+          ">Remove</button>
+        </div>
+
+        <div style="display:flex;gap:10px;">
+          <input class="qfMin" type="number" inputmode="decimal" placeholder="min" value="${f.min}"
+            style="flex:1;padding:10px;border-radius:12px;border:none;background:white;">
+          <input class="qfMax" type="number" inputmode="decimal" placeholder="max" value="${f.max}"
+            style="flex:1;padding:10px;border-radius:12px;border:none;background:white;">
+        </div>
+      `;
+
+      card.querySelector(".qfRemove").onclick = () => {
+        numericFilters.splice(idx, 1);
+        renderNumericFilters();
+        refresh();
+      };
+
+      card.querySelector(".qfMin").oninput = (e) => {
+        f.min = e.target.value;
+        refresh();
+      };
+
+      card.querySelector(".qfMax").oninput = (e) => {
+        f.max = e.target.value;
+        refresh();
+      };
+
+      numericWrap.appendChild(card);
+    });
+  }
+
+  // ---------- filtering ----------
+  function passesTabs(item) {
+    const st = (typeof item.status === "boolean") ? item.status : true;
+    if (!statusSet.has(st)) return false;
+
+    const tier = (item.tier || "House");
+    if (!tierSet.has(tier)) return false;
+
+    const col = normalizeColor(item.color || "White");
+    if (!colorSet.has(col)) return false;
+
+    return true;
+  }
+
+  function passesNumeric(item) {
+    if (!numericFilters.length) return true;
+
+    for (const f of numericFilters) {
+      const v = Number(f.getter(item));
+      const val = isNaN(v) ? 0 : v;
+
+      const min = f.min === "" ? null : Number(f.min);
+      const max = f.max === "" ? null : Number(f.max);
+
+      if (min !== null && !isNaN(min) && val < min) return false;
+      if (max !== null && !isNaN(max) && val > max) return false;
+    }
+
+    return true;
+  }
+
+  function getFilteredItems() {
+    return (items || [])
+      .filter(it => it && it.UUID) // must have UUID
+      .filter(passesTabs)
+      .filter(passesNumeric);
+  }
+
+  function renderResults(arr) {
+    resultsEl.innerHTML = "";
+
+    metaEl.textContent = `${arr.length} item(s) match`;
+
+    if (!arr.length) {
+      const empty = document.createElement("div");
+      empty.textContent = "No matches.";
+      empty.style.cssText = `color:#666;padding:10px;`;
+      resultsEl.appendChild(empty);
+      return;
+    }
+
+    arr
+      .slice()
+      .sort((a, b) => smartItemTitle(a).localeCompare(smartItemTitle(b), undefined, { sensitivity:"base" }))
+      .forEach(it => {
+        const row = document.createElement("div");
+        row.style.cssText = `
+          background:rgba(255,255,255,.85);
+          border-radius:12px;
+          padding:10px 12px;
+          font-size:14px;
+        `;
+        row.textContent = smartItemTitle(it);
+        resultsEl.appendChild(row);
+      });
+  }
+
+  function refresh() {
+    const filtered = getFilteredItems();
+    renderResults(filtered);
+  }
+
+  // ---------- wire UI ----------
+  popup.querySelector("#qfClose").onclick = close;
+  ov.onclick = e => { if (e.target === ov) close(); };
+
+  popup.querySelector("#qfAddNumeric").onclick = openNumericPicker;
+
+  popup.querySelector("#qfSave").onclick = () => {
+    const filtered = getFilteredItems();
+    const uuids = filtered.map(it => it.UUID);
+    localStorage.setItem("Filtered Items", JSON.stringify(uuids, null, 2));
+    alert(`Saved ${uuids.length} UUID(s) to localStorage as "Filtered Items".`);
+  };
+
+  // initial render
+  renderTabs();
+  renderNumericFilters();
+  refresh();
+
+  function close() {
+    ov.remove();
+    popup.remove();
+  }
+}
 
 function openClearCachePopup() {
   let selectedAction = null;
