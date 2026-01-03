@@ -1,0 +1,1 @@
+[{"detail":"color","options":["White","Rose","Sparkling","Red"],"type":"array","default":"White"},{"detail":"status","type":"boolean","default":true},{"detail":"brand","type":"text","default":""},{"detail":"varietal","type":"text","default":""},{"detail":"identifier","type":"text","default":""}]
