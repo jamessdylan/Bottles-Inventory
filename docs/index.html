@@ -2503,23 +2503,30 @@ plusBtn.onpointerleave = endHold;
 
   row.querySelector(".toggle").onclick=()=>{item[key]=!item[key];renderItems();}
 
-let rowHoldTimer;
+// ✅ Long-press edit ONLY on the icon
+const iconEl = row.querySelector(".icon");
+let iconHoldTimer = null;
 
-row.onpointerdown = e => {
-  // ignore controls
-  if (
-    e.target.closest(".controls") ||
-    e.target.closest(".toggle") ||
-    e.target.closest(".value")
-  ) return;
+iconEl.style.cursor = "pointer";
 
-  rowHoldTimer = setTimeout(() => {
+iconEl.onpointerdown = (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+
+  iconHoldTimer = setTimeout(() => {
     openEditBottle(item);
   }, 1000);
 };
 
-row.onpointerup = () => clearTimeout(rowHoldTimer);
-row.onpointerleave = () => clearTimeout(rowHoldTimer);
+iconEl.onpointerup = () => clearTimeout(iconHoldTimer);
+iconEl.onpointerleave = () => clearTimeout(iconHoldTimer);
+iconEl.onpointercancel = () => clearTimeout(iconHoldTimer);
+
+iconEl.onclick = (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+};
+
 
   list.appendChild(row);
 }
