@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Colors</title>
+<title>SM New</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1648,8 +1648,8 @@ function openLoadValuesPopup() {
         arr = csvToArrayOfDicts(text);
       }
 
-      openJSONInNewWindow(JSON.stringify(arr, null, 2), "LoadedValues.json");
-      cleanup();
+      importLoadedValues(arr);
+cleanup();
     } catch (err) {
       console.error("Load Values failed:", err);
       alert("Failed to parse file (check console). If it’s a CSV from Excel/Numbers, this parser should still work — so the console error will tell us what’s off.");
@@ -5148,6 +5148,145 @@ function generatePatchItemsFile() {
 
   const json = JSON.stringify(patches, null, 2);
   openJSONInNewWindow(json, "patchItems.json");
+}
+
+function getUUIDFromRow(row) {
+  if (!row || typeof row !== "object") return "";
+  const v = row.UUID ?? row.uuid ?? row.Uuid ?? row.uUID ?? "";
+  return String(v ?? "").trim();
+}
+
+function makeNewUUID() {
+  if (window.crypto && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  // fallback (good enough for local use)
+  return "uuid-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
+}
+
+function buildNewItemFromRow(row) {
+  const it = {};
+
+  // UUID
+  it.UUID = makeNewUUID();
+
+  // Defaults (match your app expectations)
+  it.status = true;
+  it.tier = "House";
+  it.color = "White";
+  it.brand = "N/A";
+  it.identifier = "N/A";
+  it.varietal = "N/A";
+  it.year = "N/A";
+  it.price = 0;
+  it.featured = "";
+  it.distributor = "N/A";
+  it.domain = "N/A";
+  it.region = "N/A";
+  it.note = "";
+  it.base64 = false;
+
+  // Per-source defaults
+  (SOURCES || []).forEach(src => {
+    it[src] = 0;
+    it[`${src}Complete`] = false;
+  });
+
+  // Now overlay row values (excluding UUID)
+  Object.keys(row || {}).forEach(k => {
+    if (k === "UUID" || k === "uuid" || k === "Uuid" || k === "uUID") return;
+    it[k] = row[k];
+  });
+
+  // Normalize key fields
+  it.color = normalizeColor(it.color ?? "White");
+  if (typeof it.status !== "boolean") it.status = true;
+  if (!it.tier) it.tier = "House";
+
+  // If icon isn’t provided, derive it from color (your existing scheme)
+  if (!("icon" in it) || it.icon === null || it.icon === undefined || it.icon === "") {
+    const c = it.color;
+    it.icon =
+      c === "White" ? "#c9b037" :
+      c === "Rose" ? "#d97c8a" :
+      c === "Sparkling" ? "#fff2cf" :
+      "#7b1e1e";
+  }
+
+  // If base64 flag doesn’t match, make it consistent
+  it.base64 = !!it.base64;
+
+  return it;
+}
+
+function updateExistingItemFromRow(item, row) {
+  // Update only keys present in the row (excluding UUID)
+  Object.keys(row || {}).forEach(k => {
+    if (k === "UUID" || k === "uuid" || k === "Uuid" || k === "uUID") return;
+    item[k] = row[k];
+  });
+
+  // Keep required normalization consistent
+  if ("color" in row) item.color = normalizeColor(item.color);
+  if ("status" in row && typeof item.status !== "boolean") item.status = true;
+
+  // If they updated color but didn’t provide icon/base64, keep icon consistent
+  if (("color" in row) && !item.base64) {
+    const c = item.color;
+    item.icon =
+      c === "White" ? "#c9b037" :
+      c === "Rose" ? "#d97c8a" :
+      c === "Sparkling" ? "#fff2cf" :
+      "#7b1e1e";
+  }
+}
+
+function importLoadedValues(arr) {
+  if (!Array.isArray(arr)) {
+    alert("Loaded file must be an array of dictionaries.");
+    return;
+  }
+
+  const byUUID = new Map((items || []).filter(i => i && i.UUID).map(i => [String(i.UUID), i]));
+
+  let created = 0;
+  let updated = 0;
+  let skipped = 0;
+
+  arr.forEach(row => {
+    if (!row || typeof row !== "object") {
+      skipped++;
+      return;
+    }
+
+    const rawUUID = getUUIDFromRow(row);
+    const isNewSignal = rawUUID.toLowerCase() === "new" || rawUUID === "";
+
+    // Treat as "new bottle" if:
+    // - UUID is "new" or missing
+    // - OR UUID provided but not found in current items
+    if (isNewSignal || !byUUID.has(rawUUID)) {
+      const newItem = buildNewItemFromRow(row);
+
+      // If they gave a real UUID that isn't in items, you can optionally preserve it:
+      // (Comment out these 2 lines if you ALWAYS want generated UUIDs for new rows)
+      if (!isNewSignal && rawUUID) newItem.UUID = rawUUID;
+
+      items.push(newItem);
+      byUUID.set(newItem.UUID, newItem);
+      created++;
+      return;
+    }
+
+    // Existing UUID → update
+    const target = byUUID.get(rawUUID);
+    updateExistingItemFromRow(target, row);
+    updated++;
+  });
+
+  renderItems();
+
+  alert(`Import complete:\n\nCreated: ${created}\nUpdated: ${updated}\nSkipped: ${skipped}`);
 }
 
 
