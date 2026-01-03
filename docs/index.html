@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM New</title>
+<title>SM Colors</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -3597,22 +3597,47 @@ undoBtn.onpointerleave = () => clearTimeout(undoHoldTimer);
 
   /* 🔹 RESTORED LONG-PRESS EDIT 🔹 */
   let pressTimer;
-  const valueEl=row.querySelector(".value");
+  
+const valueEl = row.querySelector(".value");
 
-valueEl.onclick = () => {
-  // Only act on ghost values
-  if (!valueEl.classList.contains("ghost")) return;
+let valueHoldTimer = null;
+let valueLongPressFired = false;
 
-  commitGhostValue(item, Source);
+/* ----- CLICK: +0.1 OR commit ghost ----- */
+valueEl.onclick = (e) => {
+  // If long-press already fired, ignore click
+  if (valueLongPressFired) {
+    valueLongPressFired = false;
+    return;
+  }
+
+  // Ghost value → commit previous snapshot (unchanged behavior)
+  if (valueEl.classList.contains("ghost")) {
+    commitGhostValue(item, Source);
+    return;
+  }
+
+  // Normal click → +0.1
+  const current = Number(item[Source]) || 0;
+  handleQuantityChange(item, round(current + 0.1));
 };
 
-  valueEl.onpointerdown=()=>{
-    pressTimer=setTimeout(()=>{
-promptNumber("Enter value", item[Source], v => {
-  handleQuantityChange(item, v);
-});
-    },450);
-  };
+/* ----- LONG PRESS: manual entry ----- */
+valueEl.onpointerdown = (e) => {
+  valueLongPressFired = false;
+
+  valueHoldTimer = setTimeout(() => {
+    valueLongPressFired = true;
+    promptNumber("Enter value", item[Source], v => {
+      handleQuantityChange(item, v);
+    });
+  }, 450);
+};
+
+valueEl.onpointerup = () => clearTimeout(valueHoldTimer);
+valueEl.onpointerleave = () => clearTimeout(valueHoldTimer);
+valueEl.onpointercancel = () => clearTimeout(valueHoldTimer);
+
 
   valueEl.onpointerup=()=>clearTimeout(pressTimer);
   valueEl.onpointerleave=()=>clearTimeout(pressTimer);
