@@ -2783,6 +2783,157 @@ function handleQuantityChange(item, newValue) {
   renderItems();
 }
 
+/* ---------- PROJECTS + DICTIONARIES HELPERS ---------- */
+const PROJECTS_KEY = "Projects";
+
+function safeParseJSON(raw, fallback) {
+  try { return JSON.parse(raw); } catch { return fallback; }
+}
+
+function dateToMs(d) {
+  if (!d) return 0;
+  if (typeof d === "number") return d;
+  const ms = Date.parse(String(d));
+  return isNaN(ms) ? 0 : ms;
+}
+
+function getCurrentProjectTitle() {
+  // Use whichever you already use in your app; this is a safe fallback chain.
+  return (
+    (localStorage.getItem("CurrentProjectTitle") || "").trim() ||
+    (window.CurrentProjectTitle || "").trim() ||
+    (document.title || "").trim()
+  );
+}
+
+function getProjectsFromStorage() {
+  const raw = localStorage.getItem(PROJECTS_KEY);
+  const parsed = safeParseJSON(raw || "[]", []);
+  return Array.isArray(parsed) ? parsed : [];
+}
+
+function getMostRecentOtherProject(projects, currentTitle) {
+  const ct = String(currentTitle || "").trim();
+
+  const filtered = projects
+    .filter(p => p && typeof p === "object")
+    .filter(p => String(p.title || "").trim() && String(p.title || "").trim() !== ct);
+
+  if (!filtered.length) return null;
+
+  filtered.sort((a, b) => dateToMs(b.date) - dateToMs(a.date));
+  return filtered[0] || null;
+}
+
+// Tries hard to locate a dictionary array inside a project,
+// then returns the most recent dictionary by its date.
+function getMostRecentDictionaryFromProject(project) {
+  if (!project || typeof project !== "object") return null;
+
+  // Common candidates (covers a bunch of naming styles)
+  const candidates = [
+    project.dictionaries,
+    project.Dictionaries,
+    project.referenceDictionaries,
+    project.ReferenceDictionaries,
+    project.linkedDictionaries,
+    project.LinkedDictionaries,
+    project.dicts,
+    project.Dicts
+  ].filter(Boolean);
+
+  let dicts = null;
+  for (const c of candidates) {
+    if (Array.isArray(c)) { dicts = c; break; }
+  }
+
+  // If project itself is basically “a dictionary record”
+  if (!dicts) {
+    if (project.date && (project.title || project.dictionaryTitle)) {
+      return {
+        title: project.dictionaryTitle || project.title,
+        date: project.date,
+        data: project.dictionary || project.data || project
+      };
+    }
+    return null;
+  }
+
+  const cleaned = dicts.filter(d => d && typeof d === "object");
+  if (!cleaned.length) return null;
+
+  cleaned.sort((a, b) => dateToMs(b.date) - dateToMs(a.date));
+  const latest = cleaned[0];
+
+  return {
+    title: latest.title || latest.name || latest.dictionaryTitle || "Untitled Dictionary",
+    date: latest.date,
+    data: latest
+  };
+}
+
+function openProjectDictionaryPreviewWindow(project, dict) {
+  const w = window.open("", "_blank", "noopener,noreferrer,width=900,height=700");
+  if (!w) {
+    console.warn("Popup blocked: unable to open preview window.");
+    return;
+  }
+
+  const projectTitle = String(project?.title || "Untitled Project");
+  const projectDate = project?.date ? new Date(dateToMs(project.date)).toLocaleString() : "N/A";
+  const dictTitle = String(dict?.title || "Untitled Dictionary");
+  const dictDate = dict?.date ? new Date(dateToMs(dict.date)).toLocaleString() : "N/A";
+
+  const payload = {
+    project: project,
+    mostRecentDictionary: dict
+  };
+
+  w.document.open();
+  w.document.write(`
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Project Preview</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;margin:18px;line-height:1.35;}
+    h1{font-size:18px;margin:0 0 8px;}
+    .meta{opacity:.75;margin-bottom:12px;}
+    pre{white-space:pre-wrap;word-break:break-word;background:#f6f6f6;padding:12px;border-radius:10px;}
+    .pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef3ee;margin-right:8px;font-size:12px;}
+  </style>
+</head>
+<body>
+  <h1>Most Recent Other Project</h1>
+  <div class="meta">
+    <span class="pill">Project</span><b>${escapeHtml(projectTitle)}</b><br/>
+    <span class="pill">Project Date</span>${escapeHtml(projectDate)}<br/>
+    <span class="pill">Dictionary</span><b>${escapeHtml(dictTitle)}</b><br/>
+    <span class="pill">Dictionary Date</span>${escapeHtml(dictDate)}
+  </div>
+  <pre>${escapeHtml(JSON.stringify(payload, null, 2))}</pre>
+
+  <script>
+    // convenient access in devtools
+    window.previewPayload = ${JSON.stringify(payload).replace(/</g,"\\u003c")};
+  </script>
+</body>
+</html>
+  `);
+  w.document.close();
+}
+
+// minimal HTML escaper for injected strings
+function escapeHtml(str) {
+  return String(str)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
 
 
 const WINE_STRUCTURE_KEY = "wineStructure";
@@ -3019,6 +3170,29 @@ cleanup();
       alert("Failed to process JSON file. See console for details.");
     }
   };
+
+/* ---------- AFTER LINK + TRANSFORM: PREVIEW MOST RECENT OTHER PROJECT ---------- */
+(function previewMostRecentOtherProjectFromProjects() {
+  const currentTitle = getCurrentProjectTitle();
+  const projects = getProjectsFromStorage();
+
+  const otherProj = getMostRecentOtherProject(projects, currentTitle);
+  if (!otherProj) {
+    console.log("No other project found (Projects filtered out current title).");
+    return;
+  }
+
+  const latestDict = getMostRecentDictionaryFromProject(otherProj);
+  if (!latestDict) {
+    console.log("Most recent other project found, but no dictionaries detected:", otherProj.title);
+    openProjectDictionaryPreviewWindow(otherProj, { title: "No dictionary found", date: otherProj.date, data: otherProj });
+    return;
+  }
+
+  console.log("Most recent dictionary title:", latestDict.title);
+  openProjectDictionaryPreviewWindow(otherProj, latestDict);
+})();
+
 
   function cleanup() {
     ov.remove();
