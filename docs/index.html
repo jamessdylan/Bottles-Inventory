@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>SM new Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2948,6 +2948,9 @@ cleanup();
 function transformReferenceDictionary(item) {
   const out = {};
 
+  const tier = (item?.tier ?? item?.Tier ?? "").toString().trim();
+  const isReserve = tier.toLowerCase() === "reserve";
+
   Object.keys(item || {}).forEach(key => {
     const value = item[key];
 
@@ -2969,18 +2972,36 @@ function transformReferenceDictionary(item) {
       return;
     }
 
-    // Source keys → SourcePrev
+    // Source keys → SourcePrev (and maybe SourceSuggested)
     if (SOURCES.includes(key)) {
       out[`${key}Prev`] = value;
+
+      // ✅ NEW: Reserve-only suggested logic
+      if (isReserve) {
+        const n = Number(value) || 0;
+        const completeKey = `${key}Complete`;
+
+        // If this row has a complete flag and it’s true, and qty > 0 → Suggested
+        const completeVal = item?.[completeKey];
+        const isComplete =
+          completeVal === true ||
+          (typeof completeVal === "string" && completeVal.toLowerCase() === "true");
+
+        if (n > 0 && isComplete) {
+          out[`${key}Suggested`] = value;
+        }
+      }
+
       return;
     }
 
-    // passthrough everything else (UUID, metadata, etc.)
+    // passthrough everything else (UUID, metadata, Complete keys, etc.)
     out[key] = value;
   });
 
   return out;
 }
+
 
 function applyLinkedReferenceDictionaryToItems(transformedArr) {
   if (!Array.isArray(transformedArr)) {
