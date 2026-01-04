@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Colors</title>
+<title>SM New Project</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -3011,13 +3011,108 @@ function totalQuantity(item){
   }, 0);
 }
 
+function n(v){
+  const x = Number(v);
+  return isNaN(x) ? 0 : x;
+}
+
+function recomputeQtyAndTotalForAllItems() {
+  (items || []).forEach(it => {
+    const qty = totalQuantity(it);
+    const price = n(it.price);
+    it.qty = qty;                 // you asked for qty recalculated
+    it.Total = qty * price;       // you asked for Total recalculated
+  });
+}
+
+function buildProjectDictionary() {
+  // Ensure live items have up-to-date qty + Total
+  recomputeQtyAndTotalForAllItems();
+
+  const project = {
+    title: document.title,             // page title
+    date: new Date().toISOString(),    // current date/time
+    grandsum: 0,
+    items: []
+  };
+
+  let grand = 0;
+
+  (items || []).forEach(it => {
+    if (!it || !it.UUID) return;
+
+    const qty = n(it.qty);             // already recomputed above
+    const price = n(it.price);
+    const total = n(it.Total);
+
+    // Build per-item dictionary
+    const entry = {
+      UUID: it.UUID,
+      price: price,
+      qty: qty,
+      Total: total
+    };
+
+    // Include ONLY sources whose value is > 0
+    (SOURCES || []).forEach(src => {
+      const v = n(it[src]);
+      if (v > 0) entry[src] = v;
+    });
+
+    project.items.push(entry);
+    grand += total;
+  });
+
+  project.grandsum = grand;
+  return project;
+}
+
+function loadProjectsFromStorage() {
+  try {
+    const raw = localStorage.getItem("Projects");
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    console.warn("Projects parse failed:", e);
+    return [];
+  }
+}
+
+function saveProjectsToStorage(arr) {
+  localStorage.setItem("Projects", JSON.stringify(arr, null, 2));
+}
+
 
 function startNewProject() {
   const ok = confirm("Do you want to continue?");
   if (!ok) return;
 
-  items.forEach(item => {
+  // 1) Build the project dictionary (includes recomputed qty/Total + grandsum)
+  const project = buildProjectDictionary();
 
+  // 2) Pull existing Projects array
+  let projects = loadProjectsFromStorage();
+
+  // 3) Title collision → confirm replace
+  const idx = projects.findIndex(p => p && p.title === project.title);
+
+  if (idx !== -1) {
+    const overwrite = confirm(
+      `A project titled "${project.title}" already exists.\n\nReplace it?`
+    );
+    if (!overwrite) return;
+
+    projects.splice(idx, 1);         // remove old
+    projects.push(project);          // add new (you can also insert at idx if you prefer)
+  } else {
+    projects.push(project);
+  }
+
+  // 4) Save Projects back to localStorage
+  saveProjectsToStorage(projects);
+
+  // 5) Now do your existing “new cycle” logic (snapshot prev, reserve prev keys, then reset)
+  items.forEach(item => {
     /* ---------- SNAPSHOT TOTAL ---------- */
     const total = totalQuantity(item);
     item.TotalPrev = total;
@@ -3034,6 +3129,7 @@ function startNewProject() {
 
     /* ---------- RESET LIVE VALUES ---------- */
     item.Total = 0;
+    item.qty = 0;
 
     SOURCES.forEach(src => {
       item[src] = 0;
@@ -3041,66 +3137,6 @@ function startNewProject() {
   });
 
   renderItems();
-}
-
-function getSourceDisplay(item, source) {
-  const value = Number(item[source]) || 0;
-  const completeKey = `${source}Complete`;
-  const prevKey = `${source}Prev`;
-
-  if (
-    value === 0 &&
-    item[completeKey] === false &&
-    item.hasOwnProperty(prevKey)
-  ) {
-    return {
-      text: item[prevKey],
-      ghost: true
-    };
-  }
-
-  return {
-    text: value,
-    ghost: false
-  };
-}
-
-function commitGhostValue(item, source) {
-  const prevKey = `${source}Prev`;
-
-  if (!item.hasOwnProperty(prevKey)) return;
-
-  handleQuantityChange(item, item[prevKey]);
-}
-
-
-
-function defaultArchiveAction(item){
-  const qty = totalQuantity(item);
-  const active = item.status === true;
-
-  if (qty > 0 && !active) return "Make Active";
-  if (qty === 0 && active) return "Make Inactive";
-  if (qty === 0 && !active) return "Delete Item";
-  return null;
-}
-
-const ARCHIVE_ACTIONS = [
-  "Make Active",
-  "Make Inactive",
-  "Delete Item",
-  null
-];
-
-function persistSmartListUUIDs() {
-  if (!activeSmartKey) return;
-
-  const list = window[activeSmartKey];
-  if (!Array.isArray(list)) return;
-
-  const uuidKey = `${Source}SmartListUUIDs`;
-
-  window[uuidKey] = list.map(item => item.UUID);
 }
 
 
