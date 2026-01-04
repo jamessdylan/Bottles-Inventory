@@ -206,6 +206,82 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 }
 .overlay.show{display:block;}
 
+/* ---------- DRAWER: LINK REFERENCE VALUES TOGGLE ---------- */
+.drawer-linkref{
+  position:absolute;
+  left:20px;
+  right:20px;
+  bottom:74px; /* sits above Clear Cache */
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+
+  padding:12px 12px;
+  border-radius:14px;
+  background:rgba(0,0,0,.05);
+}
+
+.drawer-linkref-text{display:flex;flex-direction:column;gap:4px;min-width:0;}
+.drawer-linkref-title{
+  font-size:15px;
+  font-weight:700;
+}
+.drawer-linkref-subtitle{
+  font-size:12px;
+  color:#666;
+  line-height:1.2;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* disabled/greyed out */
+.drawer-linkref.disabled{
+  opacity:.45;
+  filter:grayscale(1);
+  pointer-events:none; /* makes whole row non-interactive */
+}
+
+/* iOS-style switch */
+.ios-switch{
+  position:relative;
+  display:inline-block;
+  width:46px;
+  height:28px;
+  flex:0 0 auto;
+}
+.ios-switch input{
+  opacity:0;
+  width:0;
+  height:0;
+}
+.ios-slider{
+  position:absolute;
+  cursor:pointer;
+  inset:0;
+  background:rgba(0,0,0,.18);
+  border-radius:999px;
+  transition:.18s ease;
+}
+.ios-slider:before{
+  content:"";
+  position:absolute;
+  height:22px;
+  width:22px;
+  left:3px;
+  top:3px;
+  background:white;
+  border-radius:50%;
+  box-shadow:0 4px 12px rgba(0,0,0,.18);
+  transition:.18s ease;
+}
+.ios-switch input:checked + .ios-slider{
+  background:rgba(31,94,59,.55);
+}
+.ios-switch input:checked + .ios-slider:before{
+  transform:translateX(18px);
+}
 
 /* ---------- FIXED ACTION BAR ---------- */
 .action-bar{
@@ -785,6 +861,19 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
 <button id="structureBtn">Structure</button>
 <button id="quickFilterBtn">Quick Filter</button>
     <button id="exportBtn">Export</button>
+<!-- LINK REFERENCE VALUES TOGGLE (above Clear Cache) -->
+<div id="linkRefWrap" class="drawer-linkref">
+  <div class="drawer-linkref-text">
+    <div class="drawer-linkref-title">Link Reference Values</div>
+    <div id="linkRefProjectTitle" class="drawer-linkref-subtitle">—</div>
+  </div>
+
+  <label class="ios-switch">
+    <input id="linkRefToggle" type="checkbox">
+    <span class="ios-slider"></span>
+  </label>
+</div>
+
     <button id="clearCacheBtn" style="
   position:absolute;
   left:20px;
@@ -2514,6 +2603,64 @@ function baseSort(a,b,key){
     ||naLast(b.year,a.year);
 }
 
+const LINK_REF_TOGGLE_KEY = "Link Reference Values Enabled";
+let linkRefProject = null; // most recent project dict (if any)
+
+function getMostRecentProjectFromStorage() {
+  try {
+    const raw = localStorage.getItem("Projects");
+    const arr = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(arr) || arr.length === 0) return null;
+
+    const sorted = arr
+      .filter(p => p && typeof p === "object")
+      .slice()
+      .sort((a, b) => {
+        const da = Date.parse(a.date || "") || 0;
+        const db = Date.parse(b.date || "") || 0;
+        return db - da; // most recent first
+      });
+
+    return sorted[0] || null;
+  } catch (e) {
+    console.warn("Projects parse failed:", e);
+    return null;
+  }
+}
+
+function initLinkReferenceToggleUI() {
+  const wrap = document.getElementById("linkRefWrap");
+  const titleEl = document.getElementById("linkRefProjectTitle");
+  const toggle = document.getElementById("linkRefToggle");
+
+  if (!wrap || !titleEl || !toggle) return;
+
+  linkRefProject = getMostRecentProjectFromStorage();
+
+  if (!linkRefProject) {
+    // No projects → grey out + disable
+    wrap.classList.add("disabled");
+    titleEl.textContent = "No Projects found";
+    toggle.checked = false;
+    toggle.disabled = true;
+    return;
+  }
+
+  // Have a project → show title + enable toggle
+  wrap.classList.remove("disabled");
+  titleEl.textContent = linkRefProject.title || "Untitled Project";
+  toggle.disabled = false;
+
+  // Default behavior:
+  // - If a project exists and no prior setting saved, default to true
+  const saved = localStorage.getItem(LINK_REF_TOGGLE_KEY);
+  toggle.checked = (saved === null) ? true : (saved === "true");
+
+  toggle.onchange = () => {
+    localStorage.setItem(LINK_REF_TOGGLE_KEY, String(toggle.checked));
+  };
+}
+
 
 
 function promptNumber(label, initialValue, callback) {
@@ -3894,6 +4041,7 @@ async function prepareSmartLists(items) {
 /* ---------- INIT ---------- */
 buildSourceTabs();
 loadItems();
+initLinkReferenceToggleUI();
 
 /* ---------- ACTION STATES ---------- */
 let showArchived = false;
