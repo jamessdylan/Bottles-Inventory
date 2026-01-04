@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Projects</title>
+<title>SM </title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -354,6 +354,13 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   color: #9a9a9a;
   opacity: 0.6;
   font-style: italic;
+}
+
+/* Suggested/ghost formatting when Link Reference Values provides a value */
+.ghost-suggested{
+  outline:1px dashed rgba(31,94,59,.55);
+  background:rgba(31,94,59,.10) !important;
+  color:#1f5e3b !important;
 }
 
 
@@ -2541,6 +2548,7 @@ row.onclick = async () => {
   ov.onclick = e => { if (e.target === ov) close(); };
 }
 
+
 /* ---------------- LOAD ---------------- */
 
 async function loadItems() {
@@ -2661,6 +2669,55 @@ function initLinkReferenceToggleUI() {
   };
 }
 
+// Uses the same toggle key from earlier
+const LINK_REF_TOGGLE_KEY = "Link Reference Values Enabled";
+
+/** Returns true/false for the Link Reference Values toggle */
+function isLinkRefEnabled() {
+  return localStorage.getItem(LINK_REF_TOGGLE_KEY) === "true";
+}
+
+/** Returns the most recent Project dict from localStorage["Projects"] (same sorting as before) */
+function getMostRecentProjectFromStorage() {
+  try {
+    const raw = localStorage.getItem("Projects");
+    const arr = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(arr) || arr.length === 0) return null;
+
+    const sorted = arr
+      .filter(p => p && typeof p === "object")
+      .slice()
+      .sort((a, b) => {
+        const da = Date.parse(a.date || "") || 0;
+        const db = Date.parse(b.date || "") || 0;
+        return db - da; // most recent first
+      });
+
+    return sorted[0] || null;
+  } catch (e) {
+    console.warn("Projects parse failed:", e);
+    return null;
+  }
+}
+
+/**
+ * If Link Ref is enabled AND there's a most-recent Project with an item matching UUID,
+ * and that item has a numeric value for the current source, return it. Else null.
+ */
+function getLinkedGhostValueForItem(uuid, sourceKey) {
+  if (!isLinkRefEnabled()) return null;
+
+  const project = getMostRecentProjectFromStorage();
+  if (!project || !Array.isArray(project.items)) return null;
+
+  const match = project.items.find(d => d && d.UUID === uuid);
+  if (!match) return null;
+
+  const v = Number(match[sourceKey]);
+  if (!isFinite(v) || v <= 0) return null;
+
+  return v;
+}
 
 
 function promptNumber(label, initialValue, callback) {
@@ -3739,7 +3796,6 @@ function openTwoFilePreview(csvText, csvName, jsonText, jsonName) {
   win.document.close();
 }
 
-
 function drawItem(item){
   const key=`${Source}Complete`;
   const iconHTML=item.base64
@@ -3748,210 +3804,224 @@ function drawItem(item){
 
   const row=document.createElement("div");
   row.className="item";
- const display = getSourceDisplay(item, Source);
 
-row.innerHTML=`
-  <div class="left">
-    <div class="icon">${iconHTML}</div>
-    <div class="text-stack">
-      <div class="title" style="color:${item.status?'#000':'#ccc'}">
-        ${[item.brand,item.identifier,item.varietal,item.year].filter(v=>v&&v!=="N/A").join(" ")}
-      </div>
-      <div class="sub-row">
-        <div class="subtitle">${item.tier||""}</div>
-        <div class="controls">
-          <button class="minus">−</button>
-          <div class="value ${display.ghost ? 'ghost' : ''}">
-            ${display.text}
+  // ---- EXISTING DISPLAY ----
+  const display = getSourceDisplay(item, Source);
+
+  // ---- NEW: suggested value only used when qty==0, toggle ON ----
+  const currentQty = Number(item[Source]) || 0;
+  const suggested = (currentQty === 0) ? getSuggestedValueFromMostRecentProject(item.UUID, Source) : null;
+  const hasSuggested = (suggested !== null);
+
+  // If we have a suggested value and qty==0, force "ghost" display formatting
+  // (text can stay your existing display.text; ghost styling indicates suggestion)
+  const ghostOn = display.ghost || hasSuggested;
+
+  row.innerHTML=`
+    <div class="left">
+      <div class="icon">${iconHTML}</div>
+      <div class="text-stack">
+        <div class="title" style="color:${item.status?'#000':'#ccc'}">
+          ${[item.brand,item.identifier,item.varietal,item.year].filter(v=>v&&v!=="N/A").join(" ")}
+        </div>
+        <div class="sub-row">
+          <div class="subtitle">${item.tier||""}</div>
+          <div class="controls">
+            <button class="minus">−</button>
+            <div class="value ${ghostOn ? 'ghost' : ''}">
+              ${display.text}
+            </div>
+            <button class="plus">+</button>
           </div>
-          <button class="plus">+</button>
         </div>
       </div>
     </div>
-  </div>
-  <div class="toggle">
-    ${item[key]?`<span class="toggle-check">✔</span>`:`<div class="toggle-circle"></div>`}
-  </div>
-`;
+    <div class="toggle">
+      ${item[key]?`<span class="toggle-check">✔</span>`:`<div class="toggle-circle"></div>`}
+    </div>
+  `;
 
-document.getElementById("undoBtn").onclick = undoLastAction;
+  document.getElementById("undoBtn").onclick = undoLastAction;
 
-function undoLastAction() {
-  const action = undoStack.pop();
-  if (!action) return;
+  function undoLastAction() {
+    const action = undoStack.pop();
+    if (!action) return;
 
-  const { item, key, prevValue } = action;
-
-  item[key] = prevValue;
-
-  renderItems();
-}
-
-function showUndoHistory() {
-  if (!undoStack.length) {
-    alert("No undo history");
-    return;
+    const { item, key, prevValue } = action;
+    item[key] = prevValue;
+    renderItems();
   }
 
-  const text = undoStack
-    .slice()
-    .reverse()
-    .map((u, i) => `${i + 1}. ${u.text}`)
-    .join("\n");
+  function showUndoHistory() {
+    if (!undoStack.length) {
+      alert("No undo history");
+      return;
+    }
 
-  alert(`Undo History (most recent first):\n\n${text}`);
-}
+    const text = undoStack
+      .slice()
+      .reverse()
+      .map((u, i) => `${i + 1}. ${u.text}`)
+      .join("\n");
 
-const undoBtn = document.getElementById("undoBtn");
+    alert(`Undo History (most recent first):\n\n${text}`);
+  }
 
-let undoHoldTimer;
+  const undoBtn = document.getElementById("undoBtn");
+  let undoHoldTimer;
 
-undoBtn.onclick = () => {
-  undoLastAction();
-};
+  undoBtn.onclick = () => {
+    undoLastAction();
+  };
 
-undoBtn.onpointerdown = () => {
-  undoHoldTimer = setTimeout(() => {
-    showUndoHistory();
-  }, 600);
-};
+  undoBtn.onpointerdown = () => {
+    undoHoldTimer = setTimeout(() => {
+      showUndoHistory();
+    }, 600);
+  };
 
-undoBtn.onpointerup = () => clearTimeout(undoHoldTimer);
-undoBtn.onpointerleave = () => clearTimeout(undoHoldTimer);
-
-
-
+  undoBtn.onpointerup = () => clearTimeout(undoHoldTimer);
+  undoBtn.onpointerleave = () => clearTimeout(undoHoldTimer);
 
   /* 🔹 RESTORED LONG-PRESS EDIT 🔹 */
   let pressTimer;
-  
-const valueEl = row.querySelector(".value");
 
-let valueHoldTimer = null;
-let valueLongPressFired = false;
+  const valueEl = row.querySelector(".value");
 
-/* ----- CLICK: +0.1 OR commit ghost ----- */
-valueEl.onclick = (e) => {
-  // If long-press already fired, ignore click
-  if (valueLongPressFired) {
+  let valueHoldTimer = null;
+  let valueLongPressFired = false;
+
+  /* ----- CLICK: +0.1 OR commit ghost ----- */
+  valueEl.onclick = (e) => {
+    if (valueLongPressFired) {
+      valueLongPressFired = false;
+      return;
+    }
+
+    const current = Number(item[Source]) || 0;
+
+    // ✅ If qty > 0: unchanged (+0.1)
+    if (current > 0) {
+      handleQuantityChange(item, round(current + 0.1));
+      return;
+    }
+
+    // qty == 0:
+    // ✅ If toggle OFF: unchanged (+0.1)
+    if (!isLinkRefEnabled()) {
+      handleQuantityChange(item, round(current + 0.1));
+      return;
+    }
+
+    // ✅ toggle ON: if suggested exists, commit it (ghost behavior)
+    if (hasSuggested) {
+      // commitGhostValue previously used display's ghost snapshot;
+      // here we "commit" by setting the suggested value directly.
+      handleQuantityChange(item, suggested);
+      return;
+    }
+
+    // ✅ No suggested: unchanged (+0.1)
+    handleQuantityChange(item, round(current + 0.1));
+  };
+
+  /* ----- LONG PRESS: manual entry ----- */
+  valueEl.onpointerdown = (e) => {
     valueLongPressFired = false;
-    return;
-  }
 
-  // Ghost value → commit previous snapshot (unchanged behavior)
-  if (valueEl.classList.contains("ghost")) {
-    commitGhostValue(item, Source);
-    return;
-  }
+    valueHoldTimer = setTimeout(() => {
+      valueLongPressFired = true;
+      promptNumber("Enter value", item[Source], v => {
+        handleQuantityChange(item, v);
+      });
+    }, 450);
+  };
 
-  // Normal click → +0.1
-  const current = Number(item[Source]) || 0;
-  handleQuantityChange(item, round(current + 0.1));
-};
-
-/* ----- LONG PRESS: manual entry ----- */
-valueEl.onpointerdown = (e) => {
-  valueLongPressFired = false;
-
-  valueHoldTimer = setTimeout(() => {
-    valueLongPressFired = true;
-    promptNumber("Enter value", item[Source], v => {
-      handleQuantityChange(item, v);
-    });
-  }, 450);
-};
-
-valueEl.onpointerup = () => clearTimeout(valueHoldTimer);
-valueEl.onpointerleave = () => clearTimeout(valueHoldTimer);
-valueEl.onpointercancel = () => clearTimeout(valueHoldTimer);
-
+  valueEl.onpointerup = () => clearTimeout(valueHoldTimer);
+  valueEl.onpointerleave = () => clearTimeout(valueHoldTimer);
+  valueEl.onpointercancel = () => clearTimeout(valueHoldTimer);
 
   valueEl.onpointerup=()=>clearTimeout(pressTimer);
   valueEl.onpointerleave=()=>clearTimeout(pressTimer);
 
-   const minusBtn = row.querySelector(".minus");
-const plusBtn  = row.querySelector(".plus");
+  const minusBtn = row.querySelector(".minus");
+  const plusBtn  = row.querySelector(".plus");
 
-let holdTimerBtn = null;
-let longPressFired = false;
+  let holdTimerBtn = null;
+  let longPressFired = false;
 
-/* helper: start a long-press safely */
-function startHold(cb){
-  longPressFired = false;
-  clearTimeout(holdTimerBtn);
-  holdTimerBtn = setTimeout(() => {
-    longPressFired = true;
-    cb();
-  }, 450);
-}
+  function startHold(cb){
+    longPressFired = false;
+    clearTimeout(holdTimerBtn);
+    holdTimerBtn = setTimeout(() => {
+      longPressFired = true;
+      cb();
+    }, 450);
+  }
 
-function endHold(){
-  clearTimeout(holdTimerBtn);
-}
+  function endHold(){
+    clearTimeout(holdTimerBtn);
+  }
 
-/* ----- MINUS (tap = -1, hold = subtract N) ----- */
-minusBtn.onclick = (e) => {
-  if (longPressFired) { e.preventDefault(); e.stopPropagation(); return; }
-  handleQuantityChange(item, (Number(item[Source]) || 0) - 1);
-};
+  minusBtn.onclick = (e) => {
+    if (longPressFired) { e.preventDefault(); e.stopPropagation(); return; }
+    handleQuantityChange(item, (Number(item[Source]) || 0) - 1);
+  };
 
-minusBtn.onpointerdown = (e) => {
-  e.preventDefault();
-  startHold(() => {
-    promptNumber("Subtract how many?", 0, v => {
-      handleQuantityChange(item, (Number(item[Source]) || 0) - (Number(v) || 0));
+  minusBtn.onpointerdown = (e) => {
+    e.preventDefault();
+    startHold(() => {
+      promptNumber("Subtract how many?", 0, v => {
+        handleQuantityChange(item, (Number(item[Source]) || 0) - (Number(v) || 0));
+      });
     });
-  });
-};
+  };
 
-minusBtn.onpointerup = endHold;
-minusBtn.onpointerleave = endHold;
+  minusBtn.onpointerup = endHold;
+  minusBtn.onpointerleave = endHold;
 
-/* ----- PLUS (tap = +1, hold = add N) ----- */
-plusBtn.onclick = (e) => {
-  if (longPressFired) { e.preventDefault(); e.stopPropagation(); return; }
-  handleQuantityChange(item, (Number(item[Source]) || 0) + 1);
-};
+  plusBtn.onclick = (e) => {
+    if (longPressFired) { e.preventDefault(); e.stopPropagation(); return; }
+    handleQuantityChange(item, (Number(item[Source]) || 0) + 1);
+  };
 
-plusBtn.onpointerdown = (e) => {
-  e.preventDefault();
-  startHold(() => {
-    promptNumber("Add how many?", 0, v => {
-      handleQuantityChange(item, (Number(item[Source]) || 0) + (Number(v) || 0));
+  plusBtn.onpointerdown = (e) => {
+    e.preventDefault();
+    startHold(() => {
+      promptNumber("Add how many?", 0, v => {
+        handleQuantityChange(item, (Number(item[Source]) || 0) + (Number(v) || 0));
+      });
     });
-  });
-};
+  };
 
-plusBtn.onpointerup = endHold;
-plusBtn.onpointerleave = endHold;
-
+  plusBtn.onpointerup = endHold;
+  plusBtn.onpointerleave = endHold;
 
   row.querySelector(".toggle").onclick=()=>{item[key]=!item[key];renderItems();}
 
-// ✅ Long-press edit ONLY on the icon
-const iconEl = row.querySelector(".icon");
-let iconHoldTimer = null;
+  // ✅ Long-press edit ONLY on the icon
+  const iconEl = row.querySelector(".icon");
+  let iconHoldTimer = null;
 
-iconEl.style.cursor = "pointer";
+  iconEl.style.cursor = "pointer";
 
-iconEl.onpointerdown = (e) => {
-  e.preventDefault();
-  e.stopPropagation();
+  iconEl.onpointerdown = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
 
-  iconHoldTimer = setTimeout(() => {
-    openEditBottle(item);
-  }, 1000);
-};
+    iconHoldTimer = setTimeout(() => {
+      openEditBottle(item);
+    }, 1000);
+  };
 
-iconEl.onpointerup = () => clearTimeout(iconHoldTimer);
-iconEl.onpointerleave = () => clearTimeout(iconHoldTimer);
-iconEl.onpointercancel = () => clearTimeout(iconHoldTimer);
+  iconEl.onpointerup = () => clearTimeout(iconHoldTimer);
+  iconEl.onpointerleave = () => clearTimeout(iconHoldTimer);
+  iconEl.onpointercancel = () => clearTimeout(iconHoldTimer);
 
-iconEl.onclick = (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-};
-
+  iconEl.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
 
   list.appendChild(row);
 }
