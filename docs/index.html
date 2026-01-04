@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Colors</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2692,10 +2692,13 @@ function handleQuantityChange(item, newValue) {
 
   if (oldValue === nextValue) return;
 
-  // 🔹 Pass both values now
   logUndo(item, key, oldValue, nextValue);
 
   item[key] = nextValue;
+
+  // ✅ keep derived fields in sync
+  updateQtyAndTotal(item);
+
   renderItems();
 }
 
@@ -3161,6 +3164,18 @@ function totalQuantity(item){
   return SOURCES.reduce((sum, src) => {
     return sum + (Number(item[src]) || 0);
   }, 0);
+}
+
+function updateQtyAndTotal(item) {
+  if (!item) return;
+
+  // qty = sum of all source quantities
+  const qty = totalQuantity(item);
+  item.qty = qty;
+
+  // Total = qty × price (2 decimals)
+  const price = Number(item.price) || 0;
+  item.Total = Math.round(qty * price * 100) / 100;
 }
 
 
@@ -4843,11 +4858,15 @@ confirmNewBottle.onclick = () => {
     items.push(target);
   }
 
+// ✅ ensure qty + Total are correct after edits/new bottle (price changes included)
+updateQtyAndTotal(target);
+
   editingItem = null;
   resetNewBottleDefaults();
   renderItems();
   closeNewBottle();
 };
+
 
 function openTargetListPopup() {
   const smartLists = JSON.parse(
@@ -5492,7 +5511,7 @@ function importLoadedValues(arr) {
       // If they gave a real UUID that isn't in items, you can optionally preserve it:
       // (Comment out these 2 lines if you ALWAYS want generated UUIDs for new rows)
       if (!isNewSignal && rawUUID) newItem.UUID = rawUUID;
-
+updateQtyAndTotal(newItem);
       items.push(newItem);
       byUUID.set(newItem.UUID, newItem);
       created++;
@@ -5502,6 +5521,7 @@ function importLoadedValues(arr) {
     // Existing UUID → update
     const target = byUUID.get(rawUUID);
     updateExistingItemFromRow(target, row);
+updateQtyAndTotal(target);
     updated++;
   });
 
