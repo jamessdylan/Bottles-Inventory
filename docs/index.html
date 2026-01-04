@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM new Inventory</title>
+<title>SM Wine Inventory</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -775,7 +775,8 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   <!-- Drawer Content -->
   <div class="drawer" id="drawer">
     <div class="drawer-title" id="pageTitle"></div>
-    <button id="newProjectBtn">New Project</button>
+<button id="saveProjectBtn">Save Project</button>
+<button id="newProjectBtn">New Project</button>
 <button id="loadValuesBtn">Load Values</button>
 <button id="linkReferenceDictBtn">Link Reference Dictionary</button>
     <button id="reserveListBtn">Reserve List</button>
@@ -993,6 +994,16 @@ const tabsEl=document.getElementById("sourceTabs");
     const dictionaryFileBtn = document.getElementById("dictionaryFileBtn");
     const exportBtn = document.getElementById("exportBtn");
 document.getElementById("clearCacheBtn").onclick = openClearCachePopup;
+
+
+const saveProjectBtn = document.getElementById("saveProjectBtn");
+
+saveProjectBtn.onclick = () => {
+  drawer.classList.remove("open");
+  overlay.classList.remove("show");
+  saveProjectToLocalStorage();
+};
+
 
 const newProjectBtn = document.getElementById("newProjectBtn");
 
@@ -2478,6 +2489,76 @@ function baseSort(a,b,key){
     ||naLast(b.year,a.year);
 }
 
+const PROJECTS_KEY = "Projects";
+
+function loadProjectsFromStorage() {
+  try {
+    const raw = localStorage.getItem(PROJECTS_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    console.warn("Projects parse failed:", e);
+    return [];
+  }
+}
+
+function saveProjectsToStorage(projects) {
+  localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects, null, 2));
+}
+
+function buildProjectItemsSnapshot() {
+  // Make sure qty + Total are up to date before snapshotting
+  (items || []).forEach(it => updateQtyAndTotal(it));
+
+  // Snapshot ONLY what you asked for:
+  // "item’s source values as well as price, qty, and Total"
+  return (items || [])
+    .filter(it => it && it.UUID)
+    .map(it => {
+      const snap = {
+        UUID: it.UUID,
+        price: Number(it.price) || 0,
+        qty: Number(it.qty) || 0,
+        Total: Number(it.Total) || 0
+      };
+
+      (SOURCES || []).forEach(src => {
+        snap[src] = Number(it[src]) || 0;
+      });
+
+      return snap;
+    });
+}
+
+function saveProjectToLocalStorage() {
+  const title = document.title || "Untitled Project";
+  const date = new Date().toISOString(); // stable + sortable
+
+  const entry = {
+    title,
+    date,
+    items: buildProjectItemsSnapshot()
+  };
+
+  const projects = loadProjectsFromStorage();
+
+  const existingIndex = projects.findIndex(p => p && p.title === title);
+
+  if (existingIndex !== -1) {
+    const ok = confirm(`A project named "${title}" already exists.\n\nOverwrite it?`);
+    if (!ok) return;
+
+    projects[existingIndex] = entry;
+  } else {
+    projects.push(entry);
+  }
+
+  // Save once more (your requested final persistence)
+  saveProjectsToStorage(projects);
+
+  // Open preview window of the NEW Projects file
+  openJSONInNewWindow(JSON.stringify(projects, null, 2), "Projects.json");
+}
 
 
 function promptNumber(label, initialValue, callback) {
