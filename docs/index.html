@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Wine Inventory</title>
+<title>SM Colors</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -775,8 +775,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
   <!-- Drawer Content -->
   <div class="drawer" id="drawer">
     <div class="drawer-title" id="pageTitle"></div>
-<button id="saveProjectBtn">Save Project</button>
-<button id="newProjectBtn">New Project</button>
+    <button id="newProjectBtn">New Project</button>
 <button id="loadValuesBtn">Load Values</button>
 <button id="linkReferenceDictBtn">Link Reference Dictionary</button>
     <button id="reserveListBtn">Reserve List</button>
@@ -994,16 +993,6 @@ const tabsEl=document.getElementById("sourceTabs");
     const dictionaryFileBtn = document.getElementById("dictionaryFileBtn");
     const exportBtn = document.getElementById("exportBtn");
 document.getElementById("clearCacheBtn").onclick = openClearCachePopup;
-
-
-const saveProjectBtn = document.getElementById("saveProjectBtn");
-
-saveProjectBtn.onclick = () => {
-  drawer.classList.remove("open");
-  overlay.classList.remove("show");
-  saveProjectToLocalStorage();
-};
-
 
 const newProjectBtn = document.getElementById("newProjectBtn");
 
@@ -2489,76 +2478,6 @@ function baseSort(a,b,key){
     ||naLast(b.year,a.year);
 }
 
-const PROJECTS_KEY = "Projects";
-
-function loadProjectsFromStorage() {
-  try {
-    const raw = localStorage.getItem(PROJECTS_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (e) {
-    console.warn("Projects parse failed:", e);
-    return [];
-  }
-}
-
-function saveProjectsToStorage(projects) {
-  localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects, null, 2));
-}
-
-function buildProjectItemsSnapshot() {
-  // Make sure qty + Total are up to date before snapshotting
-  (items || []).forEach(it => updateQtyAndTotal(it));
-
-  // Snapshot ONLY what you asked for:
-  // "item’s source values as well as price, qty, and Total"
-  return (items || [])
-    .filter(it => it && it.UUID)
-    .map(it => {
-      const snap = {
-        UUID: it.UUID,
-        price: Number(it.price) || 0,
-        qty: Number(it.qty) || 0,
-        Total: Number(it.Total) || 0
-      };
-
-      (SOURCES || []).forEach(src => {
-        snap[src] = Number(it[src]) || 0;
-      });
-
-      return snap;
-    });
-}
-
-function saveProjectToLocalStorage() {
-  const title = document.title || "Untitled Project";
-  const date = new Date().toISOString(); // stable + sortable
-
-  const entry = {
-    title,
-    date,
-    items: buildProjectItemsSnapshot()
-  };
-
-  const projects = loadProjectsFromStorage();
-
-  const existingIndex = projects.findIndex(p => p && p.title === title);
-
-  if (existingIndex !== -1) {
-    const ok = confirm(`A project named "${title}" already exists.\n\nOverwrite it?`);
-    if (!ok) return;
-
-    projects[existingIndex] = entry;
-  } else {
-    projects.push(entry);
-  }
-
-  // Save once more (your requested final persistence)
-  saveProjectsToStorage(projects);
-
-  // Open preview window of the NEW Projects file
-  openJSONInNewWindow(JSON.stringify(projects, null, 2), "Projects.json");
-}
 
 
 function promptNumber(label, initialValue, callback) {
@@ -2773,167 +2692,13 @@ function handleQuantityChange(item, newValue) {
 
   if (oldValue === nextValue) return;
 
+  // 🔹 Pass both values now
   logUndo(item, key, oldValue, nextValue);
 
   item[key] = nextValue;
-
-  // ✅ keep derived fields in sync
-  updateQtyAndTotal(item);
-
   renderItems();
 }
 
-/* ---------- PROJECTS + DICTIONARIES HELPERS ---------- */
-const PROJECTS_KEY = "Projects";
-
-function safeParseJSON(raw, fallback) {
-  try { return JSON.parse(raw); } catch { return fallback; }
-}
-
-function dateToMs(d) {
-  if (!d) return 0;
-  if (typeof d === "number") return d;
-  const ms = Date.parse(String(d));
-  return isNaN(ms) ? 0 : ms;
-}
-
-function getCurrentProjectTitle() {
-  // Use whichever you already use in your app; this is a safe fallback chain.
-  return (
-    (localStorage.getItem("CurrentProjectTitle") || "").trim() ||
-    (window.CurrentProjectTitle || "").trim() ||
-    (document.title || "").trim()
-  );
-}
-
-function getProjectsFromStorage() {
-  const raw = localStorage.getItem(PROJECTS_KEY);
-  const parsed = safeParseJSON(raw || "[]", []);
-  return Array.isArray(parsed) ? parsed : [];
-}
-
-function getMostRecentOtherProject(projects, currentTitle) {
-  const ct = String(currentTitle || "").trim();
-
-  const filtered = projects
-    .filter(p => p && typeof p === "object")
-    .filter(p => String(p.title || "").trim() && String(p.title || "").trim() !== ct);
-
-  if (!filtered.length) return null;
-
-  filtered.sort((a, b) => dateToMs(b.date) - dateToMs(a.date));
-  return filtered[0] || null;
-}
-
-// Tries hard to locate a dictionary array inside a project,
-// then returns the most recent dictionary by its date.
-function getMostRecentDictionaryFromProject(project) {
-  if (!project || typeof project !== "object") return null;
-
-  // Common candidates (covers a bunch of naming styles)
-  const candidates = [
-    project.dictionaries,
-    project.Dictionaries,
-    project.referenceDictionaries,
-    project.ReferenceDictionaries,
-    project.linkedDictionaries,
-    project.LinkedDictionaries,
-    project.dicts,
-    project.Dicts
-  ].filter(Boolean);
-
-  let dicts = null;
-  for (const c of candidates) {
-    if (Array.isArray(c)) { dicts = c; break; }
-  }
-
-  // If project itself is basically “a dictionary record”
-  if (!dicts) {
-    if (project.date && (project.title || project.dictionaryTitle)) {
-      return {
-        title: project.dictionaryTitle || project.title,
-        date: project.date,
-        data: project.dictionary || project.data || project
-      };
-    }
-    return null;
-  }
-
-  const cleaned = dicts.filter(d => d && typeof d === "object");
-  if (!cleaned.length) return null;
-
-  cleaned.sort((a, b) => dateToMs(b.date) - dateToMs(a.date));
-  const latest = cleaned[0];
-
-  return {
-    title: latest.title || latest.name || latest.dictionaryTitle || "Untitled Dictionary",
-    date: latest.date,
-    data: latest
-  };
-}
-
-function openProjectDictionaryPreviewWindow(project, dict) {
-  const w = window.open("", "_blank", "noopener,noreferrer,width=900,height=700");
-  if (!w) {
-    console.warn("Popup blocked: unable to open preview window.");
-    return;
-  }
-
-  const projectTitle = String(project?.title || "Untitled Project");
-  const projectDate = project?.date ? new Date(dateToMs(project.date)).toLocaleString() : "N/A";
-  const dictTitle = String(dict?.title || "Untitled Dictionary");
-  const dictDate = dict?.date ? new Date(dateToMs(dict.date)).toLocaleString() : "N/A";
-
-  const payload = {
-    project: project,
-    mostRecentDictionary: dict
-  };
-
-  w.document.open();
-  w.document.write(`
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>Project Preview</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;margin:18px;line-height:1.35;}
-    h1{font-size:18px;margin:0 0 8px;}
-    .meta{opacity:.75;margin-bottom:12px;}
-    pre{white-space:pre-wrap;word-break:break-word;background:#f6f6f6;padding:12px;border-radius:10px;}
-    .pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef3ee;margin-right:8px;font-size:12px;}
-  </style>
-</head>
-<body>
-  <h1>Most Recent Other Project</h1>
-  <div class="meta">
-    <span class="pill">Project</span><b>${escapeHtml(projectTitle)}</b><br/>
-    <span class="pill">Project Date</span>${escapeHtml(projectDate)}<br/>
-    <span class="pill">Dictionary</span><b>${escapeHtml(dictTitle)}</b><br/>
-    <span class="pill">Dictionary Date</span>${escapeHtml(dictDate)}
-  </div>
-  <pre>${escapeHtml(JSON.stringify(payload, null, 2))}</pre>
-
-  <script>
-    // convenient access in devtools
-    window.previewPayload = ${JSON.stringify(payload).replace(/</g,"\\u003c")};
-  </script>
-</body>
-</html>
-  `);
-  w.document.close();
-}
-
-// minimal HTML escaper for injected strings
-function escapeHtml(str) {
-  return String(str)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
 
 
 const WINE_STRUCTURE_KEY = "wineStructure";
@@ -3142,57 +2907,19 @@ function openLinkReferenceDictionaryPopup() {
         throw new Error("JSON must be an array of dictionaries.");
       }
 
-     const transformed = parsed.map(transformReferenceDictionary);
+      const transformed = parsed.map(transformReferenceDictionary);
 
-// Preview (keep your existing behavior)
-openJSONInNewWindow(
-  JSON.stringify(transformed, null, 2),
-  "linkedReferenceDictionary.json"
-);
+      openJSONInNewWindow(
+        JSON.stringify(transformed, null, 2),
+        "linkedReferenceDictionary.json"
+      );
 
-// ✅ APPLY to items immediately after transform
-const result = applyLinkedReferenceDictionaryToItems(transformed);
-
-// Re-render (this will also run your patch pipeline)
-renderItems();
-
-alert(
-  `Reference Dictionary applied:\n\n` +
-  `Updated: ${result.updated}\n` +
-  `Missing UUIDs (not found in items): ${result.missing}\n` +
-  `Skipped rows: ${result.skipped}`
-);
-
-cleanup();
-
+      cleanup();
     } catch (err) {
       console.error("Link Reference Dictionary failed:", err);
       alert("Failed to process JSON file. See console for details.");
     }
   };
-
-/* ---------- AFTER LINK + TRANSFORM: PREVIEW MOST RECENT OTHER PROJECT ---------- */
-(function previewMostRecentOtherProjectFromProjects() {
-  const currentTitle = getCurrentProjectTitle();
-  const projects = getProjectsFromStorage();
-
-  const otherProj = getMostRecentOtherProject(projects, currentTitle);
-  if (!otherProj) {
-    console.log("No other project found (Projects filtered out current title).");
-    return;
-  }
-
-  const latestDict = getMostRecentDictionaryFromProject(otherProj);
-  if (!latestDict) {
-    console.log("Most recent other project found, but no dictionaries detected:", otherProj.title);
-    openProjectDictionaryPreviewWindow(otherProj, { title: "No dictionary found", date: otherProj.date, data: otherProj });
-    return;
-  }
-
-  console.log("Most recent dictionary title:", latestDict.title);
-  openProjectDictionaryPreviewWindow(otherProj, latestDict);
-})();
-
 
   function cleanup() {
     ov.remove();
@@ -3202,9 +2929,6 @@ cleanup();
 
 function transformReferenceDictionary(item) {
   const out = {};
-
-  const tier = (item?.tier ?? item?.Tier ?? "").toString().trim();
-  const isReserve = tier.toLowerCase() === "reserve";
 
   Object.keys(item || {}).forEach(key => {
     const value = item[key];
@@ -3227,82 +2951,19 @@ function transformReferenceDictionary(item) {
       return;
     }
 
-    // Source keys → SourcePrev (and maybe SourceSuggested)
+    // Source keys → SourcePrev
     if (SOURCES.includes(key)) {
       out[`${key}Prev`] = value;
-
-      // ✅ NEW: Reserve-only suggested logic
-      if (isReserve) {
-        const n = Number(value) || 0;
-        const completeKey = `${key}Complete`;
-
-        // If this row has a complete flag and it’s true, and qty > 0 → Suggested
-        const completeVal = item?.[completeKey];
-        const isComplete =
-          completeVal === true ||
-          (typeof completeVal === "string" && completeVal.toLowerCase() === "true");
-
-        if (n > 0 && isComplete) {
-          out[`${key}Suggested`] = value;
-        }
-      }
-
       return;
     }
 
-    // passthrough everything else (UUID, metadata, Complete keys, etc.)
+    // passthrough everything else (UUID, metadata, etc.)
     out[key] = value;
   });
 
   return out;
 }
 
-
-function applyLinkedReferenceDictionaryToItems(transformedArr) {
-  if (!Array.isArray(transformedArr)) {
-    return { updated: 0, missing: 0, skipped: 0 };
-  }
-
-  const byUUID = new Map(
-    (items || [])
-      .filter(i => i && i.UUID)
-      .map(i => [String(i.UUID), i])
-  );
-
-  let updated = 0;
-  let missing = 0;
-  let skipped = 0;
-
-  transformedArr.forEach(row => {
-    if (!row || typeof row !== "object") {
-      skipped++;
-      return;
-    }
-
-    const uuid = getUUIDFromRow(row);
-    if (!uuid) {
-      skipped++;
-      return;
-    }
-
-    const target = byUUID.get(String(uuid));
-    if (!target) {
-      missing++;
-      return;
-    }
-
-    // Apply all keys except UUID variants
-    Object.keys(row).forEach(k => {
-      if (k === "UUID" || k === "uuid" || k === "Uuid" || k === "uUID") return;
-      if (row[k] === undefined) return; // ignore undefined
-      target[k] = row[k];
-    });
-
-    updated++;
-  });
-
-  return { updated, missing, skipped };
-}
 
 function updateGlobalFilters() {
   /* ---------- ARCHIVE ---------- */
@@ -3440,18 +3101,6 @@ function totalQuantity(item){
   return SOURCES.reduce((sum, src) => {
     return sum + (Number(item[src]) || 0);
   }, 0);
-}
-
-function updateQtyAndTotal(item) {
-  if (!item) return;
-
-  // qty = sum of all source quantities
-  const qty = totalQuantity(item);
-  item.qty = qty;
-
-  // Total = qty × price (2 decimals)
-  const price = Number(item.price) || 0;
-  item.Total = Math.round(qty * price * 100) / 100;
 }
 
 
@@ -5134,15 +4783,11 @@ confirmNewBottle.onclick = () => {
     items.push(target);
   }
 
-// ✅ ensure qty + Total are correct after edits/new bottle (price changes included)
-updateQtyAndTotal(target);
-
   editingItem = null;
   resetNewBottleDefaults();
   renderItems();
   closeNewBottle();
 };
-
 
 function openTargetListPopup() {
   const smartLists = JSON.parse(
@@ -5787,7 +5432,7 @@ function importLoadedValues(arr) {
       // If they gave a real UUID that isn't in items, you can optionally preserve it:
       // (Comment out these 2 lines if you ALWAYS want generated UUIDs for new rows)
       if (!isNewSignal && rawUUID) newItem.UUID = rawUUID;
-updateQtyAndTotal(newItem);
+
       items.push(newItem);
       byUUID.set(newItem.UUID, newItem);
       created++;
@@ -5797,7 +5442,6 @@ updateQtyAndTotal(newItem);
     // Existing UUID → update
     const target = byUUID.get(rawUUID);
     updateExistingItemFromRow(target, row);
-updateQtyAndTotal(target);
     updated++;
   });
 
