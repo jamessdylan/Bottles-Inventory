@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Link</title>
+<title>SM Colors</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2907,14 +2907,29 @@ function openLinkReferenceDictionaryPopup() {
         throw new Error("JSON must be an array of dictionaries.");
       }
 
-      const transformed = parsed.map(transformReferenceDictionary);
+     const transformed = parsed.map(transformReferenceDictionary);
 
-      openJSONInNewWindow(
-        JSON.stringify(transformed, null, 2),
-        "linkedReferenceDictionary.json"
-      );
+// Preview (keep your existing behavior)
+openJSONInNewWindow(
+  JSON.stringify(transformed, null, 2),
+  "linkedReferenceDictionary.json"
+);
 
-      cleanup();
+// ✅ APPLY to items immediately after transform
+const result = applyLinkedReferenceDictionaryToItems(transformed);
+
+// Re-render (this will also run your patch pipeline)
+renderItems();
+
+alert(
+  `Reference Dictionary applied:\n\n` +
+  `Updated: ${result.updated}\n` +
+  `Missing UUIDs (not found in items): ${result.missing}\n` +
+  `Skipped rows: ${result.skipped}`
+);
+
+cleanup();
+
     } catch (err) {
       console.error("Link Reference Dictionary failed:", err);
       alert("Failed to process JSON file. See console for details.");
@@ -2964,6 +2979,51 @@ function transformReferenceDictionary(item) {
   return out;
 }
 
+function applyLinkedReferenceDictionaryToItems(transformedArr) {
+  if (!Array.isArray(transformedArr)) {
+    return { updated: 0, missing: 0, skipped: 0 };
+  }
+
+  const byUUID = new Map(
+    (items || [])
+      .filter(i => i && i.UUID)
+      .map(i => [String(i.UUID), i])
+  );
+
+  let updated = 0;
+  let missing = 0;
+  let skipped = 0;
+
+  transformedArr.forEach(row => {
+    if (!row || typeof row !== "object") {
+      skipped++;
+      return;
+    }
+
+    const uuid = getUUIDFromRow(row);
+    if (!uuid) {
+      skipped++;
+      return;
+    }
+
+    const target = byUUID.get(String(uuid));
+    if (!target) {
+      missing++;
+      return;
+    }
+
+    // Apply all keys except UUID variants
+    Object.keys(row).forEach(k => {
+      if (k === "UUID" || k === "uuid" || k === "Uuid" || k === "uUID") return;
+      if (row[k] === undefined) return; // ignore undefined
+      target[k] = row[k];
+    });
+
+    updated++;
+  });
+
+  return { updated, missing, skipped };
+}
 
 function updateGlobalFilters() {
   /* ---------- ARCHIVE ---------- */
