@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>SM Colors</title>
+<title>SM Link</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -777,6 +777,7 @@ button{border:none;background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px
     <div class="drawer-title" id="pageTitle"></div>
     <button id="newProjectBtn">New Project</button>
 <button id="loadValuesBtn">Load Values</button>
+<button id="linkReferenceDictBtn">Link Reference Dictionary</button>
     <button id="reserveListBtn">Reserve List</button>
     <button id="salesReportBtn">Sales Report</button>
     <button id="baseFileBtn">Base File</button>
@@ -1083,6 +1084,13 @@ exportBtn.onclick = () => {
 };
 
 
+const linkReferenceDictBtn = document.getElementById("linkReferenceDictBtn");
+
+linkReferenceDictBtn.onclick = () => {
+  drawer.classList.remove("open");
+  overlay.classList.remove("show");
+  openLinkReferenceDictionaryPopup();
+};
 
 
 const csvFileBtn = document.getElementById("csvFileBtn");
@@ -2826,7 +2834,135 @@ function openWineStructureEntryPopup(entry) {
   ov.onclick = e => { if (e.target === ov) close(); };
 }
 
+function openLinkReferenceDictionaryPopup() {
+  const ov = document.createElement("div");
+  ov.className = "overlay show";
 
+  const popup = document.createElement("div");
+  popup.style.cssText = `
+    position:fixed;
+    inset:auto 20px 20px 20px;
+    background:rgba(255,255,255,.96);
+    backdrop-filter:blur(16px);
+    border-radius:16px;
+    padding:16px;
+    z-index:800;
+  `;
+
+  popup.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div style="font-family:'Copperplate',serif;font-size:18px;">
+        Link Reference Dictionary
+      </div>
+      <button id="lrdCancel" style="
+        border:none;background:rgba(0,0,0,.06);
+        padding:8px 12px;border-radius:10px;cursor:pointer;
+      ">Cancel</button>
+    </div>
+
+    <div style="font-size:13px;color:#666;margin-bottom:12px;">
+      Upload a JSON file. Source keys will be converted to Prev keys and values normalized.
+    </div>
+
+    <input id="lrdFile" type="file" accept=".json,application/json" style="
+      width:100%;
+      padding:12px;
+      border-radius:12px;
+      border:none;
+      background:rgba(0,0,0,.05);
+      margin-bottom:12px;
+    ">
+
+    <button id="lrdConfirm" style="
+      width:100%;
+      background:#1f5e3b;
+      color:white;
+      border:none;
+      padding:12px;
+      border-radius:14px;
+      font-size:16px;
+      cursor:pointer;
+    ">Confirm</button>
+  `;
+
+  document.body.appendChild(ov);
+  document.body.appendChild(popup);
+
+  popup.querySelector("#lrdCancel").onclick = cleanup;
+  ov.onclick = e => { if (e.target === ov) cleanup(); };
+
+  popup.querySelector("#lrdConfirm").onclick = async () => {
+    const file = popup.querySelector("#lrdFile").files?.[0];
+    if (!file) {
+      alert("Please select a JSON file.");
+      return;
+    }
+
+    try {
+      let text = await file.text();
+      if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+
+      const parsed = JSON.parse(text);
+      if (!Array.isArray(parsed)) {
+        throw new Error("JSON must be an array of dictionaries.");
+      }
+
+      const transformed = parsed.map(transformReferenceDictionary);
+
+      openJSONInNewWindow(
+        JSON.stringify(transformed, null, 2),
+        "linkedReferenceDictionary.json"
+      );
+
+      cleanup();
+    } catch (err) {
+      console.error("Link Reference Dictionary failed:", err);
+      alert("Failed to process JSON file. See console for details.");
+    }
+  };
+
+  function cleanup() {
+    ov.remove();
+    popup.remove();
+  }
+}
+
+function transformReferenceDictionary(item) {
+  const out = {};
+
+  Object.keys(item || {}).forEach(key => {
+    const value = item[key];
+
+    // Total → TotalPrev
+    if (key === "Total") {
+      out["TotalPrev"] = value;
+      return;
+    }
+
+    // price → pricePrev
+    if (key === "price") {
+      out["pricePrev"] = value;
+      return;
+    }
+
+    // qty → qtyPrev
+    if (key === "qty") {
+      out["qtyPrev"] = value;
+      return;
+    }
+
+    // Source keys → SourcePrev
+    if (SOURCES.includes(key)) {
+      out[`${key}Prev`] = value;
+      return;
+    }
+
+    // passthrough everything else (UUID, metadata, etc.)
+    out[key] = value;
+  });
+
+  return out;
+}
 
 
 function updateGlobalFilters() {
