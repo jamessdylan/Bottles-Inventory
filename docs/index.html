@@ -2661,32 +2661,6 @@ function initLinkReferenceToggleUI() {
   };
 }
 
-function getGhostSuggestion(item, source){
-  // Only when qty is zero
-  if ((Number(item[source]) || 0) > 0) return null;
-
-  /* ---------- PRIORITY 1: Project-based (toggle ON) ---------- */
-  if (isLinkRefEnabled()) {
-    const proj = getMostRecentProject();
-    if (proj && Array.isArray(proj.items)) {
-      const match = proj.items.find(d => d && d.UUID === item.UUID);
-      const v = Number(match?.[source]);
-      if (v > 0) {
-        return { value: v, type: "project" };
-      }
-    }
-  }
-
-  /* ---------- PRIORITY 2: Legacy prev snapshot ---------- */
-  const prev = Number(item[`${source}Prev`]);
-  const complete = !!item[`${source}Complete`];
-
-  if (!complete && prev > 0) {
-    return { value: prev, type: "prev" };
-  }
-
-  return null;
-}
 
 
 function promptNumber(label, initialValue, callback) {
@@ -2901,16 +2875,12 @@ function handleQuantityChange(item, newValue) {
 
   if (oldValue === nextValue) return;
 
+  // 🔹 Pass both values now
   logUndo(item, key, oldValue, nextValue);
 
   item[key] = nextValue;
-
-  // ✅ keep qty + Total updated on every change
-  updateQtyAndTotalForItem(item);
-
   renderItems();
 }
-
 
 
 
@@ -3586,49 +3556,27 @@ deleteBottleBtn.style.display = "block";
   newBottleOverlay.classList.add("show");
 }
 
-/* ---------- GHOST VALUES (NEW) ---------- */
-// Keeps qty + Total accurate whenever we change any per-source value
-function updateQtyAndTotalForItem(it) {
-  if (!it) return;
-  const qty = totalQuantity(it);
-  const price = n(it.price);
-  it.qty = qty;
-  it.Total = qty * price;
-}
+function getSourceDisplay(item, source) {
+  const value = Number(item[source]) || 0;
+  const completeKey = `${source}Complete`;
+  const prevKey = `${source}Prev`;
 
-// Decide what to display in the quantity pill
-function getSourceDisplay(item, source){
-  const current = Number(item[source]) || 0;
-  if (current > 0) {
-    return { text: current, ghost: false };
+  if (
+    value === 0 &&
+    item[completeKey] === false &&
+    item.hasOwnProperty(prevKey)
+  ) {
+    return {
+      text: item[prevKey],
+      ghost: true
+    };
   }
 
-  const ghost = getGhostSuggestion(item, source);
-  if (ghost) {
-    return { text: ghost.value, ghost: true };
-  }
-
-  return { text: 0, ghost: false };
+  return {
+    text: value,
+    ghost: false
+  };
 }
-
-
-// When user taps a ghost value, commit the prev snapshot into the live source value
-function commitGhostValue(item, source){
-  const ghost = getGhostSuggestion(item, source);
-  if (!ghost) return;
-
-  const oldValue = Number(item[source]) || 0;
-  const nextValue = ghost.value;
-
-  logUndo(item, source, oldValue, nextValue);
-  item[source] = nextValue;
-
-  updateQtyAndTotalForItem(item);
-
-  renderItems();
-}
-
-
 
 function generateBaseFile() {
   // Deep clone so we never mutate live items
